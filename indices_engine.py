@@ -530,8 +530,11 @@ def _fetch_bybit_funding() -> dict:
         for t in data.get("result", {}).get("list", []):
             sym = t.get("symbol", "")
             fr  = t.get("fundingRate", None)
-            if fr is not None:
-                result[sym] = float(fr) * 100
+            if fr is not None and fr != "":
+                try:
+                    result[sym] = float(fr) * 100
+                except (ValueError, TypeError):
+                    pass
         return result
     except Exception:
         return {}
