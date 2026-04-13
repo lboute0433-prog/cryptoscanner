@@ -5818,7 +5818,13 @@ async function trackWallet() {
     }
     // Transactions
     if (d.txs && d.txs.length) {
-      html += '<div><div style="font-size:.65rem;color:var(--accent);font-weight:700;letter-spacing:1px;margin-bottom:8px">DERNIÈRES TRANSACTIONS</div>'
+      html += '<div><div style="font-size:.65rem;color:var(--accent);font-weight:700;letter-spacing:1px;margin-bottom:8px">DERNIÈRES TRANSACTIONS</div>';
+    } else {
+      html += '<div style="font-size:.65rem;color:var(--accent);font-weight:700;letter-spacing:1px;margin-bottom:8px">DERNIÈRES TRANSACTIONS</div>'
+        +'<div style="color:var(--muted);font-size:.7rem;padding:8px 0">Aucune transaction disponible (wallet trop actif ou API limitée).</div>';
+    }
+    if (d.txs && d.txs.length) {
+      html += '<div>'
         +'<div style="display:flex;flex-direction:column;gap:5px">';
       d.txs.forEach(function(tx) {
         var col = tx.type==='REÇU'?'var(--green)':'var(--red)';
