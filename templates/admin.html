@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — CryptoScanner Pro V8</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#07111e;--panel:#0d1828;--card:#132133;--border:#223754;
+  --accent:#3ee7ff;--accent2:#6aa3ff;--green:#00ff88;--red:#ff3366;
+  --yellow:#ffc107;--text:#d7e4fb;--muted:#7a91b3;--line:rgba(255,255,255,.05);
+  --font:'Orbitron',sans-serif;--title:'Orbitron',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+@keyframes adminFadeIn {
+  from { opacity:0; transform:translateY(10px); }
+  to { opacity:1; transform:translateY(0); }
+}
+body{
+  background:
+    radial-gradient(circle at top left, rgba(62,231,255,.08), transparent 28%),
+    radial-gradient(circle at top right, rgba(79,140,255,.12), transparent 24%),
+    linear-gradient(180deg, #091321 0%, #07111e 42%, #050d18 100%);
+  color:var(--text);font-family:var(--font);min-height:100vh
+}
+header{padding:18px 28px;border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg, rgba(10,18,30,.92), rgba(8,16,28,.82));
+  backdrop-filter:blur(18px);
+  display:flex;align-items:center;justify-content:space-between;box-shadow:0 16px 40px rgba(0,0,0,.28)}
+.logo{font-family:var(--title);font-size:1.18rem;letter-spacing:4px;color:#f5fbff}
+.logo span{color:var(--red)}
+.back-btn{background:none;border:1px solid var(--border);color:var(--muted);
+  padding:8px 14px;border-radius:999px;cursor:pointer;font-family:var(--font);font-size:.75rem;transition:.2s ease}
+.back-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* Login */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:80vh}
+.login-box{background:linear-gradient(180deg, rgba(19,33,51,.94), rgba(11,21,34,.98));border:1px solid rgba(122,145,179,.16);border-radius:24px;
+  padding:36px;width:360px;text-align:center;box-shadow:0 24px 48px rgba(0,0,0,.24);animation:adminFadeIn .35s ease}
+.login-title{font-family:var(--title);color:var(--red);font-size:1rem;margin-bottom:6px}
+.login-sub{font-size:.7rem;color:var(--muted);margin-bottom:20px}
+.form-input{background:var(--panel);border:1px solid rgba(122,145,179,.18);color:var(--text);
+  font-family:var(--font);padding:11px 14px;border-radius:12px;font-size:.8rem;
+  outline:none;width:100%;margin-bottom:10px}
+.form-input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(62,231,255,.08)}
+.btn-primary{background:linear-gradient(135deg, var(--red), #ff6e8f);border:none;color:#fff;font-family:var(--font);
+  padding:11px 20px;border-radius:999px;cursor:pointer;font-size:.8rem;
+  font-weight:700;width:100%;letter-spacing:1px}
+.btn-primary:hover{opacity:.92;transform:translateY(-1px)}
+.error-msg{color:var(--red);font-size:.72rem;margin-top:8px}
+
+/* Dashboard */
+#admin-screen{display:none;padding:24px;max-width:1500px;margin:0 auto;animation:adminFadeIn .4s ease}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px}
+.stat-card{background:linear-gradient(180deg, rgba(19,33,51,.94), rgba(11,21,34,.96));border:1px solid rgba(122,145,179,.18);border-radius:18px;padding:18px;box-shadow:0 18px 40px rgba(0,0,0,.18);transition:.22s ease}
+.stat-card:hover{transform:translateY(-3px);border-color:rgba(62,231,255,.18)}
+.stat-val{font-family:var(--title);font-size:1.5rem;font-weight:700}
+.stat-lbl{font-size:.62rem;color:var(--muted);margin-top:8px;letter-spacing:1.4px}
+.blue .stat-val{color:var(--accent)}
+.green .stat-val{color:var(--green)}
+.red .stat-val{color:var(--red)}
+.yellow .stat-val{color:var(--yellow)}
+
+/* Tabs */
+.admin-tabs{display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:20px;padding-bottom:12px}
+.admin-tab{background:rgba(16,29,48,.66);border:1px solid transparent;color:var(--muted);padding:10px 16px;
+  cursor:pointer;font-family:var(--font);font-size:.76rem;letter-spacing:1px;
+  border-radius:999px;transition:.2s ease}
+.admin-tab:hover{color:var(--text);border-color:rgba(62,231,255,.18)}
+.admin-tab.active{color:var(--accent);border-color:rgba(62,231,255,.34);background:linear-gradient(180deg, rgba(62,231,255,.12), rgba(79,140,255,.08))}
+.admin-content{display:none}
+.admin-content.active{display:block}
+
+/* Table */
+.data-table{width:100%;border-collapse:collapse;font-size:.78rem}
+.data-table th{background:rgba(12,23,38,.95);color:var(--muted);padding:12px 14px;
+  text-align:left;font-size:.65rem;letter-spacing:1px;border-bottom:1px solid var(--border)}
+.data-table td{padding:11px 14px;border-bottom:1px solid rgba(26,48,80,.4)}
+.data-table tr:hover td{background:rgba(62,231,255,.045)}
+.badge{padding:2px 8px;border-radius:3px;font-size:.65rem;font-weight:700}
+.badge-admin{background:rgba(255,51,102,.2);color:var(--red);border:1px solid rgba(255,51,102,.3)}
+.badge-member,.badge-trader{background:rgba(0,229,255,.15);color:var(--accent);border:1px solid rgba(0,229,255,.3)}
+.badge-visitor,.badge-viewer{background:rgba(100,116,128,.15);color:var(--muted);border:1px solid rgba(100,116,128,.3)}
+.badge-paid{background:rgba(255,193,7,.18);color:var(--yellow);border:1px solid rgba(255,193,7,.28)}
+.badge-vip{background:rgba(0,255,136,.16);color:var(--green);border:1px solid rgba(0,255,136,.28)}
+.badge-banned{background:rgba(255,51,102,.14);color:#ff8fab;border:1px solid rgba(255,51,102,.22)}
+
+/* Action buttons */
+.action-btn{background:none;border:1px solid var(--border);color:var(--muted);
+  padding:5px 10px;border-radius:999px;cursor:pointer;font-family:var(--font);
+  font-size:.65rem;margin-right:4px}
+.action-btn:hover{border-color:var(--accent);color:var(--accent)}
+.action-btn.danger:hover{border-color:var(--red);color:var(--red)}
+
+/* Panels */
+.panel{background:linear-gradient(180deg, rgba(19,33,51,.94), rgba(11,21,34,.98));border:1px solid rgba(122,145,179,.16);border-radius:20px;padding:22px;margin-bottom:16px;box-shadow:0 18px 36px rgba(0,0,0,.16);transition:.22s ease}
+.panel:hover{border-color:rgba(62,231,255,.16)}
+.panel-title{font-family:var(--title);font-size:.8rem;color:var(--accent);
+  letter-spacing:2px;margin-bottom:14px}
+.form-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:.62rem;color:var(--muted);letter-spacing:1px}
+.btn-sm{font-family:var(--font);cursor:pointer;padding:9px 16px;border-radius:999px;
+  font-size:.75rem;border:none}
+.btn-blue{background:linear-gradient(135deg, var(--accent), #72f1ff);color:#04101c;font-weight:700}
+.btn-red{background:transparent;border:1px solid var(--red);color:var(--red)}
+.btn-muted{background:transparent;border:1px solid var(--border);color:var(--muted)}
+
+/* Logs */
+.log-row{padding:8px 12px;border-bottom:1px solid rgba(26,48,80,.4);font-size:.72rem;
+  display:flex;gap:12px}
+.log-ts{color:var(--muted);width:100px;flex-shrink:0}
+.log-user{color:var(--accent);width:80px;flex-shrink:0}
+.log-action{color:var(--yellow);width:120px;flex-shrink:0}
+.log-detail{color:var(--text);flex:1}
+
+/* Settings form */
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:600px){.settings-grid{grid-template-columns:1fr}}
+textarea.form-input{resize:vertical;min-height:80px}
+.admin-hero{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr);gap:18px;margin-bottom:20px}
+.admin-hero-card{background:linear-gradient(180deg, rgba(17,30,47,.96), rgba(10,18,30,.98));border:1px solid rgba(122,145,179,.16);border-radius:24px;padding:24px;box-shadow:0 24px 48px rgba(0,0,0,.22)}
+.admin-hero-kicker{display:inline-flex;padding:7px 12px;border-radius:999px;background:rgba(62,231,255,.08);border:1px solid rgba(62,231,255,.16);color:var(--accent);font-size:.64rem;letter-spacing:1.4px;margin-bottom:14px}
+.admin-hero-title{font-family:var(--title);font-size:2rem;letter-spacing:2px;margin-bottom:10px}
+.admin-hero-text{font-size:.76rem;line-height:1.9;color:#b5c7e1;max-width:780px}
+.admin-hero-side{display:grid;gap:12px}
+.admin-side-chip{padding:16px;border-radius:18px;background:rgba(10,18,30,.72);border:1px solid rgba(122,145,179,.16);transition:.2s ease}
+.admin-side-chip:hover{transform:translateY(-2px);border-color:rgba(62,231,255,.18)}
+.admin-side-chip b{display:block;font-family:var(--title);font-size:1.15rem;color:var(--accent);margin-top:6px}
+.admin-side-visual{
+  border-radius:18px;
+  overflow:hidden;
+  border:1px solid rgba(122,145,179,.16);
+  background:rgba(10,18,30,.72);
+}
+.admin-side-visual img{
+  display:block;
+  width:100%;
+  height:130px;
+  object-fit:cover;
+  filter:saturate(1.08) contrast(1.04);
+}
+.admin-side-visual div{
+  padding:9px 11px;
+  font-size:.66rem;
+  color:#9fb2d4;
+  line-height:1.5;
+}
+.admin-tab-visual{
+  margin-bottom:12px;
+  border-radius:12px;
+  overflow:hidden;
+  border:1px solid rgba(122,145,179,.16);
+  background:rgba(9,16,28,.72);
+}
+.admin-tab-visual img{
+  display:block;
+  width:100%;
+  height:120px;
+  object-fit:cover;
+  filter:saturate(1.08) contrast(1.04);
+}
+.admin-tab-visual div{
+  padding:8px 10px;
+  font-size:.65rem;
+  color:#9fb2d4;
+}
+.admin-command-bar{display:flex;gap:10px;flex-wrap:wrap;margin:-2px 0 18px}
+.admin-command-pill{padding:8px 12px;border-radius:999px;border:1px solid rgba(122,145,179,.16);background:rgba(10,18,30,.64);color:var(--muted);font-size:.66rem;letter-spacing:1.1px;transition:.2s ease}
+.admin-command-pill:hover{color:var(--text);border-color:rgba(62,231,255,.18)}
+@media(max-width:900px){.admin-hero{grid-template-columns:1fr}}
+</style>
+<style id="admin-v2-studio-theme">
+  :root{
+    --bg:#050712;
+    --panel:#0b1120;
+    --card:#101933;
+    --border:#223155;
+    --accent:#30e7da;
+    --accent2:#7d7dff;
+    --green:#26dc9f;
+    --red:#ff5f86;
+    --yellow:#ffbf57;
+    --text:#e8f0ff;
+    --muted:#8ea1c7;
+  }
+
+  body{
+    background:
+      radial-gradient(circle at 8% 0%, #3189ff2f 0%, transparent 28%),
+      radial-gradient(circle at 100% -10%, #34f0d930 0%, transparent 30%),
+      linear-gradient(170deg,#04060f,#070c17 35%,#050813 100%) !important;
+  }
+
+  body::before{
+    content:"";
+    position:fixed;
+    inset:-30% -10%;
+    pointer-events:none;
+    z-index:-1;
+    background:
+      radial-gradient(circle at 20% 20%, #30e7da18 0%, transparent 30%),
+      radial-gradient(circle at 70% 30%, #7d7dff14 0%, transparent 28%),
+      radial-gradient(circle at 50% 70%, #ffbf5711 0%, transparent 24%);
+    filter:blur(30px);
+  }
+
+  header,
+  .panel,
+  .stat-card,
+  .admin-hero-card,
+  .admin-side-chip{
+    border-color:var(--border) !important;
+    background:linear-gradient(180deg,#0d1528cc,#0a1020da) !important;
+    box-shadow:0 24px 60px #0000004f, inset 0 1px 0 #ffffff10 !important;
+    backdrop-filter:blur(8px);
+  }
+
+  .admin-tab.active{
+    background:linear-gradient(135deg,#30e7da2e,#7d7dff33) !important;
+    border-color:#335084 !important;
+    color:var(--accent) !important;
+  }
+
+  .btn-blue,
+  .btn-primary{
+    background:linear-gradient(135deg,#30e7da,#7d7dff) !important;
+    color:#081020 !important;
+    border:none !important;
+    font-weight:700;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">◈ CRYPTO<span>SCANNER</span> · ADMIN</div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <span id="admin-user-badge" style="font-size:.72rem;color:var(--red);display:none">
+      🔐 Connecté en tant qu'admin
+    </span>
+    <button class="back-btn" onclick="window.location='/'">← Retour</button>
+    <button class="back-btn" id="logout-btn" style="display:none;color:var(--red);border-color:var(--red)" onclick="adminLogout()">Déconnexion</button>
+  </div>
+</header>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-title">🔐 ACCÈS ADMINISTRATEUR</div>
+    <div class="login-sub">Zone réservée — Identifiants admin requis</div>
+    <form action="/admin/login" method="post">
+      <input class="form-input" id="admin-user" name="username" placeholder="Nom d'utilisateur admin" autocomplete="username">
+      <input class="form-input" id="admin-pass" name="password" type="password" placeholder="Mot de passe" autocomplete="current-password">
+      <button class="btn-primary" type="submit" onclick="if(window.adminLogin){event.preventDefault();adminLogin();}">CONNEXION ADMIN</button>
+    </form>
+    <div class="error-msg" id="login-error">{{ login_error or '' }}</div>
+  </div>
+</div>
+
+<!-- ADMIN DASHBOARD -->
+<div id="admin-screen">
+
+  <div class="admin-hero">
+    <div class="admin-hero-card">
+      <div class="admin-hero-kicker">ESPACE ADMIN</div>
+      <div class="admin-hero-title">Administration</div>
+      <div class="admin-hero-text">
+        Cette zone centralise les comptes, les journaux, les parametres operationnels et les actions globales. L’idee est de garder quelque chose de propre, clair et plus agreable a utiliser au quotidien.
+      </div>
+    </div>
+    <div class="admin-hero-side">
+      <div class="admin-side-chip">Niveau d'acces<b>Admin complet</b></div>
+      <div class="admin-side-chip">Zones utiles<b>Utilisateurs, logs, broadcast</b></div>
+      <div class="admin-side-visual">
+        <img src="https://images.unsplash.com/photo-1516245834210-c4c142787335?auto=format&fit=crop&w=1200&q=80" alt="Visual admin dashboard" loading="lazy">
+        <div>Vue operationnelle orientee supervision et pilotage des actions admin.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-command-bar">
+    <div class="admin-command-pill">Comptes</div>
+    <div class="admin-command-pill">Logs</div>
+    <div class="admin-command-pill">Parametres plateforme</div>
+    <div class="admin-command-pill">Messages Telegram</div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid" id="stats-grid"></div>
+
+  <!-- Tabs -->
+  <div class="admin-tabs">
+    <button class="admin-tab active" onclick="showAdminTab('users')">👥 UTILISATEURS</button>
+    <button class="admin-tab" onclick="showAdminTab('logs')">📋 LOGS</button>
+    <button class="admin-tab" onclick="showAdminTab('settings')">⚙️ PARAMÈTRES</button>
+    <button class="admin-tab" onclick="showAdminTab('broadcast')">📢 BROADCAST</button>
+    <button class="admin-tab" onclick="showAdminTab('brief')">📊 MORNING BRIEF</button>
+  </div>
+
+  <!-- USERS -->
+  <div class="admin-content active" id="tab-users">
+    <div class="admin-tab-visual">
+      <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1400&q=80" alt="Users management visual" loading="lazy">
+      <div>Gestion utilisateurs: supervision des roles, abonnements et activite recente.</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">👥 GESTION DES UTILISATEURS</div>
+      <table class="data-table">
+        <thead><tr>
+          <th>ID</th><th>USERNAME</th><th>EMAIL</th><th>RÔLE</th><th>ABONNEMENT</th><th>CRÉÉ</th><th>DERNIÈRE CONNEXION</th><th>ACTIONS</th>
+        </tr></thead>
+        <tbody id="users-table"></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">➕ CRÉER UN UTILISATEUR</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>USERNAME</label>
+          <input class="form-input" id="new-username" placeholder="username" style="width:160px">
+        </div>
+        <div class="form-group">
+          <label>MOT DE PASSE</label>
+          <input class="form-input" id="new-password" type="password" placeholder="••••••" style="width:160px">
+        </div>
+        <div class="form-group">
+          <label>RÔLE</label>
+          <select class="form-input" id="new-role" style="width:120px">
+            <option value="member">Membre</option>
+            <option value="visitor">Visiteur</option>
+            <option value="paid">Payant</option>
+            <option value="vip">VIP</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>ABONNEMENT</label>
+          <select class="form-input" id="new-subscription-status" style="width:120px">
+            <option value="inactive">Inactif</option>
+            <option value="trial">Essai</option>
+            <option value="active">Actif</option>
+            <option value="overdue">En retard</option>
+            <option value="canceled">Annulé</option>
+          </select>
+        </div>
+        <button class="btn-sm btn-blue" onclick="createUser()">CRÉER</button>
+      </div>
+      <div id="create-status" style="font-size:.72rem;margin-top:8px"></div>
+    </div>
+  </div>
+
+  <!-- LOGS -->
+  <div class="admin-content" id="tab-logs">
+    <div class="panel">
+      <div class="panel-title">📋 LOGS D'ACTIVITÉ</div>
+      <div id="logs-list"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="admin-content" id="tab-settings">
+    <div class="admin-tab-visual">
+      <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80" alt="Settings visual" loading="lazy">
+      <div>Parametres plateforme: controle des seuils et comportement global du scanner.</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">⚙️ PARAMÈTRES PLATEFORME</div>
+      <div class="settings-grid">
+        <div class="form-group">
+          <label>SEUIL PUMP/DUMP (%)</label>
+          <input class="form-input" id="s-pump-pct" type="number" value="5" step="0.5">
+        </div>
+        <div class="form-group">
+          <label>INTERVALLE SCAN (secondes)</label>
+          <input class="form-input" id="s-scan-interval" type="number" value="10">
+        </div>
+        <div class="form-group">
+          <label>MULTIPLICATEUR VOLUME SPIKE</label>
+          <input class="form-input" id="s-vol-mult" type="number" value="3" step="0.5">
+        </div>
+        <div class="form-group">
+          <label>EXCHANGE PAR DÉFAUT</label>
+          <select class="form-input" id="s-exchange">
+            <option value="binance">Binance</option>
+            <option value="kraken">Kraken</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:16px">
+        <button class="btn-sm btn-blue" onclick="saveSettings()">SAUVEGARDER</button>
+        <span id="settings-status" style="font-size:.72rem;margin-left:12px"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- BROADCAST -->
+<div class="admin-content" id="tab-brief">
+  <div class="panel">
+    <div class="panel-title">📊 MORNING BRIEF IA</div>
+    <p style="font-size:.72rem;color:var(--muted);margin:-8px 0 14px;line-height:1.5">
+      Réservé à l’admin : génération et diffusion vers les membres (email / Telegram). Le brief n’apparaît pas sur le dashboard public. L’API statut <code style="font-size:.65rem">/api/brief/status</code> est limitée aux comptes payants (et admin).
+    </p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:18px">
+      <div class="stat-card" style="background:rgba(0,180,255,.08);border:1px solid rgba(0,180,255,.2)">
+        <div class="stat-val" id="brief-status-val" style="font-size:1.1rem">—</div>
+        <div class="stat-lbl">Statut</div>
+      </div>
+      <div class="stat-card" style="background:rgba(0,255,150,.08);border:1px solid rgba(0,255,150,.2)">
+        <div class="stat-val" id="brief-score-val" style="font-size:1.1rem">—</div>
+        <div class="stat-lbl">Score / Signal</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+      <button class="btn btn-primary" style="font-size:.78rem" onclick="triggerBrief()">⚡ Générer maintenant</button>
+      <button class="btn" style="font-size:.78rem" onclick="checkBriefStatus()">🔄 Statut</button>
+      <a id="brief-view-link" href="#" target="_blank" class="btn" style="font-size:.78rem;text-decoration:none;pointer-events:none;opacity:.55">👁️ Voir le Brief</a>
+    </div>
+    <div id="brief-message" style="font-size:.75rem;padding:12px;background:var(--bg);border-radius:10px;min-height:54px;margin-bottom:14px;color:var(--muted);line-height:1.7"></div>
+    <div style="padding:14px;background:var(--bg);border-radius:8px;font-size:.75rem;color:var(--muted);line-height:2">
+      <div style="font-weight:700;color:var(--accent);margin-bottom:6px">ℹ️ Fonctionnement</div>
+      <div>• Généré automatiquement à <b style="color:var(--text)">8h00 heure Paris</b></div>
+      <div>• <b style="color:var(--text)">Email</b> envoyé aux membres avec email enregistré</div>
+      <div>• <b style="color:var(--text)">Telegram</b> envoyé aux membres avec compte lié</div>
+      <div>• Lien expire à <b style="color:var(--text)">minuit</b></div>
+      <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)">
+        Variable Railway : <code style="background:rgba(255,255,255,.05);padding:2px 6px;border-radius:4px">ANTHROPIC_API_KEY</code>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <div class="admin-content" id="tab-broadcast">
+    <div class="panel">
+      <div class="panel-title">📢 DIFFUSER UN MESSAGE</div>
+      <p style="font-size:.72rem;color:var(--muted);margin-bottom:14px">
+        Envoie un message ou une newsletter à tous tes membres.
+      </p>
+
+      <!-- Onglets Telegram / Email -->
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <button id="bc-tab-tg" class="btn btn-primary" style="font-size:.72rem" onclick="bcTab('tg')">📱 Telegram</button>
+        <button id="bc-tab-email" class="btn" style="font-size:.72rem" onclick="bcTab('email')">✉️ Newsletter Email</button>
+        <button id="bc-tab-brief" class="btn" style="font-size:.72rem" onclick="bcTab('brief')">📊 Morning Brief</button>
+      </div>
+
+      <!-- Panel Telegram -->
+      <div id="bc-panel-tg">
+        <p style="font-size:.68rem;color:var(--muted);margin-bottom:8px">Envoyé à tous les membres ayant lié leur Telegram</p>
+        <textarea class="form-input" id="broadcast-msg" placeholder="Ton message Telegram..." rows="4" style="margin-bottom:10px"></textarea>
+        <button class="btn btn-primary" style="font-size:.75rem" onclick="sendBroadcast()">📤 Envoyer sur Telegram</button>
+        <span id="broadcast-status" style="font-size:.72rem;margin-left:12px"></span>
+      </div>
+
+      <!-- Panel Email Newsletter -->
+      <div id="bc-panel-email" style="display:none">
+        <p style="font-size:.68rem;color:var(--muted);margin-bottom:8px">Envoyé à tous les membres ayant un email enregistré</p>
+        <div id="smtp-status-box" style="margin-bottom:10px;padding:10px;background:var(--bg);border-radius:8px;font-size:.68rem;color:var(--muted);line-height:1.8">
+          Chargement du statut SMTP...
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+          <input class="form-input" id="smtp-test-to" type="email" placeholder="email@destinataire.com" style="max-width:280px;margin-bottom:0">
+          <button class="btn" style="font-size:.75rem" onclick="sendAdminTestEmail()">Tester l'envoi</button>
+          <span id="smtp-test-status" style="font-size:.72rem;color:var(--muted)"></span>
+        </div>
+        <div style="margin-bottom:10px">
+          <label style="font-size:.68rem;color:var(--muted);display:block;margin-bottom:4px">Sujet de l'email *</label>
+          <input class="form-input" id="nl-subject" placeholder="Ex: 📊 Mise à jour importante — CryptoScanner Pro" style="margin-bottom:8px">
+        </div>
+        <div style="margin-bottom:10px">
+          <label style="font-size:.68rem;color:var(--muted);display:block;margin-bottom:4px">Message (HTML autorisé)</label>
+          <textarea class="form-input" id="nl-body" placeholder="Contenu de votre newsletter..." rows="6" style="margin-bottom:8px"></textarea>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-primary" style="font-size:.75rem" onclick="sendNewsletter()">✉️ Envoyer la Newsletter</button>
+          <span id="nl-status" style="font-size:.72rem;color:var(--muted)"></span>
+        </div>
+        <div style="margin-top:10px;padding:10px;background:var(--bg);border-radius:6px;font-size:.68rem;color:var(--muted)">
+          ⚠️ Variables SMTP requises : <code>SMTP_EMAIL</code> + <code>SMTP_PASSWORD</code> dans Railway
+        </div>
+      </div>
+
+      <!-- Panel Morning Brief -->
+      <div id="bc-panel-brief" style="display:none">
+        <p style="font-size:.68rem;color:var(--muted);margin-bottom:12px">
+          Génère et diffuse le Morning Brief IA à tous les membres maintenant
+        </p>
+        <button class="btn btn-primary" style="font-size:.75rem" onclick="triggerBrief('broadcast')">⚡ Générer & Envoyer le Morning Brief</button>
+        <div id="bc-brief-message" style="margin-top:10px;font-size:.72rem;color:var(--muted);padding:10px;background:var(--bg);border-radius:6px;min-height:30px"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let adminToken = null;
+const subscriptionStatusLabels = {
+  inactive: 'Inactif',
+  trial: 'Essai',
+  active: 'Actif',
+  overdue: 'En retard',
+  canceled: 'Annulé'
+};
+
+function formatAdminDate(value, withTime) {
+  if(!value) return withTime ? 'Jamais' : '—';
+  try {
+    return new Date(value).toLocaleString('fr-FR', withTime
+      ? {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}
+      : {year:'numeric',month:'2-digit',day:'2-digit'});
+  } catch(e) {
+    return String(value).replace('T',' ').slice(0, withTime ? 16 : 10);
+  }
+}
+
+async function adminFetch(url, options = {}) {
+  const opts = {...options};
+  opts.credentials = 'same-origin';
+  opts.headers = {...headers(), ...(options.headers || {})};
+  return fetch(url, opts);
+}
+
+async function adminLogin() {
+  const username = document.getElementById('admin-user').value.trim();
+  const password = document.getElementById('admin-pass').value;
+  const res  = await fetch('/api/auth/login', {
+    method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({username,password})
+  });
+  const data = await res.json();
+  if (data.ok && data.role === 'admin') {
+    adminToken = data.token;
+    showAdminDashboard(data.username);
+  } else if (data.ok && data.role !== 'admin') {
+    document.getElementById('login-error').textContent = '❌ Ce compte n\'a pas les droits admin.';
+  } else {
+    document.getElementById('login-error').textContent = '❌ ' + (data.error || 'Identifiants incorrects');
+  }
+}
+
+function showAdminDashboard(username) {
+  document.getElementById('login-screen').style.display   = 'none';
+  document.getElementById('admin-screen').style.display   = 'block';
+  document.getElementById('admin-user-badge').style.display = 'inline';
+  document.getElementById('logout-btn').style.display     = 'inline';
+  loadStats(); loadUsers(); loadLogs(); loadSettings();
+  loadEmailStatus();
+}
+
+async function adminLogout() {
+  await adminFetch('/api/auth/logout', {method:'POST'});
+  location.reload();
+}
+
+function headers() {
+  const h = {'Content-Type':'application/json'};
+  if (adminToken) h['X-Session-Token'] = adminToken;
+  return h;
+}
+
+// ── Stats ──────────────────────────────────────────────────────
+async function loadStats() {
+  const res  = await adminFetch('/api/admin/stats');
+  const d    = await res.json();
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card blue"><div class="stat-val">${d.users}</div><div class="stat-lbl">UTILISATEURS</div></div>
+    <div class="stat-card green"><div class="stat-val">${d.active_sessions}</div><div class="stat-lbl">SESSIONS ACTIVES</div></div>
+    <div class="stat-card yellow"><div class="stat-val">${d.coins_scanned}</div><div class="stat-lbl">PAIRES SCANNÉES</div></div>
+    <div class="stat-card blue"><div class="stat-val">${d.signals_active}</div><div class="stat-lbl">SIGNAUX ACTIFS</div></div>
+    <div class="stat-card green"><div class="stat-val">${d.news_total}</div><div class="stat-lbl">NEWS TOTALES</div></div>
+    <div class="stat-card red"><div class="stat-val">${d.news_critical}</div><div class="stat-lbl">NEWS CRITIQUES</div></div>
+    <div class="stat-card blue"><div class="stat-val">${d.portfolio_positions}</div><div class="stat-lbl">POSITIONS</div></div>
+    <div class="stat-card ${d.login_fails>10?'red':'green'}"><div class="stat-val">${d.login_fails}</div><div class="stat-lbl">TENTATIVES ÉCHOUÉES</div></div>
+  `;
+}
+
+// ── Users ──────────────────────────────────────────────────────
+async function loadUsers() {
+  const res  = await adminFetch('/api/admin/users');
+  const data = await res.json();
+  document.getElementById('users-table').innerHTML = data.map(u => `
+    <tr>
+      <td style="color:var(--muted)">${u.id}</td>
+      <td style="color:var(--accent);font-weight:700">${u.username}</td>
+      <td style="color:var(--text);font-size:.7rem">${u.email||'—'}</td>
+      <td><span class="badge badge-${u.role}">${u.role.toUpperCase()}</span></td>
+      <td>
+        <select class="action-btn" onchange="setSubscriptionStatus(${u.id},this.value)" style="cursor:pointer">
+          <option value="inactive" ${u.subscription_status==='inactive'?'selected':''}>Inactif</option>
+          <option value="trial" ${u.subscription_status==='trial'?'selected':''}>Essai</option>
+          <option value="active" ${u.subscription_status==='active'?'selected':''}>Actif</option>
+          <option value="overdue" ${u.subscription_status==='overdue'?'selected':''}>En retard</option>
+          <option value="canceled" ${u.subscription_status==='canceled'?'selected':''}>Annulé</option>
+        </select>
+      </td>
+      <td style="color:var(--muted);font-size:.7rem">${formatAdminDate(u.created, false)}</td>
+      <td style="color:var(--muted);font-size:.7rem">${formatAdminDate(u.last_login, true)}</td>
+      <td>
+        <select class="action-btn" onchange="setRole(${u.id},this.value)" style="cursor:pointer">
+          <option value="member" ${u.role==='member'?'selected':''}>Membre</option>
+          <option value="visitor" ${u.role==='visitor'?'selected':''}>Visiteur</option>
+          <option value="paid" ${u.role==='paid'?'selected':''}>Payant</option>
+          <option value="vip" ${u.role==='vip'?'selected':''}>VIP</option>
+          <option value="admin"  ${u.role==='admin'?'selected':''}>Admin</option>
+          <option value="banned"  ${u.role==='banned'?'selected':''}>Banni</option>
+        </select>
+        <button class="action-btn" onclick="resetPassword(${u.id})">🔑 MDP</button>
+        <button class="action-btn danger" onclick="deleteUser(${u.id},'${u.username}')">✕</button>
+      </td>
+    </tr>`).join('');
+}
+
+async function setRole(uid, role) {
+  await adminFetch(`/api/admin/users/${uid}/role`, {
+    method:'POST', body:JSON.stringify({role})
+  });
+  loadUsers();
+}
+
+async function setSubscriptionStatus(uid, subscription_status) {
+  await adminFetch(`/api/admin/users/${uid}/subscription`, {
+    method:'POST', body:JSON.stringify({subscription_status})
+  });
+  loadUsers();
+}
+
+async function deleteUser(uid, username) {
+  if (!confirm(`Supprimer l'utilisateur "${username}" ?`)) return;
+  await adminFetch(`/api/admin/users/${uid}`, {method:'DELETE'});
+  loadUsers(); loadStats();
+}
+
+async function resetPassword(uid) {
+  const pw = prompt('Nouveau mot de passe :');
+  if (!pw || pw.length < 4) return alert('Mot de passe trop court');
+  const res  = await adminFetch(`/api/admin/users/${uid}/reset_password`, {
+    method:'POST', body:JSON.stringify({password:pw})
+  });
+  const data = await res.json();
+  alert(data.ok ? '✅ Mot de passe réinitialisé !' : '❌ ' + data.error);
+}
+
+async function createUser() {
+  const username = document.getElementById('new-username').value.trim();
+  const password = document.getElementById('new-password').value;
+  const role     = document.getElementById('new-role').value;
+  const subscription_status = document.getElementById('new-subscription-status').value;
+  if (!username || !password) return;
+  const res  = await adminFetch('/api/auth/register', {
+    method:'POST', body:JSON.stringify({username,password,role,subscription_status})
+  });
+  const data = await res.json();
+  const el   = document.getElementById('create-status');
+  el.style.color = data.ok ? 'var(--green)' : 'var(--red)';
+  el.textContent = data.ok ? `✅ Utilisateur "${username}" créé !` : '❌ ' + data.error;
+  if (data.ok) {
+    loadUsers(); loadStats();
+    document.getElementById('new-username').value = '';
+    document.getElementById('new-password').value = '';
+    document.getElementById('new-role').value = 'member';
+    document.getElementById('new-subscription-status').value = 'inactive';
+  }
+}
+
+// ── Logs ───────────────────────────────────────────────────────
+async function loadLogs() {
+  const res  = await adminFetch('/api/admin/logs');
+  const data = await res.json();
+  document.getElementById('logs-list').innerHTML = data.length ?
+    data.map(l => `
+      <div class="log-row">
+        <span class="log-ts">${formatAdminDate(l.ts, true)}</span>
+        <span class="log-user">${l.username||'?'}</span>
+        <span class="log-action">${l.action||'?'}</span>
+        <span class="log-detail">${l.detail||''} ${l.ip?'· IP:'+l.ip:''}</span>
+      </div>`).join('') :
+    '<div style="color:var(--muted);padding:16px">Aucun log</div>';
+}
+
+// ── Settings ───────────────────────────────────────────────────
+async function loadSettings() {
+  const res  = await adminFetch('/api/admin/settings');
+  const data = await res.json();
+  if (data.pump_pct)      document.getElementById('s-pump-pct').value      = data.pump_pct;
+  if (data.scan_interval) document.getElementById('s-scan-interval').value = data.scan_interval;
+  if (data.vol_mult)      document.getElementById('s-vol-mult').value      = data.vol_mult;
+  if (data.exchange)      document.getElementById('s-exchange').value      = data.exchange;
+}
+
+async function saveSettings() {
+  const settings = {
+    pump_pct:      document.getElementById('s-pump-pct').value,
+    scan_interval: document.getElementById('s-scan-interval').value,
+    vol_mult:      document.getElementById('s-vol-mult').value,
+    exchange:      document.getElementById('s-exchange').value,
+  };
+  await adminFetch('/api/admin/settings', {method:'POST', body:JSON.stringify(settings)});
+  const el = document.getElementById('settings-status');
+  el.style.color = 'var(--green)'; el.textContent = '✅ Sauvegardé !';
+  setTimeout(()=>el.textContent='', 3000);
+}
+
+// ── Broadcast ──────────────────────────────────────────────────
+async function sendBroadcast() {
+  const msg = document.getElementById('broadcast-msg').value.trim();
+  if (!msg) return;
+  const res  = await adminFetch('/api/admin/broadcast', {
+    method:'POST', body:JSON.stringify({message:msg})
+  });
+  const data = await res.json();
+  const el   = document.getElementById('broadcast-status');
+  el.style.color = 'var(--green)'; el.textContent = '✅ Envoyé !';
+  setTimeout(()=>el.textContent='', 3000);
+}
+
+// ── Tabs ───────────────────────────────────────────────────────
+function showAdminTab(name) {
+  document.querySelectorAll('.admin-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.admin-content').forEach(c=>c.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  event.target.classList.add('active');
+  if (name==='logs')      loadLogs();
+  if (name==='settings')  loadSettings();
+  if (name==='brief')     checkBriefStatus();
+}
+
+// ── Broadcast ──────────────────────────────────────────────────
+function bcTab(tab) {
+  ['tg','email','brief'].forEach(t => {
+    const btn = document.getElementById('bc-tab-'+t);
+    const pan = document.getElementById('bc-panel-'+t);
+    if(btn) btn.className = t===tab ? 'btn btn-primary' : 'btn';
+    if(pan) pan.style.display = t===tab ? '' : 'none';
+  });
+  document.getElementById('bc-tab-'+tab).style.fontSize = '.72rem';
+}
+
+async function sendNewsletter() {
+  const subject = (document.getElementById('nl-subject')||{}).value||'';
+  const body    = (document.getElementById('nl-body')||{}).value||'';
+  const st      = document.getElementById('nl-status');
+  if(!subject || !body) { if(st){st.textContent='Sujet et message requis';st.style.color='var(--red)';} return; }
+  if(st){st.textContent='⏳ Envoi en cours...';st.style.color='var(--muted)';}
+  try {
+    const r = await adminFetch('/api/admin/newsletter', {
+      method:'POST',
+      body: JSON.stringify({subject, body})
+    });
+    const d = await r.json();
+    if(d.ok) {
+      const details = d.failed ? `, ${d.failed} echec(s)` : '';
+      if(st){st.textContent=`✅ ${d.sent} email(s) envoyé(s)${details}`;st.style.color=d.failed ? 'var(--yellow)' : 'var(--green)';}
+      loadEmailStatus();
+    } else {
+      if(st){st.textContent='❌ '+(d.error||'Erreur');st.style.color='var(--red)';}
+    }
+  } catch(e) {
+    if(st){st.textContent='❌ Erreur: '+e.message;st.style.color='var(--red)';}
+  }
+}
+
+async function loadEmailStatus() {
+  const box = document.getElementById('smtp-status-box');
+  const testInput = document.getElementById('smtp-test-to');
+  if(!box) return;
+  box.textContent = 'Chargement du statut SMTP...';
+  try {
+    const r = await adminFetch('/api/admin/email/status');
+    const d = await r.json();
+    if(!d.ok || !d.smtp) {
+      box.textContent = 'Statut SMTP indisponible.';
+      box.style.color = 'var(--red)';
+      return;
+    }
+    const smtp = d.smtp;
+    if(testInput && !testInput.value && smtp.from_email) testInput.value = smtp.from_email;
+    const statusLabel = smtp.configured ? 'Configure' : 'Non configure';
+    const statusColor = smtp.configured ? 'var(--green)' : 'var(--red)';
+    const missing = smtp.missing && smtp.missing.length ? smtp.missing.join(', ') : 'aucun';
+    box.style.color = 'var(--muted)';
+    box.innerHTML = `
+      <div><b style="color:${statusColor}">SMTP ${statusLabel}</b></div>
+      <div>Login SMTP: <b style="color:var(--text)">${smtp.login || '—'}</b></div>
+      <div>Expediteur: <b style="color:var(--text)">${smtp.from_email || '—'}</b></div>
+      <div>Serveur: <b style="color:var(--text)">${smtp.server || '—'}:${smtp.port || '—'}</b></div>
+      <div>Securite: <b style="color:var(--text)">${smtp.use_ssl ? 'SSL' : (smtp.use_starttls ? 'STARTTLS' : 'Aucune')}</b></div>
+      <div>Notification admin: <b style="color:var(--text)">${smtp.admin_notify_email || '—'}</b></div>
+      <div>Variables manquantes: <b style="color:${smtp.missing && smtp.missing.length ? 'var(--yellow)' : 'var(--green)'}">${missing}</b></div>
+    `;
+  } catch(e) {
+    box.textContent = 'Erreur statut SMTP: ' + e.message;
+    box.style.color = 'var(--red)';
+  }
+}
+
+async function sendAdminTestEmail() {
+  const to = (document.getElementById('smtp-test-to')||{}).value||'';
+  const st = document.getElementById('smtp-test-status');
+  if(!to) {
+    if(st){st.textContent='Adresse email requise';st.style.color='var(--red)';}
+    return;
+  }
+  if(st){st.textContent='⏳ Test en cours...';st.style.color='var(--muted)';}
+  try {
+    const r = await adminFetch('/api/admin/email/test', {
+      method:'POST',
+      body: JSON.stringify({to})
+    });
+    const d = await r.json();
+    if(d.ok) {
+      if(st){st.textContent='✅ ' + (d.message || 'Email de test envoye');st.style.color='var(--green)';}
+    } else {
+      if(st){st.textContent='❌ ' + (d.error || 'Erreur');st.style.color='var(--red)';}
+    }
+  } catch(e) {
+    if(st){st.textContent='❌ Erreur: ' + e.message;st.style.color='var(--red)';}
+  } finally {
+    loadEmailStatus();
+  }
+}
+
+// ── Morning Brief ──────────────────────────────────────────────
+async function checkBriefStatus() {
+  try {
+    const r = await adminFetch('/api/brief/status');
+    const d = await r.json();
+    const sv  = document.getElementById('brief-status-val');
+    const sc  = document.getElementById('brief-score-val');
+    const lnk = document.getElementById('brief-view-link');
+    const msg = document.getElementById('brief-message');
+    if (sv) sv.textContent = d.ready ? 'Pret' : 'En attente';
+    if (sc) sc.textContent = d.ready ? `${d.score || '—'}/100 - ${d.signal || '—'}` : '—';
+    if (lnk) {
+      if (d.ready && d.url) {
+        lnk.href = d.url;
+        lnk.style.pointerEvents = 'auto';
+        lnk.style.opacity = '1';
+      } else {
+        lnk.href = '#';
+        lnk.style.pointerEvents = 'none';
+        lnk.style.opacity = '.55';
+      }
+    }
+    if (msg) {
+      msg.innerHTML = d.ready
+        ? `Brief disponible pour le <b style="color:var(--text)">${d.date || "aujourd'hui"}</b>.<br><a href="${d.url}" target="_blank" style="color:var(--accent);text-decoration:none">Ouvrir le Morning Brief</a>`
+        : 'Aucun brief genere pour le moment. Lance une generation manuelle ou attends le cycle automatique de 8h00.';
+    }
+  } catch(e) { console.error('[Brief status]', e); }
+}
+
+async function triggerBrief(source) {
+  const targets = [document.getElementById('brief-message')];
+  if (source === 'broadcast') targets.push(document.getElementById('bc-brief-message'));
+  targets.filter(Boolean).forEach(el => {
+    el.textContent = 'Generation en cours... (30-60s selon la cle IA)';
+  });
+  try {
+    const r = await adminFetch('/api/brief/trigger', { method: 'POST' });
+    const d = await r.json();
+    targets.filter(Boolean).forEach(el => {
+      el.innerHTML = d.ok
+        ? `${d.message}<br><a href="${d.url}" target="_blank" style="color:var(--accent);text-decoration:none">Ouvrir le Morning Brief</a>`
+        : `Erreur: ${d.error}`;
+    });
+    const lnk = document.getElementById('brief-view-link');
+    if (lnk && d.url) {
+      lnk.href = d.url;
+      lnk.style.pointerEvents = 'auto';
+      lnk.style.opacity = '1';
+    }
+    setTimeout(checkBriefStatus, 8000);
+    setTimeout(checkBriefStatus, 45000);
+  } catch(e) {
+    targets.filter(Boolean).forEach(el => {
+      el.textContent = 'Erreur: ' + e.message;
+    });
+  }
+}
+
+// Vérifier si déjà connecté
+fetch('/api/auth/me', {credentials:'same-origin'}).then(r=>r.json()).then(d => {
+  if (d.logged && d.role === 'admin') showAdminDashboard(d.username);
+});
+</script>
+</body>
+</html>

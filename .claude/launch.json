@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Flask Dev (python app.py)",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["app.py"],
+      "port": 5000
+    },
+    {
+      "name": "Gunicorn + Eventlet (production-like)",
+      "runtimeExecutable": "gunicorn",
+      "runtimeArgs": ["--worker-class", "eventlet", "-w", "1", "--bind", "0.0.0.0:5000", "wsgi:application"],
+      "port": 5000
+    }
+  ]
+}

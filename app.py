@@ -1,0 +1,2102 @@
+#!/usr/bin/env python3
+"""
+CryptoScanner Pro V11 — App Principale (CORRIGÉ)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• Sécurité V11 activée (bcrypt, TOTP, KeyVault)
+• Rate limiting sur routes auth
+• Healthcheck amélioré
+• Headers sécurité HTTP
+• Threads thread-safe
+• Error handlers JSON
+"""
+from flask import Flask, render_template, jsonify, request, make_response, redirect
+from flask_socketio import SocketIO
+import threading, time, os, sys, sqlite3
+import requests as req
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from datetime import datetime, timedelta
+from config import (
+    ADMIN_BOOTSTRAP_PASSWORD,
+    ADMIN_BOOTSTRAP_USER,
+    ADMIN_NOTIFY_EMAIL,
+    DATABASE_PATH,
+    IS_RAILWAY,
+    RUN_BACKGROUND_JOBS,
+    SECRET_KEY,
+    SMTP_EMAIL,
+    SMTP_FROM_EMAIL,
+    SMTP_LOGIN,
+    SMTP_PASSWORD,
+    SMTP_PORT,
+    SMTP_SERVER,
+    SMTP_USE_SSL,
+    SMTP_USE_STARTTLS,
+    TELEGRAM_CHAT,
+    TELEGRAM_TOKEN,
+    connect_sqlite,
+)
+from scanner_engine import (
+    ScannerEngine,
+    VALID_ROLES,
+    VALID_SUBSCRIPTION_STATUSES,
+    normalize_role,
+    normalize_subscription_status,
+)
+from news_macro import (
+    init_news_db, fetch_news_rss, get_news_from_db,
+    fetch_inflation, fetch_stablecoin_supply, fetch_nasdaq_correlation,
+    fetch_economic_calendar, get_upcoming_events, check_and_alert_results,
+    calc_market_dna_score, get_alert_prefs, save_alert_prefs, _send_telegram,
+    translate_news_batch, get_categories, CATEGORIES,
+    fetch_forexfactory_results, send_macro_alert_telegram,
+)
+from cot_engine import (
+    init_cot_db, fetch_and_cache_cot, get_cot_history,
+    fetch_etf_flows, fetch_open_interest, fetch_liquidations,
+    fetch_indices, fetch_cot_sp500, fetch_cot_gold, fetch_etf_daily_history,
+    fetch_coinglass_longshort, fetch_coinglass_liquidations_heatmap,
+    fetch_coinglass_oi_multiexchange,
+)
+from ai_provider import analyze_text, get_ai_status
+from daily_report import DailyReportScheduler, TelegramBot, send_telegram
+from smart_signals import (
+    analyze_coin_smart, build_telegram_alert,
+    update_rsi_history, check_rsi_exit, build_retrace_alert,
+    calc_rsi,
+)
+from lexique import get_all_terms, get_term, get_by_category, search_terms
+from lexique import get_categories as get_lexique_categories
+from backtest_engine import (
+    run_backtest, compare_strategies, get_backtest_history,
+    save_backtest_result, STRATEGIES, init_backtest_db,
+)
+from forex_engine import (
+    forex_full_scan, fetch_all_pairs, analyze_forex_pair,
+    get_session_overview, get_crypto_forex_correlations, init_forex_db,
+)
+from indices_engine import (
+    fetch_all_indices, fetch_single_index,
+    fetch_bybit_spot, fetch_bybit_perp,
+    fetch_okx_spot, fetch_okx_perp,
+    fetch_multi_exchange, get_cross_market_analysis,
+    calc_market_mood_score, init_indices_db,
+)
+from cvd_engine import get_cvd_data, get_cvd_multi
+
+# ── Initialisation Flask ─────────────────────────────────────
+app = Flask(__name__)
+app.config["SECRET_KEY"] = SECRET_KEY
+
+_is_gunicorn = "gunicorn" in sys.modules or IS_RAILWAY
+_async_mode = None if _is_gunicorn else "threading"
+
+try:
+    socketio = SocketIO(app, cors_allowed_origins="*", async_mode=_async_mode)
+    _socketio_mode = "eventlet/auto" if _is_gunicorn else "threading"
+except Exception as e:
+    print(f"[SocketIO] Initialisation eventlet impossible, fallback threading: {e}")
+    socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
+    _socketio_mode = "threading-fallback"
+print(f"[SocketIO] mode={_socketio_mode}")
+print(f"[Config] railway={IS_RAILWAY} background_jobs={RUN_BACKGROUND_JOBS} db={DATABASE_PATH}")
+
+# ── Initialisation Sécurité V11 ──────────────────────────────
+from security import (
+    init_security,
+    apply_security_headers,
+    check_rate_limit,
+    get_ip,
+    setup_totp,
+    confirm_totp,
+    disable_totp,
+    _get_user_totp_secret,
+    TOTPManager,
+)
+
+init_security()
+app.after_request(apply_security_headers)
+
+# ── Error Handlers (TOUJOURS JSON pour /api/*) ───────────────
+@app.errorhandler(404)
+def not_found(e):
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "Route API non trouvée", "path": request.path, "ok": False}), 404
+    return render_template("index.html"), 404
+
+@app.errorhandler(500)
+def internal_error(e):
+    if request.path.startswith("/api/"):
+        print(f"[ERROR 500] {request.path}: {e}")
+        return jsonify({"error": "Erreur serveur interne", "detail": str(e) if app.debug else "Contactez le support", "ok": False}), 500
+    return render_template("index.html"), 500
+
+@app.errorhandler(400)
+def bad_request(e):
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "Requête invalide", "ok": False}), 400
+    return render_template("index.html"), 400
+
+# ── Initialisation Moteurs ───────────────────────────────────
+engine = ScannerEngine()
+init_news_db()
+init_cot_db()
+init_forex_db()
+init_backtest_db()
+init_indices_db()
+
+try:
+    scheduler = DailyReportScheduler(engine, fetch_etf_flows, fetch_economic_calendar)
+
+    if ADMIN_BOOTSTRAP_USER and ADMIN_BOOTSTRAP_PASSWORD:
+        try:
+            from security import hash_password
+            _pw_hash = hash_password(ADMIN_BOOTSTRAP_PASSWORD)
+            conn = connect_sqlite()
+            existing = conn.execute("SELECT id FROM users WHERE LOWER(username)=?", (ADMIN_BOOTSTRAP_USER,)).fetchone()
+            if existing:
+                conn.execute("UPDATE users SET role='admin', password_hash=? WHERE LOWER(username)=?", (_pw_hash, ADMIN_BOOTSTRAP_USER))
+                print(f"[Admin] Bootstrap admin mis a jour: {ADMIN_BOOTSTRAP_USER}")
+            else:
+                conn.execute("INSERT INTO users (username, password_hash, role, created) VALUES (?,?,?,datetime('now'))", (ADMIN_BOOTSTRAP_USER, _pw_hash, 'admin'))
+                print(f"[Admin] Bootstrap admin cree: {ADMIN_BOOTSTRAP_USER}")
+            conn.commit(); conn.close()
+        except Exception as e:
+            print(f"[Admin] Erreur bootstrap: {e}")
+    elif ADMIN_BOOTSTRAP_USER and not ADMIN_BOOTSTRAP_PASSWORD:
+        print("[Admin] Bootstrap ignore: ADMIN_PASSWORD absent")
+
+    telegram_bot = TelegramBot(scheduler)
+    print("[Init] Scheduler et Bot Telegram initialisés")
+except Exception as e:
+    print(f"[Init] Scheduler/Bot erreur: {e}")
+    scheduler = None
+    telegram_bot = None
+
+# ── Cache Smart Signals (Thread-Safe) ────────────────────────
+_smart_signals_cache = []
+_smart_signals_ts = None
+_signals_lock = threading.Lock()
+
+def smart_signal_loop():
+    global _smart_signals_cache, _smart_signals_ts
+    while True:
+        try:
+            market = engine.get_last()
+            coins  = market.get("coins", [])
+
+            # ── Niveau 1 : signaux standard ($2M+, scannés pour Smart Signals) ──
+            standard_coins = [c for c in coins if c.get("volume_usdt", 0) > 2_000_000][:50]
+            # ── Niveau 2 : small caps ($500K+, suivi RSI retrace seulement) ──────
+            small_caps = [c for c in coins
+                          if 500_000 <= c.get("volume_usdt", 0) <= 2_000_000][:30]
+
+            results = []
+
+            # ── Scan standard ─────────────────────────────────────────────────
+            for coin in standard_coins:
+                sym = coin["symbol"]
+                try:
+                    candles = engine.fetch_candles(sym, "15m", 50)
+                    if len(candles) < 25: continue
+                    closes = [c["c"] for c in candles]
+                    rsi    = calc_rsi(closes)
+                    # Mise à jour historique RSI + détection retrace
+                    if rsi is not None:
+                        retrace = check_rsi_exit(sym, rsi)
+                        if retrace:
+                            _send_retrace_alert(sym, retrace, coin)
+                        update_rsi_history(sym, rsi)
+                    # Signal standard
+                    signal = analyze_coin_smart(sym, candles)
+                    if signal: results.append(signal)
+                except: continue
+
+            # ── Scan small caps (RSI retrace uniquement) ──────────────────────
+            for coin in small_caps:
+                sym = coin["symbol"]
+                try:
+                    candles = engine.fetch_candles(sym, "15m", 50)
+                    if len(candles) < 25: continue
+                    closes = [c["c"] for c in candles]
+                    rsi    = calc_rsi(closes)
+                    if rsi is not None:
+                        retrace = check_rsi_exit(sym, rsi)
+                        if retrace:
+                            _send_retrace_alert(sym, retrace, coin)
+                        update_rsi_history(sym, rsi)
+                except: continue
+
+            results.sort(key=lambda x: x["score"], reverse=True)
+            with _signals_lock:
+                _smart_signals_cache = results[:20]
+                _smart_signals_ts    = datetime.now().strftime("%H:%M:%S")
+
+            # ── Sauvegarde historique en DB (signaux score >= 50) ─────────────
+            try:
+                ts_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                conn_h = connect_sqlite()
+                for s in results:
+                    if s.get("score", 0) < 50: continue
+                    tags_str     = ",".join(t.get("label","") for t in s.get("tags",[]))
+                    criteria_str = ",".join(s.get("criteria", []))
+                    conn_h.execute(
+                        "INSERT INTO signals_history (symbol,direction,score,price,change_pct,volume_usdt,tags,criteria,ts) VALUES (?,?,?,?,?,?,?,?,?)",
+                        (s["symbol"], s.get("direction","neutral"), s.get("score",0),
+                         s.get("price",0), s.get("change_pct",0), s.get("volume_usdt",0),
+                         tags_str, criteria_str, ts_now)
+                    )
+                conn_h.commit()
+                conn_h.close()
+            except Exception as _he:
+                print(f"[SignalHistory] {_he}")
+
+            _send_smart_alerts(results)
+            socketio.emit("smart_signals_update", {"signals": _smart_signals_cache, "ts": _smart_signals_ts})
+        except Exception as e:
+            print(f"[SmartSignals] {e}")
+        time.sleep(120)
+
+_alerted_signals = set()
+_alerted_retraces = set()   # dédup spécifique aux alertes retrace RSI
+_alert_lock = threading.Lock()
+
+# ── Cache alertes macro (évite les doublons Telegram) ────────────────────────
+_sent_macro_alerts = set()
+
+def _send_smart_alerts(signals):
+    global _alerted_signals
+    now_slot = datetime.now().strftime('%H%M')
+    slot = int(now_slot[-2:]) // 30
+    hour = now_slot[:2]
+    
+    for s in signals:
+        if s["score"] < 80: continue
+        if s["direction"] == "neutral": continue
+        
+        key = f"{s['symbol']}_{s['direction']}_{hour}_{slot}"
+        
+        with _alert_lock:
+            if key in _alerted_signals: continue
+            _alerted_signals.add(key)
+            if len(_alerted_signals) > 500:
+                _alerted_signals = set(list(_alerted_signals)[-200:])
+        
+        msg = build_telegram_alert(s)
+        _tk = TELEGRAM_TOKEN
+        _ch = TELEGRAM_CHAT
+        if _tk and _ch:
+            try:
+                req.post(f"https://api.telegram.org/bot{_tk}/sendMessage", json={"chat_id":_ch,"text":msg,"parse_mode":"HTML"},timeout=5)
+            except: pass
+        # Smart Signals = contenu premium → membres payants + VIP uniquement
+        engine._broadcast_to_members(msg, min_role="paid")
+
+
+def _send_retrace_alert(symbol: str, rsi_exit: dict, coin: dict):
+    """
+    Envoie une alerte Telegram de retournement RSI.
+    Dédup : 1 alerte par symbol + direction par heure.
+    """
+    global _alerted_retraces
+    hour = datetime.now().strftime('%H')
+    key  = f"retrace_{symbol}_{rsi_exit['direction']}_{hour}"
+
+    with _alert_lock:
+        if key in _alerted_retraces: return
+        _alerted_retraces.add(key)
+        if len(_alerted_retraces) > 300:
+            _alerted_retraces = set(list(_alerted_retraces)[-150:])
+
+    price      = coin.get("price", 0)
+    change_pct = coin.get("change_pct", 0)
+    volume_usd = coin.get("volume_usdt", 0)
+
+    msg = build_retrace_alert(symbol, rsi_exit, price, change_pct, volume_usd)
+    print(f"[Retrace] {symbol} — {rsi_exit['name']} RSI {rsi_exit['rsi_prev']}→{rsi_exit['rsi_now']}")
+
+    _tk = TELEGRAM_TOKEN
+    _ch = TELEGRAM_CHAT
+    if _tk and _ch:
+        try:
+            req.post(
+                f"https://api.telegram.org/bot{_tk}/sendMessage",
+                json={"chat_id": _ch, "text": msg, "parse_mode": "HTML"},
+                timeout=5
+            )
+        except: pass
+    # Retrace = contenu premium → membres payants + VIP uniquement
+    engine._broadcast_to_members(msg, min_role="paid")
+
+
+# ── Boucles Background ───────────────────────────────────────
+def scan_loop():
+    cycle = 0
+    while True:
+        try:
+            if cycle % 9 == 0:
+                data = engine.scan()
+                if data and data.get("coins"):
+                    minfo = engine.get_market_info() or {}
+                    fg = minfo.get("fear_greed")
+                    dom = minfo.get("dominance", {}) or {}
+                    coins = data["coins"]
+                    gainers = len([c for c in coins if c.get("change_pct",0) > 0])
+                    try:
+                        data["dna_score"] = calc_market_dna_score(fg, dom.get("btc"), len(data.get("signals",[])), len(coins), gainers)
+                    except: pass
+                    socketio.emit("market_update", data)
+                    print(f"[Scan] {len(coins)} coins | {len(data.get('signals',[]))} signaux")
+            
+            if cycle % 30 == 0:
+                try:
+                    info = engine.fetch_market_info()
+                    if info: socketio.emit("market_info_update", info)
+                except: pass
+                try:
+                    socketio.emit("whale_update", engine.fetch_whale_alerts())
+                except: pass
+            
+            if cycle % 60 == 0:
+                try:
+                    news = fetch_news_rss()
+                    critical = [n for n in news if n.get("is_critical")]
+                    socketio.emit("news_update", {"all":news[:20],"critical":critical[:5]})
+                except: pass
+        except Exception as e:
+            print(f"[scan_loop] {e}")
+        cycle += 1
+        time.sleep(10)
+
+def macro_loop():
+    while True:
+        try:
+            _idx = fetch_all_indices(["DXY"]).get("indices", {})
+            macro_data = {
+                "inflation": fetch_inflation(),
+                "stablecoins": fetch_stablecoin_supply(),
+                "nasdaq": fetch_nasdaq_correlation(),
+                "dxy": _idx.get("DXY"),
+                "econ_cal": fetch_economic_calendar(view="week"),
+                "ts": datetime.now().strftime("%H:%M:%S")
+            }
+            socketio.emit("macro_update", macro_data)
+            
+            if datetime.now().weekday() == 4:
+                for asset in ["BTC","ETH"]:
+                    fetch_and_cache_cot(asset)
+        except Exception as e:
+            print(f"[Macro] {e}")
+        
+        try:
+            upcoming = get_upcoming_events(2)
+            for ev in upcoming:
+                if ev["impact"] != "High": continue
+                key = f"cal_{ev['date']}_{ev['title'][:20]}"
+                from news_macro import _cache_get, _cache_set
+                if not _cache_get(key, 1440):
+                    prefix = "🔴 AUJOURD'HUI" if ev["is_today"] else "📅 DEMAIN"
+                    msg = (f"{prefix} — Événement économique majeur\n"
+                        f"📌 <b>{ev['title']}</b>\n"
+                        f"🕐 {ev['time']} (heure Paris)\n"
+                        f"💱 {ev['currency']}\n"
+                        f"⚠️ Impact: <b>ÉLEVÉ</b>\n"
+                        f"💡 Attention à la volatilité crypto !")
+                    from daily_report import send_telegram as tg_broadcast
+                    # Alertes calendrier macro = premium (paid + VIP)
+                    tg_broadcast(msg, broadcast=True, min_role="paid")
+                    _cache_set(key, "sent")
+        except Exception as e:
+            print(f"[CalAlert] {e}")
+
+        # ── Check résultats macro publiés → Telegram auto ─────
+        try:
+            now_h = datetime.now().hour
+            # Fenêtre de publication macro US/EU : 7h-22h UTC
+            if 7 <= now_h <= 22:
+                results = fetch_forexfactory_results()
+                for ev in results:
+                    key = f"{ev.get('date','')}_{ev.get('title','')}"
+                    if key not in _sent_macro_alerts:
+                        ok = send_macro_alert_telegram(ev)
+                        if ok:
+                            _sent_macro_alerts.add(key)
+                            print(f"[MacroAlert] Envoyé: {ev.get('title','')} = {ev.get('actual','')}")
+                # Nettoyer le cache après 200 entrées (1 semaine de données ~50 events)
+                if len(_sent_macro_alerts) > 200:
+                    _sent_macro_alerts.clear()
+        except Exception as e:
+            print(f"[MacroAlert] {e}")
+
+        time.sleep(300)
+
+def _init_market_info():
+    time.sleep(4)
+    try:
+        info = engine.fetch_market_info()
+        fg = info.get("fear_greed",{}) or {}
+        dom = info.get("dominance",{}) or {}
+        print(f"[Init] F&G={fg.get('value','?')} BTC Dom={dom.get('btc','?')}%")
+    except Exception as e:
+        print(f"[Init] {e}")
+
+_background_tasks_started = False
+_background_tasks_lock = threading.Lock()
+
+
+def _start_background_tasks():
+    if IS_RAILWAY:
+        print("[Startup] Railway - lancement des taches de fond")
+        socketio.start_background_task(scan_loop)
+        socketio.start_background_task(macro_loop)
+        socketio.start_background_task(smart_signal_loop)
+        socketio.start_background_task(_init_market_info)
+    else:
+        print("[Startup] Local - lancement des threads de fond")
+        threading.Thread(target=scan_loop, daemon=True, name="scan_loop").start()
+        threading.Thread(target=macro_loop, daemon=True, name="macro_loop").start()
+        threading.Thread(target=smart_signal_loop, daemon=True, name="smart_signal_loop").start()
+        threading.Thread(target=_init_market_info, daemon=True, name="init_market_info").start()
+
+
+def start_runtime_services():
+    global _background_tasks_started
+    with _background_tasks_lock:
+        if _background_tasks_started:
+            return
+        _background_tasks_started = True
+
+        if RUN_BACKGROUND_JOBS:
+            _start_background_tasks()
+        else:
+            print("[Startup] Taches de fond desactivees (RUN_BACKGROUND_JOBS=false)")
+
+# ── Auth Helpers ──────────────────────────────────────────────
+def get_session():
+    token = request.cookies.get("cs_token") or request.headers.get("X-Session-Token")
+    if not token: return None
+    return engine.validate_session(token)
+
+def get_uid():
+    sess = get_session()
+    return sess["user_id"] if sess else 0
+
+ROLE_RANK = {
+    "visitor": 0,
+    "member": 1,
+    "paid": 2,
+    "vip": 3,
+    "admin": 4,
+    "banned": -1,
+}
+
+
+def _role_guard(required_role):
+    sess = get_session()
+    if not sess:
+        return None, (jsonify({"ok": False, "error": "Connexion requise"}), 401)
+    role = normalize_role(sess.get("role"))
+    if role == "banned":
+        return None, (jsonify({"ok": False, "error": "Compte bloque"}), 403)
+    if ROLE_RANK.get(role, 0) < ROLE_RANK.get(required_role, 0):
+        return None, (jsonify({"ok": False, "error": f"Acces reserve au niveau {required_role}"}), 403)
+    return sess, None
+
+
+def require_admin():
+    sess = get_session()
+    if not sess or sess.get("role") != "admin": return None
+    return sess
+
+
+def _json_body():
+    return request.get_json(silent=True) or {}
+
+
+def _set_session_cookie(resp, token):
+    if token:
+        resp.set_cookie("cs_token", token, httponly=True, samesite="Lax", secure=IS_RAILWAY, max_age=86400)
+    else:
+        resp.delete_cookie("cs_token")
+    return resp
+
+
+def _smtp_status():
+    login_value = SMTP_LOGIN or SMTP_EMAIL
+    from_value = SMTP_FROM_EMAIL or SMTP_EMAIL
+    configured = bool(login_value and from_value and SMTP_PASSWORD and SMTP_SERVER and SMTP_PORT)
+    missing = []
+    if not login_value:
+        missing.append("SMTP_LOGIN")
+    if not from_value:
+        missing.append("SMTP_FROM_EMAIL")
+    if not SMTP_PASSWORD:
+        missing.append("SMTP_PASSWORD")
+    if not SMTP_SERVER:
+        missing.append("SMTP_SERVER")
+    if not SMTP_PORT:
+        missing.append("SMTP_PORT")
+    return {
+        "configured": configured,
+        "login": login_value or "",
+        "from_email": from_value or "",
+        "server": SMTP_SERVER or "",
+        "port": SMTP_PORT,
+        "use_ssl": bool(SMTP_USE_SSL),
+        "use_starttls": bool(SMTP_USE_STARTTLS),
+        "admin_notify_email": ADMIN_NOTIFY_EMAIL or "",
+        "missing": missing,
+    }
+
+
+def _send_system_email(to_address, subject, html_body, reply_to=""):
+    smtp = _smtp_status()
+    if not smtp["configured"] or not to_address:
+        reason = "SMTP non configuré"
+        if smtp["missing"]:
+            reason += " (" + ", ".join(smtp["missing"]) + ")"
+        return False, reason
+    try:
+        smtp_login = SMTP_LOGIN or SMTP_EMAIL
+        smtp_from = SMTP_FROM_EMAIL or SMTP_EMAIL
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = smtp_from
+        msg["To"] = to_address
+        if reply_to:
+            msg["Reply-To"] = reply_to
+        msg.attach(MIMEText(html_body, "html", "utf-8"))
+        smtp_cls = smtplib.SMTP_SSL if SMTP_USE_SSL else smtplib.SMTP
+        with smtp_cls(SMTP_SERVER, SMTP_PORT, timeout=20) as server:
+            if SMTP_USE_STARTTLS and not SMTP_USE_SSL:
+                server.starttls()
+            server.login(smtp_login, SMTP_PASSWORD)
+            server.sendmail(smtp_from, [to_address], msg.as_string())
+        return True, ""
+    except Exception as e:
+        return False, str(e)
+
+# ── Pages ─────────────────────────────────────────────────────
+@app.route("/health")
+def health():
+    checks = {
+        "app": True,
+        "db": False,
+        "background_jobs_enabled": RUN_BACKGROUND_JOBS,
+        "telegram_configured": bool(TELEGRAM_TOKEN),
+    }
+
+    try:
+        conn = connect_sqlite()
+        conn.execute("SELECT 1")
+        conn.close()
+        checks["db"] = True
+    except Exception as e:
+        checks["db_error"] = str(e)
+
+    return jsonify({
+        "status": "alive",
+        "checks": checks,
+        "ts": datetime.now().isoformat()
+    }), 200
+
+
+@app.route("/ready")
+def ready():
+    checks = {"db": False, "scan": False, "background_jobs_enabled": RUN_BACKGROUND_JOBS}
+    status_code = 200
+
+    try:
+        conn = connect_sqlite()
+        conn.execute("SELECT 1")
+        conn.close()
+        checks["db"] = True
+    except Exception as e:
+        checks["db_error"] = str(e)
+        status_code = 503
+
+    try:
+        data = engine.get_last()
+        checks["scan"] = bool(data.get("coins"))
+    except Exception as e:
+        checks["scan_error"] = str(e)
+
+    if RUN_BACKGROUND_JOBS and not checks["scan"]:
+        status_code = 503
+
+    return jsonify({
+        "status": "ready" if status_code == 200 else "warming_up",
+        "checks": checks,
+        "ts": datetime.now().isoformat()
+    }), status_code
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+@app.route("/admin")
+def admin_page():
+    return render_template("admin.html", login_error=request.args.get("error", ""))
+
+
+@app.route("/admin/login", methods=["POST"])
+def admin_login_page():
+    username = (request.form.get("username") or "").strip()
+    password = request.form.get("password") or ""
+    result = engine.login_user(username, password, get_ip())
+    if not result.get("ok"):
+        return redirect(f"/admin?error={result.get('error', 'Identifiants incorrects')}")
+    if result.get("role") != "admin":
+        token = result.get("token")
+        if token:
+            try:
+                engine.revoke_session(token)
+            except Exception:
+                pass
+        return redirect("/admin?error=Ce compte n'a pas les droits admin.")
+    resp = make_response(redirect("/admin"))
+    if result.get("token"):
+        _set_session_cookie(resp, result["token"])
+    return resp
+
+
+def _admin_guard():
+    sess = require_admin()
+    if not sess:
+        return None, (jsonify({"ok": False, "error": "Acces admin requis"}), 401)
+    return sess, None
+
+
+@app.route("/api/auth/register", methods=["POST"])
+def api_auth_register():
+    data = _json_body()
+    username = (data.get("username") or "").strip().lower()
+    password = data.get("password") or ""
+    email = (data.get("email") or "").strip().lower()
+    firstname = (data.get("firstname") or "").strip()
+    lastname = (data.get("lastname") or "").strip()
+    ip = get_ip()
+
+    if not check_rate_limit(ip, "register"):
+        return jsonify({"ok": False, "error": "Trop de tentatives, réessaie plus tard"}), 429
+
+    role = normalize_role(data.get("role") or "member")
+    subscription_status = normalize_subscription_status(
+        data.get("subscription_status") or ("active" if role in {"paid", "vip", "admin"} else "inactive")
+    )
+    result = engine.create_user(
+        username,
+        password,
+        role=role,
+        email=email,
+        firstname=firstname,
+        lastname=lastname,
+        subscription_status=subscription_status,
+    )
+    if not result.get("ok"):
+        return jsonify(result), 400
+
+    user = None
+    conn = connect_sqlite()
+    conn.row_factory = sqlite3.Row
+    try:
+        user = conn.execute("SELECT id, username, email, firstname, lastname FROM users WHERE username=?", (username,)).fetchone()
+    finally:
+        conn.close()
+
+    if user:
+        engine.log_action(user["id"], user["username"], "REGISTER", f"Email:{email}", ip)
+        claude_key = (data.get("claude_key") or "").strip()
+        openai_key = (data.get("openai_key") or "").strip()
+        if claude_key:
+            engine.save_exchange_keys(user["id"], "claude", claude_key, "")
+        if openai_key:
+            engine.save_exchange_keys(user["id"], "openai", openai_key, "")
+
+    admin_subject = f"Nouvelle inscription CryptoScanner: {username}"
+    admin_html = (
+        f"<h3>Nouvelle inscription</h3>"
+        f"<p><b>Utilisateur:</b> {username}</p>"
+        f"<p><b>Nom:</b> {firstname} {lastname}</p>"
+        f"<p><b>Email:</b> {email}</p>"
+        f"<p><b>Date:</b> {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</p>"
+    )
+    ok_admin = False
+    err_admin = ""
+    if ADMIN_NOTIFY_EMAIL:
+        ok_admin, err_admin = _send_system_email(ADMIN_NOTIFY_EMAIL, admin_subject, admin_html, reply_to=email)
+        if not ok_admin:
+            print(f"[Email register admin] {err_admin}")
+
+    user_subject = "Bienvenue sur CryptoScanner Pro"
+    user_html = (
+        f"<h3>Bienvenue {firstname or username}</h3>"
+        f"<p>Ton compte <b>{username}</b> a bien été créé.</p>"
+        f"<p>Tu peux maintenant te connecter, configurer Google Authenticator et lier ton Telegram depuis l'onglet Config.</p>"
+    )
+    ok_user, err_user = _send_system_email(email, user_subject, user_html)
+    if not ok_user:
+        print(f"[Email register user] {err_user}")
+
+    return jsonify({
+        "ok": True,
+        "email_sent_user": ok_user,
+        "email_sent_admin": ok_admin,
+        "email_error_user": err_user if not ok_user else "",
+        "email_error_admin": err_admin if not ok_admin else "",
+        "email_notice": "Compte cree. L'email de bienvenue est facultatif tant que le SMTP n'est pas configure.",
+    })
+
+
+@app.route("/api/auth/login", methods=["POST"])
+def api_auth_login():
+    data = _json_body()
+    result = engine.login_user(data.get("username", ""), data.get("password", ""), get_ip())
+    if not result.get("ok"):
+        return jsonify(result), 401
+    resp = make_response(jsonify(result))
+    if result.get("token"):
+        _set_session_cookie(resp, result["token"])
+    return resp
+
+
+@app.route("/api/auth/verify_2fa", methods=["POST"])
+def api_auth_verify_2fa():
+    data = _json_body()
+    user_id = int(data.get("user_id", 0) or 0)
+    code = (data.get("code") or "").strip()
+    is_totp = bool(data.get("totp"))
+
+    if is_totp:
+        secret = _get_user_totp_secret(user_id)
+        if not secret or not TOTPManager.verify_code(secret, code):
+            return jsonify({"ok": False, "error": "Code TOTP invalide"}), 401
+        user = engine.get_user_by_id(user_id)
+        if not user:
+            return jsonify({"ok": False, "error": "Utilisateur introuvable"}), 404
+        token = engine.create_session(user_id, get_ip())
+        engine.log_action(user_id, user["username"], "TOTP_LOGIN", f"IP:{get_ip()}", get_ip())
+        result = {
+            "ok": True,
+            "token": token,
+            "user_id": user["id"],
+            "username": user["username"],
+            "role": user["role"],
+            "subscription_status": user.get("subscription_status", "inactive"),
+        }
+    else:
+        result = engine.verify_2fa(user_id, code, get_ip())
+    if not result.get("ok"):
+        return jsonify(result), 401
+    resp = make_response(jsonify(result))
+    if result.get("token"):
+        _set_session_cookie(resp, result["token"])
+    return resp
+
+
+@app.route("/api/auth/logout", methods=["POST"])
+def api_auth_logout():
+    token = request.cookies.get("cs_token") or request.headers.get("X-Session-Token")
+    if token:
+        engine.revoke_session(token)
+    resp = make_response(jsonify({"ok": True}))
+    _set_session_cookie(resp, None)
+    return resp
+
+
+@app.route("/api/auth/me")
+def api_auth_me():
+    sess = get_session()
+    if not sess:
+        return jsonify({"logged": False})
+    user = engine.get_user_by_id(sess["user_id"])
+    if not user:
+        return jsonify({"logged": False})
+    return jsonify({
+        "logged": True,
+        "user_id": user["id"],
+        "username": user["username"],
+        "role": user["role"],
+        "subscription_status": user.get("subscription_status", "inactive"),
+        "email": user.get("email", ""),
+        "firstname": user.get("firstname", ""),
+        "lastname": user.get("lastname", ""),
+        "last_login": user.get("last_login"),
+        "tg_linked": bool(user.get("tg_chat_id")),
+        "totp_enabled": str(user.get("totp_enabled", 0)) == "1",
+    })
+
+
+@app.route("/api/auth/profile", methods=["POST"])
+def api_auth_profile():
+    sess = get_session()
+    if not sess:
+        return jsonify({"ok": False, "error": "Session invalide"}), 401
+    data = _json_body()
+    result = engine.update_user_profile(
+        sess["user_id"],
+        firstname=data.get("firstname", ""),
+        lastname=data.get("lastname", ""),
+        email=data.get("email", ""),
+        password=data.get("password", ""),
+    )
+    if not result.get("ok"):
+        return jsonify(result), 400
+    user = engine.get_user_by_id(sess["user_id"])
+    return jsonify({"ok": True, "user": user})
+
+
+@app.route("/api/auth/api_keys", methods=["GET", "POST"])
+def api_auth_api_keys():
+    sess, denied = _role_guard("paid")
+    if denied:
+        return denied
+    if request.method == "GET":
+        groq      = engine.get_exchange_keys(sess["user_id"], "groq")      or {}
+        claude    = engine.get_exchange_keys(sess["user_id"], "claude")    or {}
+        anthropic = engine.get_exchange_keys(sess["user_id"], "anthropic") or claude
+        openai    = engine.get_exchange_keys(sess["user_id"], "openai")    or {}
+        def _mask(k):
+            k = k or ""
+            return (k[:6] + "..." + k[-4:]) if len(k) > 12 else ("configuree" if k else "")
+        status = get_ai_status({
+            "groq":      groq.get("api_key", ""),
+            "anthropic": anthropic.get("api_key", ""),
+            "claude":    claude.get("api_key", ""),
+            "openai":    openai.get("api_key", ""),
+        })
+        return jsonify({
+            "ok": True,
+            "ai_provider":      status["provider"],
+            "ai_key_set":       status["configured"],
+            "ai_key_masked":    status["masked"],
+            "claude_key_set":   bool(claude.get("api_key")),
+            "claude_key_masked": _mask(claude.get("api_key","")),
+            "groq_key_set":     bool(groq.get("api_key")),
+            "groq_key_masked":  _mask(groq.get("api_key","")),
+            "openai_key_set":   bool(openai.get("api_key")),
+            "openai_key_masked": _mask(openai.get("api_key","")),
+        })
+
+    data = _json_body()
+    ai_provider = (data.get("ai_provider") or "groq").strip().lower()
+    ai_api_key = (data.get("ai_api_key") or "").strip()
+    claude_key = (data.get("claude_key") or "").strip()
+    if claude_key and not ai_api_key:
+        ai_provider = "anthropic"
+        ai_api_key = claude_key
+    if ai_provider not in {"groq", "anthropic", "openai"}:
+        return jsonify({"ok": False, "error": "Provider IA invalide"}), 400
+    engine.save_exchange_keys(sess["user_id"], ai_provider, ai_api_key, "")
+    if ai_provider == "anthropic":
+        engine.save_exchange_keys(sess["user_id"], "claude", ai_api_key, "")
+    return jsonify({"ok": True})
+
+
+@app.route("/api/auth/totp_status")
+def api_auth_totp_status():
+    sess = get_session()
+    if not sess:
+        return jsonify({"ok": False, "totp_enabled": False}), 401
+    user = engine.get_user_by_id(sess["user_id"])
+    return jsonify({"ok": True, "totp_enabled": bool(user and str(user.get("totp_enabled", 0)) == "1")})
+
+
+@app.route("/api/auth/setup_totp", methods=["POST"])
+def api_auth_setup_totp():
+    sess = get_session()
+    if not sess:
+        return jsonify({"ok": False, "error": "Session invalide"}), 401
+    user = engine.get_user_by_id(sess["user_id"])
+    if not user:
+        return jsonify({"ok": False, "error": "Utilisateur introuvable"}), 404
+    data = setup_totp(user["id"], user["username"])
+    return jsonify({"ok": True, **data})
+
+
+@app.route("/api/auth/confirm_totp", methods=["POST"])
+def api_auth_confirm_totp():
+    sess = get_session()
+    if not sess:
+        return jsonify({"ok": False, "error": "Session invalide"}), 401
+    code = (_json_body().get("code") or "").strip()
+    return jsonify({"ok": bool(confirm_totp(sess["user_id"], code))})
+
+
+@app.route("/api/auth/disable_totp", methods=["POST"])
+def api_auth_disable_totp():
+    sess = get_session()
+    if not sess:
+        return jsonify({"ok": False, "error": "Session invalide"}), 401
+    return jsonify({"ok": bool(disable_totp(sess["user_id"]))})
+
+
+@app.route("/api/auth/me/telegram")
+def api_auth_me_telegram():
+    sess = get_session()
+    if not sess:
+        return jsonify({"linked": False}), 401
+    user = engine.get_user_by_id(sess["user_id"])
+    chat_id = (user or {}).get("tg_chat_id", "")
+    masked = f"{chat_id[:3]}***{chat_id[-2:]}" if chat_id and len(chat_id) > 5 else chat_id
+    return jsonify({"linked": bool(chat_id), "chat_id_masked": masked})
+
+
+@app.route("/api/auth/link_telegram", methods=["POST"])
+def api_auth_link_telegram():
+    sess = get_session()
+    if not sess:
+        return jsonify({"ok": False, "error": "Session invalide"}), 401
+    chat_id = (_json_body().get("chat_id") or "").strip()
+    if not chat_id:
+        return jsonify({"ok": False, "error": "Chat ID requis"}), 400
+    result = engine.enable_2fa(sess["user_id"], chat_id)
+    return jsonify({"ok": result.get("ok", False), "message": "Telegram lié avec succès"})
+
+
+@app.route("/api/auth/unlink_telegram", methods=["POST"])
+def api_auth_unlink_telegram():
+    sess = get_session()
+    if not sess:
+        return jsonify({"ok": False, "error": "Session invalide"}), 401
+    result = engine.disable_2fa(sess["user_id"])
+    return jsonify({"ok": result.get("ok", False)})
+
+
+@app.route("/api/admin/stats")
+def api_admin_stats():
+    sess, denied = _admin_guard()
+    if denied:
+        return denied
+    conn = connect_sqlite()
+    try:
+        users = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+        active_sessions = conn.execute("SELECT COUNT(*) FROM sessions WHERE expires > ?", (datetime.now().isoformat(),)).fetchone()[0]
+        portfolio_positions = conn.execute("SELECT COUNT(*) FROM portfolio").fetchone()[0]
+        login_fails = conn.execute(
+            "SELECT COUNT(*) FROM login_attempts WHERE success=0 AND ts>?",
+            ((datetime.now() - timedelta(minutes=15)).isoformat(),),
+        ).fetchone()[0]
+        news_total = conn.execute("SELECT COUNT(*) FROM news_items").fetchone()[0]
+        news_critical = conn.execute("SELECT COUNT(*) FROM news_items WHERE is_critical=1").fetchone()[0]
+    finally:
+        conn.close()
+
+    market = engine.get_last() or {}
+    return jsonify({
+        "users": users,
+        "active_sessions": active_sessions,
+        "coins_scanned": len(market.get("coins", [])),
+        "signals_active": len(market.get("signals", [])),
+        "news_total": news_total,
+        "news_critical": news_critical,
+        "portfolio_positions": portfolio_positions,
+        "login_fails": login_fails,
+    })
+
+
+@app.route("/api/admin/users")
+def api_admin_users():
+    sess, denied = _admin_guard()
+    if denied:
+        return denied
+    conn = connect_sqlite()
+    conn.row_factory = sqlite3.Row
+    try:
+        rows = conn.execute(
+            "SELECT id, username, email, role, subscription_status, created, last_login FROM users ORDER BY id DESC"
+        ).fetchall()
+        return jsonify([dict(r) for r in rows])
+    finally:
+        conn.close()
+
+
+@app.route("/api/admin/users/<int:uid>/role", methods=["POST"])
+def api_admin_user_role(uid):
+    sess, denied = _admin_guard()
+    if denied:
+        return denied
+    role = normalize_role((_json_body().get("role") or "").strip().lower())
+    if role not in VALID_ROLES:
+        return jsonify({"ok": False, "error": "Role invalide"}), 400
+    conn = connect_sqlite()
+    try:
+        conn.execute("UPDATE users SET role=? WHERE id=?", (role, uid))
+        conn.commit()
+    finally:
+        conn.close()
+    engine.log_action(sess["user_id"], sess["username"], "ADMIN_ROLE", f"user={uid} role={role}", get_ip())
+    return jsonify({"ok": True})
+
+
+@app.route("/api/admin/users/<int:uid>/subscription", methods=["POST"])
+def api_admin_user_subscription(uid):
+    sess, denied = _admin_guard()
+    if denied:
+        return denied
+    status = normalize_subscription_status((_json_body().get("subscription_status") or "").strip().lower())
+    if status not in VALID_SUBSCRIPTION_STATUSES:
+        return jsonify({"ok": False, "error": "Statut abonnement invalide"}), 400
+    conn = connect_sqlite()
+    try:
+        conn.execute("UPDATE users SET subscription_status=? WHERE id=?", (status, uid))
+        conn.commit()
+    finally:
+        conn.close()
+    engine.log_action(sess["user_id"], sess["username"], "ADMIN_SUBSCRIPTION", f"user={uid} subscription_status={status}", get_ip())
+    return jsonify({"ok": True})
+
+
+@app.route("/api/admin/users/<int:uid>/reset_password", methods=["POST"])
+def api_admin_user_reset_password(uid):
+    sess, denied = _admin_guard()
+    if denied:
+        return denied
+    password = _json_body().get("password") or ""
+    if len(password) < 8:
+        return jsonify({"ok": False, "error": "Mot de passe trop court (min 8 caracteres)"}), 400
+    from security import hash_password
+    conn = connect_sqlite()
+    try:
+        conn.execute("UPDATE users SET password_hash=? WHERE id=?", (hash_password(password), uid))
+        conn.execute("DELETE FROM sessions WHERE user_id=?", (uid,))
+        conn.commit()
+    finally:
+        conn.close()
+    engine.log_action(sess["user_id"], sess["username"], "ADMIN_RESET_PASSWORD", f"user={uid}", get_ip())
+    return jsonify({"ok": True})
+
+
+@app.route("/api/admin/users/<int:uid>", methods=["DELETE"])
+def api_admin_user_delete(uid):
+    sess, denied = _admin_guard()
+    if denied:
+        return denied
+    if uid == sess["user_id"]:
+        return jsonify({"ok": False, "error": "Impossible de supprimer son propre compte"}), 400
+    conn = connect_sqlite()
+    try:
+        conn.execute("DELETE FROM sessions WHERE user_id=?", (uid,))
+        conn.execute("DELETE FROM login_attempts WHERE username IN (SELECT username FROM users WHERE id=?)", (uid,))
+        conn.execute("DELETE FROM users WHERE id=?", (uid,))
+        conn.commit()
+    finally:
+        conn.close()
+    engine.log_action(sess["user_id"], sess["username"], "ADMIN_DELETE_USER", f"user={uid}", get_ip())
+    return jsonify({"ok": True})
+
+
+@app.route("/api/admin/logs")
+def api_admin_logs():
+    sess, denied = _admin_guard()
+    if denied:
+        return denied
+    return jsonify(engine.get_logs(100))
+
+
+@app.route("/api/admin/settings", methods=["GET", "POST"])
+def api_admin_settings():
+    sess, denied = _admin_guard()
+    if denied:
+        return denied
+    keys = {
+        "pump_pct": "5",
+        "scan_interval": "10",
+        "vol_mult": "3",
+        "exchange": engine.get_exchange(),
+    }
+    if request.method == "GET":
+        return jsonify({k: engine._get_setting(k, default) for k, default in keys.items()})
+
+    data = _json_body()
+    for key in keys:
+        if key in data:
+            engine._set_setting(key, str(data.get(key, "")))
+    if "exchange" in data and data.get("exchange") in {"coingecko"}:
+        engine.set_exchange(data["exchange"])
+    engine.log_action(sess["user_id"], sess["username"], "ADMIN_SETTINGS", "settings_updated", get_ip())
+    return jsonify({"ok": True})
+
+
+@app.route("/api/admin/broadcast", methods=["POST"])
+def api_admin_broadcast():
+    sess, denied = _admin_guard()
+    if denied:
+        return denied
+    message = (_json_body().get("message") or "").strip()
+    if not message:
+        return jsonify({"ok": False, "error": "Message vide"}), 400
+    sent = send_telegram(message, broadcast=True)
+    engine.log_action(sess["user_id"], sess["username"], "ADMIN_BROADCAST", message[:120], get_ip())
+    return jsonify({"ok": bool(sent)})
+
+
+@app.route("/api/auth/enable_2fa", methods=["POST"])
+def api_auth_enable_2fa_legacy():
+    return api_auth_link_telegram()
+
+
+@app.route("/api/auth/disable_2fa", methods=["POST"])
+def api_auth_disable_2fa_legacy():
+    return api_auth_unlink_telegram()
+
+
+@app.route("/api/market")
+def api_market():
+    if not engine.check_rate_limit(get_ip(), 60):
+        return jsonify({"error": "Rate limit"}), 429
+    try:
+        data = engine.get_last()
+        coins = data.get("coins", [])
+        if not coins:
+            scanned = engine.scan()
+            if scanned:
+                data = scanned
+                coins = data.get("coins", [])
+        minfo = engine.get_market_info() or {}
+        fg = minfo.get("fear_greed")
+        dom = minfo.get("dominance", {}) or {}
+        gainers = len([c for c in coins if c.get("change_pct", 0) > 0])
+        try:
+            data["dna_score"] = calc_market_dna_score(
+                fg,
+                dom.get("btc"),
+                len(data.get("signals", [])),
+                len(coins),
+                gainers,
+            )
+        except Exception:
+            pass
+        return jsonify(data)
+    except Exception as e:
+        print(f"[/api/market] {e}")
+        return jsonify({"coins": [], "signals": [], "ts": None, "count": 0, "exchange": "coingecko", "error": str(e)})
+
+
+@app.route("/api/signals")
+def api_signals():
+    return jsonify(engine.get_signals())
+
+
+@app.route("/api/smart_signals")
+def api_smart_signals():
+    with _signals_lock:
+        return jsonify({"signals": _smart_signals_cache, "ts": _smart_signals_ts})
+
+
+@app.route("/api/smart_signals/history")
+def api_smart_signals_history():
+    limit  = min(int(request.args.get("limit", 50)), 200)
+    symbol = (request.args.get("symbol") or "").strip().upper()
+    direction = (request.args.get("direction") or "").strip().lower()
+    try:
+        conn = connect_sqlite(); conn.row_factory = sqlite3.Row
+        q = "SELECT * FROM signals_history WHERE 1=1"
+        params = []
+        if symbol:
+            q += " AND symbol=?"; params.append(symbol)
+        if direction in ("buy","sell"):
+            q += " AND direction=?"; params.append(direction)
+        q += " ORDER BY id DESC LIMIT ?"
+        params.append(limit)
+        rows = conn.execute(q, params).fetchall()
+        conn.close()
+        return jsonify({"ok": True, "history": [dict(r) for r in rows]})
+    except Exception as e:
+        return jsonify({"ok": False, "history": [], "error": str(e)})
+
+
+@app.route("/api/candles/<symbol>")
+def get_candles(symbol):
+    interval = request.args.get("interval", "1h")
+    limit = int(request.args.get("limit", "100") or "100")
+    return jsonify(engine.fetch_candles(symbol.upper(), interval, limit))
+
+
+@app.route("/api/market_info")
+def api_market_info():
+    return jsonify(engine.get_market_info())
+
+
+@app.route("/api/market_info/refresh")
+def refresh_market_info():
+    return jsonify(engine.fetch_market_info())
+
+
+@app.route("/api/whales")
+def api_whales():
+    return jsonify(engine.fetch_whale_alerts())
+
+
+@app.route("/api/wallet/track", methods=["POST"])
+def api_wallet_track():
+    sess, denied = _role_guard("member")
+    if denied:
+        return denied
+    data = _json_body()
+    address = (data.get("address") or "").strip()
+    chain   = (data.get("chain") or "").strip().lower() or None
+    if not address:
+        return jsonify({"ok": False, "error": "Adresse requise"}), 400
+    from wallet_tracker import track_wallet
+    result = track_wallet(address, chain)
+    return jsonify(result)
+
+
+@app.route("/api/news")
+def get_news():
+    critical_only = request.args.get("critical", "false").lower() == "true"
+    category = request.args.get("category", "")
+    search = request.args.get("search", "")
+    lang = request.args.get("lang", "all")
+    limit = int(request.args.get("limit", "30") or "30")
+
+    selected_category = category if category and category != "all" else None
+    selected_search = search if search else None
+    selected_lang = None if lang == "all" else lang
+
+    news = get_news_from_db(
+        limit,
+        critical_only,
+        selected_category,
+        selected_search,
+        None,
+        selected_lang,
+        "fr",
+    )
+    if not news:
+        fetch_news_rss()
+        news = get_news_from_db(
+            limit,
+            critical_only,
+            selected_category,
+            selected_search,
+            None,
+            selected_lang,
+            "fr",
+        )
+    if lang == "fr":
+        fr_news = get_news_from_db(
+            limit,
+            critical_only,
+            selected_category,
+            selected_search,
+            None,
+            "fr",
+            "fr",
+        )
+        if not fr_news and not news:
+            fetch_news_rss()
+            fr_news = get_news_from_db(
+                limit,
+                critical_only,
+                selected_category,
+                selected_search,
+                None,
+                "fr",
+                "fr",
+            )
+        if len(fr_news) >= limit:
+            news = fr_news[:limit]
+        else:
+            mixed = get_news_from_db(
+                limit * 2,
+                critical_only,
+                selected_category,
+                selected_search,
+                None,
+                None,
+                "fr",
+            )
+            seen = {n.get("url") for n in fr_news}
+            merged = list(fr_news)
+            for item in mixed:
+                if item.get("url") in seen:
+                    continue
+                merged.append(item)
+                seen.add(item.get("url"))
+                if len(merged) >= limit:
+                    break
+            news = translate_news_batch(merged[:limit], "fr")
+    return jsonify(news)
+
+
+@app.route("/api/news/refresh")
+def refresh_news():
+    news = fetch_news_rss()
+    return jsonify({"ok": True, "count": len(news)})
+
+
+@app.route("/api/news/categories")
+def news_categories():
+    return jsonify(get_categories())
+
+
+@app.route("/api/macro/all")
+def api_macro_all():
+    _idx = fetch_all_indices(["DXY"]).get("indices", {})
+    return jsonify({
+        "inflation": fetch_inflation(),
+        "stablecoins": fetch_stablecoin_supply(),
+        "nasdaq": fetch_nasdaq_correlation(),
+        "dxy": _idx.get("DXY"),
+        "econ_cal": fetch_economic_calendar(view=request.args.get("view", "week")),
+        "upcoming": get_upcoming_events(7),
+        "ts": datetime.now().strftime("%H:%M:%S"),
+    })
+
+
+@app.route("/api/macro/calendar")
+def api_macro_calendar():
+    return jsonify(fetch_economic_calendar(request.args.get("date"), request.args.get("view", "week")))
+
+
+@app.route("/api/macro/calendar/check-results", methods=["POST"])
+def api_macro_check_results():
+    """
+    Vérifie les nouveaux résultats macro ForexFactory et envoie des alertes Telegram
+    pour chaque résultat non encore envoyé (clé de dédup = date_title).
+    """
+    global _sent_macro_alerts
+    try:
+        events = fetch_forexfactory_results()
+        sent   = []
+        skipped = []
+        for ev in events:
+            key = f"{ev.get('date','')}_{ev.get('title','')}"
+            if key in _sent_macro_alerts:
+                skipped.append(key)
+                continue
+            ok = send_macro_alert_telegram(ev)
+            if ok:
+                _sent_macro_alerts.add(key)
+                sent.append(ev.get("title", key))
+        return jsonify({
+            "ok":      True,
+            "sent":    sent,
+            "skipped": len(skipped),
+            "total":   len(events),
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/alert_prefs", methods=["GET", "POST"])
+def api_alert_preferences():
+    sess, denied = _role_guard("member")
+    if denied:
+        return denied
+    user_id = sess["user_id"]
+    if request.method == "GET":
+        return jsonify(get_alert_prefs(user_id))
+    data = _json_body()
+    save_alert_prefs(user_id, data)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/alert_prefs/test_email", methods=["POST"])
+def api_alert_preferences_test_email():
+    sess, denied = _role_guard("member")
+    if denied:
+        return denied
+    user = engine.get_user_by_id(sess["user_id"])
+    if not user or not user.get("email"):
+        return jsonify({"ok": False, "error": "Email utilisateur manquant"}), 400
+    ok, err = _send_system_email(user["email"], "Test CryptoScanner", "<p>Email de test CryptoScanner.</p>")
+    if not ok:
+        return jsonify({"ok": False, "error": err}), 500
+    return jsonify({"ok": True, "message": "Email de test envoyé"})
+
+
+@app.route("/api/admin/email/status")
+def api_admin_email_status():
+    sess, denied = _admin_guard()
+    if denied:
+        return denied
+    return jsonify({"ok": True, "smtp": _smtp_status()})
+
+
+@app.route("/api/admin/email/test", methods=["POST"])
+def api_admin_email_test():
+    sess, denied = _admin_guard()
+    if denied:
+        return denied
+    data = _json_body()
+    to_address = (data.get("to") or "").strip()
+    if not to_address:
+        return jsonify({"ok": False, "error": "Adresse email requise"}), 400
+    subject = "Test SMTP CryptoScanner"
+    html = (
+        "<h3>Test SMTP CryptoScanner</h3>"
+        f"<p>Envoye le {datetime.now().strftime('%d/%m/%Y a %H:%M:%S')}.</p>"
+        "<p>Si vous recevez ce message, la configuration email fonctionne.</p>"
+    )
+    ok, err = _send_system_email(to_address, subject, html)
+    if not ok:
+        return jsonify({"ok": False, "error": err, "smtp": _smtp_status()}), 500
+    return jsonify({"ok": True, "message": f"Email de test envoye a {to_address}", "smtp": _smtp_status()})
+
+
+@app.route("/api/report/daily", methods=["POST"])
+def api_report_daily():
+    sess, denied = _admin_guard()
+    if denied:
+        return denied
+    if not scheduler:
+        return jsonify({"ok": False, "message": "Scheduler indisponible"}), 503
+    scheduler.send_now()
+    return jsonify({"ok": True, "message": "Rapport journalier envoyé"})
+
+
+@app.route("/api/report/etf", methods=["POST"])
+def api_report_etf():
+    sess, denied = _admin_guard()
+    if denied:
+        return denied
+    if not scheduler:
+        return jsonify({"ok": False, "message": "Scheduler indisponible"}), 503
+    scheduler.send_etf_report()
+    return jsonify({"ok": True, "message": "Rapport ETF envoyé"})
+
+
+@app.route("/api/portfolio", methods=["GET", "POST"])
+def api_portfolio():
+    sess, denied = _role_guard("member")
+    if denied:
+        return denied
+    user_id = sess["user_id"]
+    if request.method == "GET":
+        return jsonify(engine.db_get_portfolio(user_id, request.args.get("portfolio_name")))
+    engine.db_add_position(_json_body(), user_id)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/portfolio/<int:pid>", methods=["DELETE"])
+def api_portfolio_delete(pid):
+    sess, denied = _role_guard("member")
+    if denied:
+        return denied
+    engine.db_del_position(pid, sess["user_id"])
+    return jsonify({"ok": True})
+
+
+@app.route("/api/trades", methods=["GET", "POST"])
+def api_trades():
+    sess, denied = _role_guard("member")
+    if denied:
+        return denied
+    user_id = sess["user_id"]
+    if request.method == "GET":
+        return jsonify(engine.db_get_trades(user_id))
+    engine.db_add_trade(_json_body(), user_id)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/trades/<int:tid>", methods=["DELETE"])
+def api_trades_delete(tid):
+    sess, denied = _role_guard("member")
+    if denied:
+        return denied
+    engine.db_del_trade(tid, sess["user_id"])
+    return jsonify({"ok": True})
+
+
+@app.route("/api/alerts", methods=["GET", "POST"])
+def api_alerts():
+    sess, denied = _role_guard("member")
+    if denied:
+        return denied
+    user_id = sess["user_id"]
+    if request.method == "GET":
+        return jsonify(engine.db_get_alerts(user_id))
+    engine.db_add_alert(_json_body(), user_id)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/alerts/<int:aid>", methods=["DELETE"])
+def api_alerts_delete(aid):
+    sess, denied = _role_guard("member")
+    if denied:
+        return denied
+    engine.db_del_alert(aid, sess["user_id"])
+    return jsonify({"ok": True})
+
+
+@app.route("/api/watchlist", methods=["GET", "POST"])
+def api_watchlist():
+    sess, denied = _role_guard("member")
+    if denied:
+        return denied
+    user_id = sess["user_id"]
+    if request.method == "GET":
+        return jsonify(engine.get_watchlist(user_id))
+    symbol = (_json_body().get("symbol") or "").strip().upper()
+    if not symbol:
+        return jsonify({"ok": False, "error": "Symbole requis"}), 400
+    engine.add_watchlist(user_id, symbol)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/watchlist/<int:wid>", methods=["DELETE"])
+def api_watchlist_delete(wid):
+    sess, denied = _role_guard("member")
+    if denied:
+        return denied
+    engine.del_watchlist(wid, sess["user_id"])
+    return jsonify({"ok": True})
+
+
+@app.route("/api/blacklist", methods=["GET", "POST"])
+def api_blacklist():
+    sess, denied = _admin_guard()
+    if denied:
+        return denied
+    if request.method == "GET":
+        return jsonify(engine.get_blacklist())
+    symbol = (_json_body().get("symbol") or "").strip().upper()
+    if not symbol:
+        return jsonify({"ok": False, "error": "Symbole requis"}), 400
+    engine.add_blacklist(symbol)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/blacklist/<int:bid>", methods=["DELETE"])
+def api_blacklist_delete(bid):
+    sess, denied = _admin_guard()
+    if denied:
+        return denied
+    engine.del_blacklist(bid)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/exchange", methods=["POST"])
+def api_exchange():
+    sess, denied = _admin_guard()
+    if denied:
+        return denied
+    exchange = (_json_body().get("exchange") or "").strip().lower()
+    if exchange not in {"coingecko"}:
+        return jsonify({"ok": False, "error": "Exchange invalide"}), 400
+    engine.set_exchange(exchange)
+    return jsonify({"ok": True, "exchange": engine.get_exchange()})
+
+
+@app.route("/api/exchange_connect/save_keys", methods=["POST"])
+def api_exchange_connect_save_keys():
+    sess, denied = _role_guard("member")
+    if denied:
+        return denied
+    data = _json_body()
+    exchange = (data.get("exchange") or "").strip().lower()
+    api_key = (data.get("api_key") or "").strip()
+    api_secret = (data.get("api_secret") or "").strip()
+    if not exchange:
+        return jsonify({"ok": False, "error": "Exchange requis"}), 400
+    engine.save_exchange_keys(sess["user_id"], exchange, api_key, api_secret)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/exchange_connect/get_keys")
+def api_exchange_connect_get_keys():
+    sess, denied = _role_guard("member")
+    if denied:
+        return denied
+    exchange = (request.args.get("exchange") or "").strip().lower()
+    keys = engine.get_exchange_keys(sess["user_id"], exchange) or {}
+    api_key = keys.get("api_key", "") or ""
+    return jsonify({
+        "ok": True,
+        "exchange": exchange,
+        "api_key": api_key,
+        "api_key_masked": (api_key[:4] + "..." + api_key[-4:]) if len(api_key) > 8 else api_key,
+        "has_secret": bool(keys.get("api_secret")),
+    })
+
+
+@app.route("/api/exchange_connect/test", methods=["POST"])
+def api_exchange_connect_test():
+    sess, denied = _role_guard("member")
+    if denied:
+        return denied
+    data = _json_body()
+    exchange = (data.get("exchange") or "").strip().lower()
+    return jsonify({"ok": bool(exchange), "exchange": exchange, "message": "Test local simplifié"})
+
+
+@app.route("/api/lexique")
+def api_lexique():
+    return jsonify(get_all_terms())
+
+
+@app.route("/api/lexique/categories")
+def api_lexique_categories():
+    return jsonify(get_lexique_categories())
+
+
+@app.route("/api/lexique/<term_id>")
+def api_lexique_term(term_id):
+    item = get_term(term_id)
+    if not item:
+        return jsonify({"ok": False, "error": "Terme introuvable"}), 404
+    return jsonify(item)
+
+
+@app.route("/api/lexique/search/<q>")
+def api_lexique_search(q):
+    return jsonify(search_terms(q))
+
+
+@app.route("/api/cot/<asset>")
+def api_cot(asset):
+    sess, denied = _role_guard("paid")
+    if denied:
+        return denied
+    force = request.args.get("refresh", "false").lower() == "true"
+    if force:
+        return jsonify(fetch_and_cache_cot(asset.upper(), True))
+    return jsonify(get_cot_history(asset.upper()))
+
+
+@app.route("/api/cot/sp500")
+@app.route("/api/cot_sp500")
+def api_cot_sp500():
+    sess, denied = _role_guard("paid")
+    if denied:
+        return denied
+    return jsonify(fetch_cot_sp500())
+
+
+@app.route("/api/cot/gold")
+@app.route("/api/cot_gold")
+def api_cot_gold():
+    sess, denied = _role_guard("paid")
+    if denied:
+        return denied
+    return jsonify(fetch_cot_gold())
+
+
+@app.route("/api/etf_flows")
+def api_etf_flows():
+    sess, denied = _role_guard("paid")
+    if denied:
+        return denied
+    return jsonify(fetch_etf_flows())
+
+
+@app.route("/api/etf/daily")
+def api_etf_daily():
+    sess, denied = _role_guard("paid")
+    if denied:
+        return denied
+    return jsonify(fetch_etf_daily_history())
+
+
+@app.route("/api/open_interest")
+def api_open_interest():
+    sess, denied = _role_guard("paid")
+    if denied:
+        return denied
+    return jsonify(fetch_open_interest())
+
+
+@app.route("/api/liquidations")
+def api_liquidations():
+    sess, denied = _role_guard("paid")
+    if denied:
+        return denied
+    return jsonify(fetch_liquidations())
+
+
+@app.route("/api/cvd")
+def api_cvd():
+    sess, denied = _role_guard("paid")
+    if denied:
+        return denied
+    symbol = (request.args.get("symbol") or "BTCUSDT").strip().upper()
+    interval = (request.args.get("interval") or "60").strip()
+    try:
+        limit = int(request.args.get("limit", "48") or "48")
+    except Exception:
+        limit = 48
+    limit = max(12, min(limit, 200))
+    return jsonify(get_cvd_data(symbol=symbol, interval=interval, limit=limit))
+
+
+@app.route("/api/cvd/multi")
+def api_cvd_multi():
+    sess, denied = _role_guard("paid")
+    if denied:
+        return denied
+    interval = (request.args.get("interval") or "60").strip()
+    symbols_raw = (request.args.get("symbols") or "BTCUSDT,ETHUSDT").strip()
+    symbols = [s.strip().upper() for s in symbols_raw.split(",") if s.strip()][:6]
+    return jsonify(get_cvd_multi(symbols=symbols, interval=interval))
+
+
+@app.route("/api/forex/all")
+def api_forex_all():
+    return jsonify(forex_full_scan())
+
+
+@app.route("/api/indices")
+@app.route("/api/indices/all")
+def api_indices_all():
+    keys = request.args.get("keys", "")
+    selected = [k.strip().upper() for k in keys.split(",") if k.strip()] or None
+    return jsonify(fetch_all_indices(selected))
+
+
+@app.route("/api/indices/mood")
+def api_indices_mood():
+    market = engine.get_last() or {}
+    market_info = engine.get_market_info() or {}
+    indices = fetch_all_indices(["VIX", "DXY", "SP500"])
+    idx = indices.get("indices", {})
+    btc = next((c for c in market.get("coins", []) if c.get("symbol") == "BTC"), {})
+    fear_greed = market_info.get("fear_greed", {}) or {}
+    dom = market_info.get("dominance", {}) or {}
+    return jsonify(calc_market_mood_score(
+        vix=(idx.get("VIX") or {}).get("price"),
+        fear_greed=fear_greed.get("value"),
+        dxy_change=(idx.get("DXY") or {}).get("change_pct"),
+        btc_dominance=dom.get("btc"),
+        sp500_change=(idx.get("SP500") or {}).get("change_pct"),
+        btc_change=btc.get("change_pct"),
+    ))
+
+
+@app.route("/api/indices/cross_analysis")
+def api_indices_cross_analysis():
+    market = engine.get_last() or {}
+    market_info = engine.get_market_info() or {}
+    indices = fetch_all_indices(["VIX", "DXY", "SP500"])
+    idx = indices.get("indices", {})
+    btc = next((c for c in market.get("coins", []) if c.get("symbol") == "BTC"), {})
+    fear_greed = market_info.get("fear_greed", {}) or {}
+    return jsonify(get_cross_market_analysis(
+        btc_change=btc.get("change_pct", 0),
+        fear_greed=fear_greed.get("value", 50),
+        vix=(idx.get("VIX") or {}).get("price", 18),
+        dxy_change=(idx.get("DXY") or {}).get("change_pct", 0),
+        sp500_change=(idx.get("SP500") or {}).get("change_pct", 0),
+    ))
+
+
+@app.route("/api/bybit/spot")
+def api_bybit_spot():
+    return jsonify({"coins": fetch_bybit_spot(), "ts": datetime.now().strftime("%H:%M:%S")})
+
+
+@app.route("/api/bybit/perp")
+def api_bybit_perp():
+    return jsonify({"perps": fetch_bybit_perp(), "ts": datetime.now().strftime("%H:%M:%S")})
+
+
+@app.route("/api/okx/spot")
+def api_okx_spot():
+    return jsonify({"coins": fetch_okx_spot(), "ts": datetime.now().strftime("%H:%M:%S")})
+
+
+@app.route("/api/okx/perp")
+def api_okx_perp():
+    return jsonify({"perps": fetch_okx_perp(), "ts": datetime.now().strftime("%H:%M:%S")})
+
+
+@app.route("/api/multi_exchange")
+def api_multi_exchange():
+    exchanges = [e.strip().lower() for e in request.args.get("exchanges", "").split(",") if e.strip()]
+    return jsonify(fetch_multi_exchange(exchanges or None))
+
+
+@app.route("/api/perp")
+def api_perp():
+    return jsonify({"perps": fetch_bybit_perp(), "ts": datetime.now().strftime("%H:%M:%S")})
+
+
+@app.route("/api/coingecko")
+def api_coingecko():
+    limit = int(request.args.get("limit", "100") or "100")
+    data = engine.get_last()
+    coins = data.get("coins", [])
+    if not coins:
+        scanned = engine.scan()
+        coins = (scanned or {}).get("coins", [])
+    return jsonify({"coins": coins[:limit], "count": len(coins[:limit]), "ts": datetime.now().strftime("%H:%M:%S")})
+
+
+@app.route("/api/backtest/strategies")
+def api_backtest_strategies():
+    sess, denied = _role_guard("paid")
+    if denied:
+        return denied
+    return jsonify({"ok": True, "strategies": STRATEGIES})
+
+
+@app.route("/api/backtest/run", methods=["POST"])
+def api_backtest_run():
+    sess, denied = _role_guard("paid")
+    if denied:
+        return denied
+    user_id = sess["user_id"]
+    data = _json_body()
+    result = run_backtest(
+        data.get("symbol", "BTC"),
+        data.get("strategy") or data.get("strategy_id") or "smart",
+        data.get("interval", "1h"),
+        float(data.get("capital", 1000)),
+        int(data.get("candles_limit", data.get("limit", 500))),
+        data.get("params", {}),
+    )
+    if result.get("ok"):
+        try:
+            save_backtest_result(user_id, result)
+        except Exception:
+            pass
+    return jsonify(result)
+
+
+@app.route("/api/backtest/compare", methods=["POST"])
+def api_backtest_compare():
+    sess, denied = _role_guard("paid")
+    if denied:
+        return denied
+    data = _json_body()
+    result = compare_strategies(
+        data.get("symbol", "BTC"),
+        data.get("interval", "1h"),
+        float(data.get("capital", 1000)),
+        int(data.get("candles_limit", data.get("limit", 500))),
+    )
+    return jsonify(result)
+
+
+@app.route("/api/backtest/history")
+def api_backtest_history():
+    sess, denied = _role_guard("paid")
+    if denied:
+        return denied
+    user_id = sess["user_id"]
+    return jsonify(get_backtest_history(user_id))
+
+
+
+
+# ══════════════════════════════════════════════════════════════
+# MORNING BRIEF IA
+# ══════════════════════════════════════════════════════════════
+import morning_brief as _mb
+
+@app.route("/brief")
+def view_brief():
+    token = request.args.get("token","")
+    if not token:
+        return _brief_err("🔒 Accès refusé","Lien d'accès requis."), 401
+    if not _mb.is_token_valid(token):
+        return _brief_err("⏰ Lien expiré","Brief expiré. Nouveau brief chaque matin à 8h."), 403
+    html = _mb._get_brief_html()
+    if not html:
+        return _brief_err("⏳ En cours","Brief en cours de génération, réessaie dans quelques minutes."), 503
+    return html, 200, {"Content-Type":"text/html; charset=utf-8","Cache-Control":"private, no-cache"}
+
+def _brief_err(title, msg):
+    return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>{title}</title>
+<style>body{{font-family:Arial;background:#12121e;color:#e0e0f0;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}}
+.b{{text-align:center;padding:40px;background:#1e1e30;border-radius:14px;max-width:420px;margin:20px}}
+h1{{color:#ffd700;font-size:22px;margin-bottom:12px}}p{{color:#888;line-height:1.6}}</style>
+</head><body><div class="b"><h1>{title}</h1><p>{msg}</p></div></body></html>"""
+
+
+def _resolve_base_url():
+    env_base = (os.environ.get("BASE_URL") or "").strip().rstrip("/")
+    if env_base:
+        return env_base
+    try:
+        return request.url_root.rstrip("/")
+    except Exception:
+        return "http://localhost:5000"
+
+@app.route("/api/brief/trigger", methods=["POST"])
+def api_brief_trigger():
+    sess, denied = _admin_guard()
+    if denied:
+        return denied
+    import threading
+    threading.Thread(target=_mb.run_morning_brief, daemon=True).start()
+    token    = _mb.generate_daily_token()
+    base_url = _resolve_base_url()
+    return jsonify({"ok":True,"message":"Brief en cours (30-60s)…","url":f"{base_url}/brief?token={token}"})
+
+@app.route("/api/brief/status")
+def api_brief_status():
+    # Morning Brief: statut et lien réservés aux comptes payants (ou admin)
+    sess, denied = _role_guard("paid")
+    if denied:
+        return denied
+    token    = _mb.generate_daily_token()
+    base_url = _resolve_base_url()
+    cached   = _mb._load_brief()
+    return jsonify({
+        "ready":  bool(_mb._get_brief_html()),
+        "date":   _mb._current_brief_date or (cached.get("date") if cached else None),
+        "score":  _mb._current_brief_score or (cached.get("score") if cached else None),
+        "signal": _mb._current_brief_signal or (cached.get("signal") if cached else None),
+        "url":    f"{base_url}/brief?token={token}"
+    })
+
+# ══════════════════════════════════════════════════════════════
+# PROXY COINGECKO (évite CORS depuis le browser)
+# ══════════════════════════════════════════════════════════════
+@app.route("/api/coin/<coin_id>")
+def api_coin(coin_id):
+    import requests as _r
+    try:
+        resp = _r.get(f"https://api.coingecko.com/api/v3/coins/{coin_id}",
+            params={"localization":"false","tickers":"false","market_data":"true",
+                    "community_data":"true","developer_data":"true","sparkline":"false"},
+            headers={"Accept":"application/json"}, timeout=12)
+        if resp.status_code == 429:
+            return jsonify({"error":"Rate limit CoinGecko — attends 30 secondes"}), 429
+        if resp.status_code == 404:
+            return jsonify({"error":f"Coin '{coin_id}' introuvable"}), 404
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({"error":str(e)}), 500
+
+@app.route("/api/coin/search")
+def api_coin_search():
+    import requests as _r
+    q = request.args.get("q","")
+    if not q or len(q)<2: return jsonify({"coins":[]})
+    try:
+        resp = _r.get("https://api.coingecko.com/api/v3/search",
+            params={"query":q}, headers={"Accept":"application/json"}, timeout=8)
+        coins = [{"id":c["id"],"name":c["name"],"symbol":c["symbol"].upper(),
+                  "thumb":c.get("thumb","")} for c in resp.json().get("coins",[])[:8]]
+        return jsonify({"coins":coins})
+    except Exception as e:
+        return jsonify({"coins":[],"error":str(e)})
+
+
+@app.route("/api/ai/analyze", methods=["POST"])
+def api_ai_analyze():
+    sess, denied = _role_guard("paid")
+    if denied:
+        return denied
+    data = _json_body()
+    prompt = (data.get("prompt") or "").strip()
+    if not prompt:
+        return jsonify({"ok": False, "error": "Prompt requis"}), 400
+    groq = engine.get_exchange_keys(sess["user_id"], "groq") or {}
+    anthropic = engine.get_exchange_keys(sess["user_id"], "anthropic") or {}
+    claude = engine.get_exchange_keys(sess["user_id"], "claude") or {}
+    result = analyze_text(
+        prompt,
+        system="Tu es un analyste crypto pedagogue, direct et prudent. Reponds en francais clair, structure simple, ton professionnel.",
+        max_tokens=900,
+        temperature=0.35,
+        user_keys={
+            "groq": groq.get("api_key", ""),
+            "anthropic": anthropic.get("api_key", ""),
+            "claude": claude.get("api_key", ""),
+        },
+    )
+    return jsonify(result), (200 if result.get("ok") else 503)
+
+# ══════════════════════════════════════════════════════════════
+# CONTACT & DEBUG
+# ══════════════════════════════════════════════════════════════
+@app.route("/api/contact", methods=["POST"])
+def api_contact():
+    data      = _json_body()
+    firstname = (data.get("firstname") or "").strip()
+    lastname  = (data.get("lastname")  or "").strip()
+    username  = (data.get("username")  or "").strip()
+    email     = (data.get("email")     or "").strip()
+    message   = (data.get("message")   or "").strip()
+    if not firstname or not lastname: return jsonify({"ok":False,"error":"Prénom et nom requis"}), 400
+    if not email or "@" not in email:  return jsonify({"ok":False,"error":"Email invalide"}), 400
+    if len(message)<10: return jsonify({"ok":False,"error":"Message trop court"}), 400
+    try:
+        conn = connect_sqlite()
+        conn.execute("""CREATE TABLE IF NOT EXISTS contact_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, firstname TEXT, lastname TEXT,
+            username TEXT, email TEXT, message TEXT, ts TEXT, read INTEGER DEFAULT 0)""")
+        conn.execute("INSERT INTO contact_messages (firstname,lastname,username,email,message,ts) VALUES (?,?,?,?,?,datetime('now'))",
+            (firstname, lastname, username, email, message))
+        conn.commit(); conn.close()
+    except Exception as e: print(f"[Contact DB] {e}")
+    try:
+        tk = os.environ.get("TG_TOKEN",""); ch = os.environ.get("TG_CHAT","")
+        if tk and ch:
+            req.post(f"https://api.telegram.org/bot{tk}/sendMessage",
+                json={"chat_id":ch,"text":f"📬 <b>CONTACT</b>\n👤 {firstname} {lastname}" + (f" (@{username})" if username else "") + f"\n📧 {email}\n\n💬 {message[:400]}","parse_mode":"HTML"},timeout=5)
+    except Exception as e: print(f"[Contact TG] {e}")
+    if ADMIN_NOTIFY_EMAIL:
+        _send_system_email(ADMIN_NOTIFY_EMAIL, f"Contact: {firstname} {lastname}",
+            f"<h3>Nouveau contact</h3><p><b>De:</b> {firstname} {lastname} ({email})</p><p>{message}</p>", reply_to=email)
+    return jsonify({"ok":True})
+
+@app.route("/api/debug/me")
+def api_debug_me():
+    sess = get_session()
+    if not sess: return jsonify({"error":"pas de session"})
+    try:
+        conn = connect_sqlite(); conn.row_factory = sqlite3.Row
+        row  = conn.execute("SELECT id,username,role,totp_enabled,tfa_enabled,email FROM users WHERE id=?", (sess["user_id"],)).fetchone()
+        conn.close()
+        if row:
+            d = dict(row); d["session_role"] = sess["role"]; return jsonify(d)
+    except Exception as e: return jsonify({"error":str(e)})
+    return jsonify(sess)
+
+@app.route("/api/admin/newsletter", methods=["POST"])
+def api_admin_newsletter():
+    sess, denied = _admin_guard()
+    if denied:
+        return denied
+    data    = _json_body()
+    subject = (data.get("subject") or "").strip()
+    body    = (data.get("body")    or "").strip()
+    if not subject or not body: return jsonify({"ok":False,"error":"Sujet et message requis"}), 400
+    conn = connect_sqlite(); conn.row_factory = sqlite3.Row
+    members = conn.execute("SELECT username,email,firstname FROM users WHERE email != '' AND email IS NOT NULL AND role != 'banned'").fetchall()
+    conn.close()
+    smtp = _smtp_status()
+    if not smtp["configured"]:
+        reason = "SMTP non configure"
+        if smtp["missing"]:
+            reason += " (" + ", ".join(smtp["missing"]) + ")"
+        return jsonify({"ok": False, "error": reason, "smtp": smtp}), 400
+    year = datetime.now().year; sent = 0; failed = 0; errors = []
+    for m in members:
+        name = m["firstname"] or m["username"]
+        html = f"""<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f4f4f8;font-family:Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f8;padding:30px 20px">
+<tr><td><table width="100%" style="max-width:600px;margin:0 auto;background:#1e1e30;border-radius:14px;overflow:hidden">
+<tr><td style="background:linear-gradient(135deg,#1a1a2e,#16213e);padding:20px;text-align:center">
+<div style="font-size:20px;font-weight:700;color:#ffd700">📊 CryptoScanner Pro</div></td></tr>
+<tr><td style="padding:24px 32px;color:#e0e0f0;font-size:14px;line-height:1.7">
+<p style="color:#888;margin:0 0 12px">Bonjour {name},</p><div>{body}</div></td></tr>
+<tr><td style="background:#12121e;padding:14px;text-align:center">
+<p style="color:#444;font-size:11px;margin:0">© {year} CryptoScanner Pro</p></td></tr>
+</table></td></tr></table></body></html>"""
+        try:
+            ok, err = _send_system_email(m["email"], subject, html)
+            if ok:
+                sent += 1
+            else:
+                failed += 1
+                if len(errors) < 3:
+                    errors.append(f"{m['email']}: {err}")
+        except Exception as e:
+            failed += 1
+            if len(errors) < 3:
+                errors.append(f"{m['email']}: {e}")
+    return jsonify({"ok":True,"sent":sent,"failed":failed,"total":len(members),"errors":errors,"smtp":smtp})
+
+if __name__ == "__main__":
+    start_runtime_services()
+    port = int(os.environ.get("PORT", "5000"))
+    socketio.run(app, host="0.0.0.0", port=port)
