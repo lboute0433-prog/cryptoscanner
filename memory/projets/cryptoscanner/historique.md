@@ -13,3 +13,4 @@ tags: [projet/cryptoscanner]
 - [2026-04-12 18h00 — Canal FREE + Bot /start + /lier](../../archives/2026-04-12-18h00-cryptoscanner-canal-free-bot-start.md)
 - [2026-04-12 20h00 — Verif.md : Bugs + Features (logos, historique, IA, permissions)](../../archives/2026-04-12-20h00-cryptoscanner-verif-bugs-features.md)
 - [2026-04-12 22h00 — verif.md #4 : Paramètres Plateforme Admin](../../archives/2026-04-12-22h00-cryptoscanner-verif-4-params-plateforme.md)
+- [2026-04-13 14h00 — Fixes bugs + Wallet Tracker Phase 1 + GitHub](../../archives/2026-04-13-14h00-cryptoscanner-fixes-wallet-tracker-github.md)
