@@ -701,7 +701,7 @@ def api_auth_register():
         return jsonify(result), 400
 
     user = None
-    conn = connect_sqlite()
+    conn = get_connection()
     conn.row_factory = sqlite3.Row
     try:
         user = conn.execute("SELECT id, username, email, firstname, lastname FROM users WHERE username=?", (username,)).fetchone()
@@ -1961,9 +1961,15 @@ def api_brief_status():
 # ══════════════════════════════════════════════════════════════
 # PROXY COINGECKO (évite CORS depuis le browser)
 # ══════════════════════════════════════════════════════════════
+_coin_cache: dict = {}
+
 @app.route("/api/coin/<coin_id>")
 def api_coin(coin_id):
-    import requests as _r
+    import requests as _r, time as _time
+    # Cache 5 min pour éviter les 429 CoinGecko sur Railway
+    cached = _coin_cache.get(coin_id)
+    if cached and _time.time() < cached["expires"]:
+        return jsonify(cached["data"])
     try:
         resp = _r.get(f"https://api.coingecko.com/api/v3/coins/{coin_id}",
             params={"localization":"false","tickers":"false","market_data":"true",
@@ -1973,7 +1979,9 @@ def api_coin(coin_id):
             return jsonify({"error":"Rate limit CoinGecko — attends 30 secondes"}), 429
         if resp.status_code == 404:
             return jsonify({"error":f"Coin '{coin_id}' introuvable"}), 404
-        return jsonify(resp.json())
+        data = resp.json()
+        _coin_cache[coin_id] = {"data": data, "expires": _time.time() + 300}
+        return jsonify(data)
     except Exception as e:
         return jsonify({"error":str(e)}), 500
 
