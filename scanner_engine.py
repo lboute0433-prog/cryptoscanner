@@ -394,6 +394,10 @@ class ScannerEngine:
             conn.commit(); conn.close()
             return {"ok":True}
         except (sqlite3.IntegrityError, Exception) as e:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
             conn.close()
             msg = str(e).lower()
             if "unique" in msg or "duplicate" in msg or "already exists" in msg:
@@ -778,31 +782,146 @@ class ScannerEngine:
         self._market_info = info
         return info
 
+    def _detect_volume_whales(self) -> list:
+        """Détecte les mouvements whales via anomalies de volume Binance (sans API key)."""
+        whales = []
+        try:
+            r = requests.get(BINANCE_TICKER, timeout=10)
+            items = r.json() if r.status_code == 200 else []
+            if not isinstance(items, list):
+                return []
+            now_ts = datetime.now().strftime("%H:%M:%S")
+            for t in items:
+                sym = (t.get("symbol") or "")
+                if not sym.endswith("USDT"):
+                    continue
+                base = sym.replace("USDT", "")
+                if "_" in base or len(base) > 10 or base in STABLE_SYMBOLS:
+                    continue
+                try:
+                    vol = float(t.get("quoteVolume") or 0)
+                    chg = abs(float(t.get("priceChangePercent") or 0))
+                    price = float(t.get("lastPrice") or 0)
+                    count = int(t.get("count") or 0)
+                    # Critères whale selon capitalisation estimée
+                    # Large cap (BTC/ETH/BNB/SOL/XRP) : vol > $300M et mouv > 4%
+                    # Mid cap : vol > $30M et mouv > 8%
+                    # Small cap : vol > $5M et mouv > 15%
+                    is_whale = False
+                    category = ""
+                    if vol > 300_000_000 and chg > 4:
+                        is_whale = True; category = "LARGE CAP"
+                    elif 30_000_000 < vol <= 300_000_000 and chg > 8:
+                        is_whale = True; category = "MID CAP"
+                    elif 5_000_000 < vol <= 30_000_000 and chg > 15:
+                        is_whale = True; category = "SMALL CAP"
+                    if is_whale:
+                        direction = "🟢 PUMP" if float(t.get("priceChangePercent", 0)) > 0 else "🔴 DUMP"
+                        whales.append({
+                            "symbol": base,
+                            "amount": vol,
+                            "type":   "volume_anomaly",
+                            "from":   category,
+                            "to":     direction,
+                            "msg":    f"Volume 24h: ${vol/1e6:.1f}M · Mouvement: {t.get('priceChangePercent',0)}% · Prix: ${price:,.4f}",
+                            "ts":     now_ts,
+                            "trades": count,
+                        })
+                except Exception:
+                    continue
+            # Trier par volume décroissant, garder top 15
+            whales.sort(key=lambda x: x["amount"], reverse=True)
+            return whales[:15]
+        except Exception as e:
+            print(f"[Whale/Binance] {e}")
+            return []
+
+    def _detect_btc_whales(self) -> list:
+        """Détecte les gros transferts BTC via mempool.space (sans API key)."""
+        whales = []
+        try:
+            # Récupérer les derniers blocs
+            r = requests.get("https://mempool.space/api/v1/blocks", timeout=8)
+            if r.status_code != 200:
+                return []
+            blocks = r.json()
+            if not blocks:
+                return []
+            # Prendre le dernier bloc
+            latest_block = blocks[0]
+            block_hash = latest_block.get("id", "")
+            if not block_hash:
+                return []
+            # Récupérer les transactions du bloc
+            r2 = requests.get(f"https://mempool.space/api/block/{block_hash}/txs/0", timeout=8)
+            if r2.status_code != 200:
+                return []
+            txs = r2.json()
+            # Prix BTC pour conversion USD
+            btc_price = 0
+            try:
+                tp = requests.get("https://blockchain.info/ticker", timeout=4).json()
+                btc_price = float(tp.get("USD", {}).get("last", 0))
+            except Exception:
+                btc_price = 80000  # fallback
+            # Filtrer les grosses transactions (> 10 BTC)
+            now_ts = datetime.now().strftime("%H:%M:%S")
+            for tx in txs:
+                try:
+                    out_val = sum(o.get("value", 0) for o in (tx.get("vout") or [])) / 1e8
+                    if out_val < 10:
+                        continue
+                    usd_val = out_val * btc_price
+                    if usd_val < 500_000:
+                        continue
+                    whales.append({
+                        "symbol": "BTC",
+                        "amount": usd_val,
+                        "type":   "on_chain_transfer",
+                        "from":   "on-chain",
+                        "to":     "inconnu",
+                        "msg":    f"{out_val:,.2f} BTC transférés (${usd_val/1e6:.2f}M) · bloc #{latest_block.get('height', '?')}",
+                        "ts":     now_ts,
+                    })
+                except Exception:
+                    continue
+            # Top 5 par valeur
+            whales.sort(key=lambda x: x["amount"], reverse=True)
+            return whales[:5]
+        except Exception as e:
+            print(f"[Whale/BTC] {e}")
+            return []
+
     def fetch_whale_alerts(self):
         try:
-            if not WHALE_API_KEY:
-                self._whale_alerts = []
-                return []
-            since = int(time.time()) - 3600
-            r = requests.get(WHALE_ALERT_URL, params={
-                "api_key": WHALE_API_KEY,
-                "min_value": 1000000,
-                "start": since
-            }, timeout=10)
-            data = r.json()
-            whales = []
-            for tx in data.get("transactions", [])[:10]:
-                whales.append({
-                    "symbol":  tx.get("symbol","?").upper(),
-                    "amount":  tx.get("amount_usd", 0),
-                    "type":    tx.get("transaction_type","transfer"),
-                    "from":    tx.get("from",{}).get("owner_type","?"),
-                    "to":      tx.get("to",{}).get("owner_type","?"),
-                    "msg":     f"{tx.get('amount',0):,.0f} {tx.get('symbol','').upper()} transférés",
-                    "ts":      datetime.fromtimestamp(tx.get("timestamp",0)).strftime("%H:%M:%S")
-                })
-            self._whale_alerts = whales
-            return whales
+            if WHALE_API_KEY:
+                since = int(time.time()) - 3600
+                r = requests.get(WHALE_ALERT_URL, params={
+                    "api_key": WHALE_API_KEY,
+                    "min_value": 1000000,
+                    "start": since
+                }, timeout=10)
+                data = r.json()
+                whales = []
+                for tx in data.get("transactions", [])[:10]:
+                    whales.append({
+                        "symbol":  tx.get("symbol","?").upper(),
+                        "amount":  tx.get("amount_usd", 0),
+                        "type":    tx.get("transaction_type","transfer"),
+                        "from":    tx.get("from",{}).get("owner_type","?"),
+                        "to":      tx.get("to",{}).get("owner_type","?"),
+                        "msg":     f"{tx.get('amount',0):,.0f} {tx.get('symbol','').upper()} transférés",
+                        "ts":      datetime.fromtimestamp(tx.get("timestamp",0)).strftime("%H:%M:%S")
+                    })
+                self._whale_alerts = whales
+                return whales
+            # Fallback gratuit : volume Binance + BTC on-chain
+            vol_whales = self._detect_volume_whales()
+            btc_whales = self._detect_btc_whales()
+            # BTC on-chain en premier, puis anomalies volume
+            combined = btc_whales + vol_whales
+            self._whale_alerts = combined
+            return combined
         except Exception as e:
             print(f"[Whale] {e}"); return []
 

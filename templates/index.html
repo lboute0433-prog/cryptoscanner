@@ -5737,14 +5737,57 @@ async function loadWhales() {
     el.innerHTML = '<div style="color:var(--muted);padding:20px">Aucun mouvement détecté pour le moment.</div>';
     return;
   }
-  el.innerHTML = data.map(w => `
+
+  const btcWhales  = data.filter(w => w.type === 'on_chain_transfer');
+  const volWhales  = data.filter(w => w.type === 'volume_anomaly');
+
+  const sectionTitle = (label) =>
+    `<div style="font-size:.65rem;color:var(--accent);font-weight:700;letter-spacing:1px;margin:12px 0 6px;text-transform:uppercase">${label}</div>`;
+
+  const renderBtc = (w) => {
+    const amtStr = w.amount ? `<span style="font-size:.75rem;color:#f7931a;font-weight:700">$${fmtVol(w.amount)}</span>` : '';
+    return `
+    <div class="alert-row" style="margin-bottom:8px">
+      <span class="alert-sym" style="color:#f7931a">🟠 BTC</span>
+      <span style="display:inline-block;font-size:.65rem;background:#f7931a22;color:#f7931a;border:1px solid #f7931a55;border-radius:4px;padding:1px 6px;font-weight:700;margin-right:4px">BTC ON-CHAIN</span>
+      ${amtStr}
+      <span class="alert-cond" style="font-size:.72rem">${w.msg}</span>
+      <span style="font-size:.7rem;color:var(--muted)">${w.ts||''}</span>
+    </div>`;
+  };
+
+  const capColor = (cat) => {
+    if (cat === 'LARGE CAP') return '#00e5ff';
+    if (cat === 'MID CAP')   return '#a78bfa';
+    return '#fbbf24';
+  };
+
+  const renderVol = (w) => {
+    const cat   = w.from || '';
+    const col   = capColor(cat);
+    const dirCol = (w.to||'').includes('PUMP') ? 'var(--green)' : 'var(--red)';
+    const amtStr = w.amount ? `<span style="font-size:.75rem;color:var(--accent);font-weight:700">$${fmtVol(w.amount)}</span>` : '';
+    return `
     <div class="alert-row" style="margin-bottom:8px">
       <span class="alert-sym" style="color:var(--yellow)">🐳 ${w.symbol}</span>
-      <span class="alert-cond">${w.msg}</span>
-      ${w.from ? `<span style="font-size:.7rem;color:var(--muted)">${w.from} → ${w.to}</span>` : ''}
+      <span style="display:inline-block;font-size:.65rem;background:${col}22;color:${col};border:1px solid ${col}55;border-radius:4px;padding:1px 6px;font-weight:700;margin-right:4px">${cat}</span>
+      ${amtStr}
+      <span style="font-size:.75rem;color:${dirCol};font-weight:700;margin-right:4px">${w.to||''}</span>
+      <span class="alert-cond" style="font-size:.72rem">${w.msg}</span>
       <span style="font-size:.7rem;color:var(--muted)">${w.ts||''}</span>
-      ${w.amount ? `<span style="font-size:.75rem;color:var(--accent);font-weight:700">$${fmtVol(w.amount)}</span>` : ''}
-    </div>`).join('');
+    </div>`;
+  };
+
+  let html = '';
+  if (btcWhales.length) {
+    html += sectionTitle('🔗 BTC On-Chain Transfers');
+    html += btcWhales.map(renderBtc).join('');
+  }
+  if (volWhales.length) {
+    html += sectionTitle('📊 Anomalies de Volume Binance');
+    html += volWhales.map(renderVol).join('');
+  }
+  el.innerHTML = html;
 }
 
 // ── WALLET TRACKER ───────────────────────────────────────────
@@ -9827,12 +9870,30 @@ async function _invSearchNow(q) {
 
 function invSearch() {
   var q = (_el('inv-search-input')||{}).value||'';
+  q = q.trim();
   if(!q) return;
-  var id = q.toLowerCase().trim().replace(/\s+/g,'-');
+  // Normaliser : minuscules, espaces → tirets, retirer accents
+  var id = q.toLowerCase()
+             .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+             .replace(/\s+/g,'-')
+             .replace(/[^a-z0-9\-]/g,'');
   invLoad(_cgIdMap[id] || id);
 }
 
-async function loadInvestorPage() {}
+async function loadInvestorPage() {
+  // Restaurer l'état correct du tab à chaque activation
+  if (_invData) {
+    // Un coin est déjà chargé — afficher le contenu existant
+    _hide('inv-empty-state');
+    _hide('inv-loading');
+    _show('inv-content');
+  } else {
+    // Aucun coin chargé — afficher l'empty state avec les raccourcis
+    _show('inv-empty-state');
+    _hide('inv-loading');
+    _hide('inv-content');
+  }
+}
 
 async function invLoad(coinId) {
   var id = (coinId||'').toLowerCase().trim();
@@ -9846,10 +9907,11 @@ async function invLoad(coinId) {
 
   try {
     var r = await fetch('/api/coin/'+encodeURIComponent(id));
-    if(r.status===429) throw new Error('Rate limit - attends 30 secondes');
-    if(r.status===404) throw new Error('Projet "'+id+'" introuvable - utilise le nom complet (bitcoin, ethereum...)');
+    if(r.status===429) throw new Error('__rate_limit__:'+id);
+    if(r.status===404) throw new Error('Projet "'+id+'" introuvable — utilise le nom complet (ex: bitcoin, ethereum, solana)');
     if(!r.ok) throw new Error('Erreur API: '+r.status);
     var d = await r.json();
+    if(d.error === 'rate_limit') throw new Error('__rate_limit__:'+id);
     if(d.error) throw new Error(d.error);
     _invData = d;
     var md = d.market_data||{};
@@ -10051,8 +10113,45 @@ async function invLoad(coinId) {
 
   } catch(e) {
     _hide('inv-loading'); _show('inv-empty-state');
-    var es=_el('inv-empty-state');
-    if(es){es.innerHTML='';var msg=document.createElement('div');msg.style.cssText='text-align:center;padding:30px';var et=document.createElement('div');et.style.cssText='font-size:2rem;margin-bottom:10px';et.textContent='❌';var em=document.createElement('div');em.style.cssText='color:var(--red);font-size:.8rem;margin-bottom:8px';em.textContent=e.message;var eh=document.createElement('div');eh.style.cssText='color:var(--muted);font-size:.7rem';eh.textContent='Exemples valides: bitcoin, ethereum, solana, aave';msg.appendChild(et);msg.appendChild(em);msg.appendChild(eh);es.appendChild(msg);}
+    var es = _el('inv-empty-state');
+    if(es) {
+      es.innerHTML = '';
+      var msg = document.createElement('div');
+      msg.style.cssText = 'text-align:center;padding:30px';
+
+      var isRateLimit = e.message && e.message.indexOf('__rate_limit__') === 0;
+      var rateCoinId  = isRateLimit ? e.message.split(':')[1] : null;
+
+      var et = document.createElement('div');
+      et.style.cssText = 'font-size:2rem;margin-bottom:10px';
+      et.textContent = isRateLimit ? '⏳' : '❌';
+
+      var em = document.createElement('div');
+      em.style.cssText = 'color:var(--yellow);font-size:.8rem;margin-bottom:8px;font-weight:700';
+      em.textContent = isRateLimit
+        ? 'CoinGecko temporairement indisponible (trop de requêtes)'
+        : e.message;
+
+      var eh = document.createElement('div');
+      eh.style.cssText = 'color:var(--muted);font-size:.7rem;margin-bottom:14px';
+      eh.textContent = isRateLimit
+        ? 'L\'API publique CoinGecko est saturée sur Railway. Patiente 30 secondes ou réessaie.'
+        : 'Exemples valides : bitcoin, ethereum, solana, aave';
+
+      msg.appendChild(et);
+      msg.appendChild(em);
+      msg.appendChild(eh);
+
+      if(isRateLimit && rateCoinId) {
+        var retryBtn = document.createElement('button');
+        retryBtn.textContent = '↻ Réessayer';
+        retryBtn.style.cssText = 'background:rgba(0,229,255,.12);border:1px solid rgba(0,229,255,.3);color:var(--accent);padding:8px 20px;border-radius:8px;cursor:pointer;font-family:var(--font);font-size:.75rem;font-weight:700';
+        retryBtn.onclick = function(){ invLoad(rateCoinId); };
+        msg.appendChild(retryBtn);
+      }
+
+      es.appendChild(msg);
+    }
     console.error('[Investor]', e);
   }
 }

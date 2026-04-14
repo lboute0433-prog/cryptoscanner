@@ -702,21 +702,33 @@ def api_auth_register():
         return jsonify(result), 400
 
     user = None
-    conn = get_connection()
-    conn.row_factory = sqlite3.Row
     try:
-        user = conn.execute("SELECT id, username, email, firstname, lastname FROM users WHERE username=?", (username,)).fetchone()
-    finally:
-        conn.close()
+        conn = get_connection()
+        conn.row_factory = sqlite3.Row
+        try:
+            user = conn.execute("SELECT id, username, email, firstname, lastname FROM users WHERE username=?", (username,)).fetchone()
+        finally:
+            try:
+                conn.close()
+            except Exception:
+                pass
+    except Exception as _db_err:
+        print(f"[Register] Impossible de récupérer l'utilisateur après insertion: {_db_err}")
 
     if user:
-        engine.log_action(user["id"], user["username"], "REGISTER", f"Email:{email}", ip)
+        try:
+            engine.log_action(user["id"], user["username"], "REGISTER", f"Email:{email}", ip)
+        except Exception as _log_err:
+            print(f"[Register] log_action échoué: {_log_err}")
         claude_key = (data.get("claude_key") or "").strip()
         openai_key = (data.get("openai_key") or "").strip()
-        if claude_key:
-            engine.save_exchange_keys(user["id"], "claude", claude_key, "")
-        if openai_key:
-            engine.save_exchange_keys(user["id"], "openai", openai_key, "")
+        try:
+            if claude_key:
+                engine.save_exchange_keys(user["id"], "claude", claude_key, "")
+            if openai_key:
+                engine.save_exchange_keys(user["id"], "openai", openai_key, "")
+        except Exception as _keys_err:
+            print(f"[Register] save_exchange_keys échoué: {_keys_err}")
 
     admin_subject = f"Nouvelle inscription CryptoScanner: {username}"
     admin_html = (
@@ -744,7 +756,12 @@ def api_auth_register():
         print(f"[Email register user] {err_user}")
 
     # Créer une session immédiatement après inscription (auto-login fiable)
-    session_token = engine.create_session(user["id"], ip) if user else None
+    session_token = None
+    if user:
+        try:
+            session_token = engine.create_session(user["id"], ip)
+        except Exception as _sess_err:
+            print(f"[Register] create_session échoué: {_sess_err}")
 
     resp = make_response(jsonify({
         "ok": True,
@@ -1964,6 +1981,16 @@ def api_brief_status():
 # ══════════════════════════════════════════════════════════════
 _coin_cache: dict = {}
 
+def _cg_headers():
+    """Headers CoinGecko — supporte la clé Demo API (gratuite) via variable d'env."""
+    import os
+    key = os.environ.get("COINGECKO_API_KEY", "")
+    headers = {"Accept": "application/json",
+               "User-Agent": "CryptoScannerPro/1.0"}
+    if key:
+        headers["x-cg-demo-api-key"] = key
+    return headers
+
 @app.route("/api/coin/<coin_id>")
 def api_coin(coin_id):
     import requests as _r, time as _time
@@ -1975,11 +2002,15 @@ def api_coin(coin_id):
         resp = _r.get(f"https://api.coingecko.com/api/v3/coins/{coin_id}",
             params={"localization":"false","tickers":"false","market_data":"true",
                     "community_data":"true","developer_data":"true","sparkline":"false"},
-            headers={"Accept":"application/json"}, timeout=12)
+            headers=_cg_headers(), timeout=15)
         if resp.status_code == 429:
-            return jsonify({"error":"Rate limit CoinGecko — attends 30 secondes"}), 429
+            # Si on a un cache périmé, le servir quand même plutôt que 429
+            stale = _coin_cache.get(coin_id)
+            if stale:
+                return jsonify(stale["data"])
+            return jsonify({"error":"rate_limit"}), 429
         if resp.status_code == 404:
-            return jsonify({"error":f"Coin '{coin_id}' introuvable"}), 404
+            return jsonify({"error":f"Coin '{coin_id}' introuvable sur CoinGecko"}), 404
         data = resp.json()
         _coin_cache[coin_id] = {"data": data, "expires": _time.time() + 300}
         return jsonify(data)
@@ -1993,9 +2024,11 @@ def api_coin_search():
     if not q or len(q)<2: return jsonify({"coins":[]})
     try:
         resp = _r.get("https://api.coingecko.com/api/v3/search",
-            params={"query":q}, headers={"Accept":"application/json"}, timeout=8)
+            params={"query":q}, headers=_cg_headers(), timeout=8)
         coins = [{"id":c["id"],"name":c["name"],"symbol":c["symbol"].upper(),
-                  "thumb":c.get("thumb","")} for c in resp.json().get("coins",[])[:8]]
+                  "thumb":c.get("thumb",""),
+                  "market_cap_rank":c.get("market_cap_rank",0)}
+                 for c in resp.json().get("coins",[])[:8]]
         return jsonify({"coins":coins})
     except Exception as e:
         return jsonify({"coins":[],"error":str(e)})
