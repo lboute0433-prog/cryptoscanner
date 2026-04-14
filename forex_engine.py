@@ -18,6 +18,9 @@ import os
 import time
 import threading
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+
+_PARIS = ZoneInfo("Europe/Paris")
 from typing import Optional
 
 DB_PATH = "cryptoscanner.db"
@@ -63,12 +66,17 @@ FOREX_PAIRS = {
 # Toutes les paires en dict plat
 ALL_PAIRS = {**FOREX_PAIRS["majors"], **FOREX_PAIRS["crosses"], **FOREX_PAIRS["exotics"]}
 
-# ── Sessions de trading Forex (heure Paris / CET) ────────────
+# ── Sessions de trading Forex (heure Paris CET=UTC+1 / CEST=UTC+2) ─────────
+# Heures d'ouverture réelles en heure Paris :
+#   Sydney   : 00h–09h  (session nuit/matin Paris)
+#   Tokyo    : 01h–10h
+#   Londres  : 09h–18h  (LSE 09:00, forex 09:00-18:00 CET)
+#   New York : 15h–23h  (NYSE ouvre 15h30, forex NY 14h-23h CET)
 TRADING_SESSIONS = {
-    "sydney":    {"open":  7, "close": 16, "emoji":"🇦🇺", "name":"Sydney"},
+    "sydney":    {"open":  0, "close":  9, "emoji":"🇦🇺", "name":"Sydney"},
     "tokyo":     {"open":  1, "close": 10, "emoji":"🇯🇵", "name":"Tokyo"},
-    "london":    {"open":  8, "close": 17, "emoji":"🇬🇧", "name":"Londres"},
-    "new_york":  {"open": 14, "close": 23, "emoji":"🇺🇸", "name":"New York"},
+    "london":    {"open":  9, "close": 18, "emoji":"🇬🇧", "name":"Londres"},
+    "new_york":  {"open": 15, "close": 23, "emoji":"🇺🇸", "name":"New York"},
 }
 
 # Paires les plus actives par session
@@ -451,7 +459,7 @@ def analyze_forex_pair(pair: str, candles: list = None) -> Optional[dict]:
 
 def _is_forex_open() -> bool:
     """Le forex est fermé du vendredi 22h UTC au dimanche 22h UTC (heure Paris : sam 00h - lun 00h)."""
-    now = datetime.now()
+    now = datetime.now(_PARIS)
     wd = now.weekday()  # 0=lun, 5=sam, 6=dim
     return not (wd == 5 or wd == 6)
 
@@ -465,7 +473,7 @@ def get_active_sessions() -> list:
     if not _is_forex_open():
         return []
 
-    now_hour = datetime.now().hour
+    now_hour = datetime.now(_PARIS).hour
     active   = []
 
     for session_id, s in TRADING_SESSIONS.items():
@@ -480,8 +488,8 @@ def get_active_sessions() -> list:
                 "pairs":   SESSION_PAIRS.get(session_id, []),
             })
 
-    # Détecter l'overlap London/NY (14h-17h Paris)
-    if 14 <= now_hour < 17:
+    # Détecter l'overlap London/NY (17h-18h Paris = pic de liquidité)
+    if 17 <= now_hour < 18:
         active.append({
             "id":    "overlap",
             "name":  "Overlap Londres/NY 🔥",
@@ -495,7 +503,7 @@ def get_active_sessions() -> list:
 
 def get_session_overview() -> dict:
     """Vue complète des sessions avec heures d'ouverture."""
-    now_hour = datetime.now().hour
+    now_hour = datetime.now(_PARIS).hour
     is_weekend = not _is_forex_open()
     sessions = []
     for sid, s in TRADING_SESSIONS.items():
@@ -526,9 +534,9 @@ def get_session_overview() -> dict:
 
 
 def _get_best_session(hour: int) -> str:
-    if 14 <= hour < 17:   return "⚡ OVERLAP London/NY — Liquidité maximale"
-    elif 8 <= hour < 17:  return "🇬🇧 Session Londres — Haute liquidité EUR/GBP"
-    elif 14 <= hour < 23: return "🇺🇸 Session New York — Haute liquidité USD"
+    if 17 <= hour < 18:   return "⚡ OVERLAP London/NY — Liquidité maximale"
+    elif 9 <= hour < 18:  return "🇬🇧 Session Londres — Haute liquidité EUR/GBP"
+    elif 15 <= hour < 23: return "🇺🇸 Session New York — Haute liquidité USD"
     elif 1 <= hour < 10:  return "🇯🇵 Session Tokyo — Paires JPY/AUD actives"
     else:                  return "🌙 Faible liquidité — Marchés calmes"
 

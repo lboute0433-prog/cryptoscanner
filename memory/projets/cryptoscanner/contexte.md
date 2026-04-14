@@ -1,7 +1,7 @@
 ---
 projet: cryptoscanner
 phase: en-cours
-derniere-session: 2026-04-13
+derniere-session: 2026-04-14
 tags: [projet/cryptoscanner]
 ---
 
@@ -9,14 +9,14 @@ tags: [projet/cryptoscanner]
 
 ## État courant
 - Phase : Développement actif — polish UI + Telegram FREE opérationnel + signaux avancés + Wallet Tracker
-- Dernière session : 2026-04-13 14h00 — Fixes bugs + Wallet Tracker Phase 1 + GitHub push
-- En cours : Railway build en cours après force push `master` → `main-cryptoScanner-/-Codex`
+- Dernière session : 2026-04-14 14h00 — Fix 4 bugs (inscription, investor, forex, signaux Telegram)
+- En cours : Railway redéploiement à vérifier (webhook potentiellement cassé)
 
 ## Stack technique
 - Backend : Python 3.11, Flask, Flask-SocketIO
 - Base de données : SQLite local / PostgreSQL prod (via `db.py` + `DATABASE_URL`)
 - Déploiement : Railway (auto-deploy sur push GitHub) — URL : https://web-production-34b51.up.railway.app
-- GitHub : https://github.com/lboute0433-prog/cryptoscanner (branche : `main-cryptoScanner-/-Codex`)
+- GitHub : https://github.com/lboute0433-prog/cryptoscanner (branche : `master`)
 - IA : Groq (principal) + Anthropic (fallback) + OpenAI via `ai_provider.py`
 - Frontend : HTML/CSS/JS dans `templates/`
 
@@ -33,25 +33,25 @@ tags: [projet/cryptoscanner]
 - **IA multi-providers** : Groq + Anthropic + OpenAI
 - **Matrice permissions** : visitor/member/paid/admin par page
 - **Paramètres Plateforme** : 4 settings seedés en DB (pump_pct=5, scan_interval=10, vol_mult=3, exchange=coingecko)
-- **Auto-login inscription** : token explicite via X-Session-Token header
+- **Auto-login inscription** : token retourné directement par `api_auth_register`
 - **CROWDED POSITIONS** : try/catch isolé pour cross_analysis
-- **Marchés forex** : `_is_forex_open()` → fermé samedi+dimanche
+- **Sessions forex** : ZoneInfo("Europe/Paris") — Sydney 00-09, Tokyo 01-10, Londres 09-18, New York 15-23
 - **Wallet Tracker Phase 1** : ETH/BTC/SOL via APIs gratuites dans page Whales
+- **Funding rate fix** : `_fetch_bybit_funding()` guard `fr != ""` + try/except par entrée
+- **Signaux anti-spam** : max 3/cycle, cooldown 1h, score min 85, filtre ADR ≥25% range 24h
+- **MA20 + ADR** dans messages Telegram signaux
+- **Analyse Investisseur** : 🔍 cliquable (`onclick="invSearch()"`)
 - Rôles : visitor(0) / member(1) / paid(2) / vip(3) / admin(4)
 
 ## Variables Railway configurées
 - `TG_CHAT_FREE` = `-1003997628346`
 - `SITE_URL` = `https://web-production-34b51.up.railway.app`
 
-## verif.md — État
-- ✅ #1 à #9 : tous terminés
-- ✅ #10 : marchés ouverts week-end — corrigé
-- ✅ #11 : Wallet Tracker Phase 1 livré
-
 ## Prochaines étapes
-1. Vérifier déploiement Railway (build terminé ?)
-2. Tester bug inscription en prod
-3. Tester Wallet Tracker (ETH/BTC/SOL)
+1. Vérifier Railway auto-deploy (reconnecter webhook si nécessaire)
+2. Tester Analyse Investisseur en prod (vérifier rate-limit CoinGecko)
+3. Ajuster `MAX_PER_CYCLE` et score min signaux selon observation prod
 4. **Wallet Tracker Phase 2** : wallets whales connus (Binance, Jump, a16z…)
 5. `technical_indicators.py` : centraliser RSI/EMA/ATR/Bollinger
-6. PayPal webhook : après serveur dédié
+6. Réfléchir au nouveau nom de la plateforme (marchés financiers au sens large)
+7. PayPal webhook : après serveur dédié

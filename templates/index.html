@@ -3630,45 +3630,28 @@ async function cfgRegister() {
         okEl.textContent = '✅ Compte créé !' + emailInfo;
         okEl.style.display = '';
       }
-      // Auto-login immédiat → redirection vers Mon Compte
-      setTimeout(async function() {
-        try {
-          var lResp = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({username: us, password: pw})
-          });
-          var lData = await lResp.json();
-          // Vérifier que le login a retourné un vrai token (pas juste un challenge 2FA)
-          if (lData.ok && lData.token) {
-            // Passer le token explicitement en header pour éviter les problèmes de cookie
-            var me = await fetch('/api/auth/me', {
-              headers: {'X-Session-Token': lData.token}
-            });
-            var mj = await me.json();
-            currentUser = mj.logged ? mj : {username: lData.username, role: lData.role, user_id: lData.user_id, subscription_status: lData.subscription_status};
-            cfgUpdateProfile(currentUser);
-            if (typeof showLoggedIn === 'function') showLoggedIn(currentUser.username || lData.username);
-            if (typeof checkTOTPStatus === 'function') checkTOTPStatus();
-            if (typeof checkTelegramLink === 'function') checkTelegramLink();
-            if (typeof loadUserApiKeys === 'function') loadUserApiKeys();
-            showTab('settings');
-          } else if (lData.ok && lData.requires_2fa) {
-            // 2FA requis → basculer vers connexion (rare pour un nouveau compte)
-            cfgSwitchTab('login');
-            var uField = document.getElementById('cfg-username');
-            if (uField) uField.value = us;
-          } else {
-            // Auto-login échoué → basculer vers l'onglet connexion avec username pré-rempli
-            cfgSwitchTab('login');
-            var uField = document.getElementById('cfg-username');
-            if (uField) uField.value = us;
-          }
-        } catch(e) {
-          console.warn('[AutoLogin après inscription]', e);
+      if (d.token) {
+        // Token retourné directement par l'API register — pas besoin d'un second appel login
+        currentUser = {
+          username: d.username || us,
+          role: d.role || 'member',
+          user_id: d.user_id,
+          subscription_status: d.subscription_status || 'inactive'
+        };
+        cfgUpdateProfile(currentUser);
+        if (typeof showLoggedIn === 'function') showLoggedIn(currentUser.username);
+        if (typeof checkTOTPStatus === 'function') checkTOTPStatus();
+        if (typeof checkTelegramLink === 'function') checkTelegramLink();
+        if (typeof loadUserApiKeys === 'function') loadUserApiKeys();
+        setTimeout(function() { showTab('settings'); }, 600);
+      } else {
+        // Fallback : aller sur onglet connexion avec username pré-rempli
+        setTimeout(function() {
           cfgSwitchTab('login');
-        }
-      }, 600);
+          var uField = document.getElementById('cfg-username');
+          if (uField) uField.value = us;
+        }, 800);
+      }
     } else {
       if(errEl) errEl.textContent = '❌ ' + (d.error||'Erreur inconnue');
     }
@@ -8283,7 +8266,7 @@ setInterval(loadDashMood, 300000);
 <div class="inv-search-wrap">
   <input id="inv-search-input" placeholder="Bitcoin, Ethereum, SOL, TAO..." 
          oninput="invSearchSuggest(this.value)" onkeydown="if(event.key==='Enter')invSearch()">
-  <span style="position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:1.1rem">🔍</span>
+  <span style="position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:1.1rem;cursor:pointer" onclick="invSearch()">🔍</span>
   <div class="inv-suggestions" id="inv-suggestions"></div>
 </div>
 

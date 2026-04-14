@@ -262,6 +262,7 @@ def analyze_coin_smart(symbol, candles_15m, candles_1h=None):
     prev_price = closes_15m[-4]  # 1h avant (4 × 15min)
     atr        = calc_atr(candles_15m)
     bb_low, bb_mid, bb_high = calc_bollinger(closes_15m)
+    ma20       = calc_ema(closes_15m, 20)
 
     if avg_vol is None or avg_vol == 0: return None
 
@@ -272,14 +273,25 @@ def analyze_coin_smart(symbol, candles_15m, candles_1h=None):
     # Filtre minimum — ignorer les coins sans volume
     if volume_usd < MIN_VOLUME_USD: return None
 
+    # ADR approximation : range max/min sur les 96 dernières bougies 15m (≈24h)
+    last_96 = candles_15m[-96:] if len(candles_15m) >= 96 else candles_15m
+    adr_high = max(c["h"] for c in last_96)
+    adr_low  = min(c["l"] for c in last_96)
+    adr_pct  = (adr_high - adr_low) / last_price * 100 if last_price > 0 else 0
+
     signals = []
     score   = 0
 
     # ── 1. Variation de prix significative ────────────────────
-    if price_chg >= PUMP_PRICE_PCT:
+    # Filtre ADR : le move doit représenter ≥25% du range journalier (signal réel vs bruit)
+    adr_threshold = adr_pct * 0.25 if adr_pct > 0 else PUMP_PRICE_PCT
+    pump_min = max(PUMP_PRICE_PCT, adr_threshold)
+    dump_min = min(DUMP_PRICE_PCT, -adr_threshold)
+
+    if price_chg >= pump_min:
         signals.append({"label":"🚀 PUMP +{:.1f}%".format(price_chg), "type":"green", "weight":30})
         score += 30
-    elif price_chg <= DUMP_PRICE_PCT:
+    elif price_chg <= dump_min:
         signals.append({"label":"💥 DUMP {:.1f}%".format(price_chg), "type":"red", "weight":30})
         score += 30
 
@@ -348,6 +360,13 @@ def analyze_coin_smart(symbol, candles_15m, candles_1h=None):
     red_w   = sum(s["weight"] for s in signals if s["type"]=="red")
     direction = "buy" if green_w > red_w else "sell" if red_w > green_w else "neutral"
 
+    # Contexte MA20 : position du prix par rapport à la moyenne mobile
+    ma20_ctx = None
+    if ma20:
+        ma20_diff = (last_price - ma20) / ma20 * 100
+        ma20_ctx  = {"value": round(ma20, 6), "diff_pct": round(ma20_diff, 2),
+                     "above": last_price > ma20}
+
     return {
         "symbol":      symbol,
         "price":       last_price,
@@ -362,6 +381,8 @@ def analyze_coin_smart(symbol, candles_15m, candles_1h=None):
         "breakout":    breakout,
         "divergence":  div,
         "bb_pos":      round((last_price - bb_low) / (bb_high - bb_low) * 100, 1) if bb_low and bb_high and (bb_high-bb_low)>0 else None,
+        "ma20":        ma20_ctx,
+        "adr_pct":     round(adr_pct, 2),
     }
 
 def build_telegram_alert(signal):
@@ -430,6 +451,17 @@ def build_telegram_alert(signal):
         lines.append(f"")
         lines.append(f"🔀 {d['name']}")
         lines.append(f"   {d['desc']}")
+
+    # MA20 contexte
+    if signal.get("ma20"):
+        m = signal["ma20"]
+        pos = "AU-DESSUS ↑" if m["above"] else "EN-DESSOUS ↓"
+        lines.append(f"")
+        lines.append(f"📏 MA20: <b>{pos}</b> ({m['diff_pct']:+.1f}%)")
+
+    # ADR info
+    if signal.get("adr_pct"):
+        lines.append(f"📐 ADR 24h: <b>{signal['adr_pct']:.1f}%</b>")
 
     lines.append(f"")
     lines.append(f"🚫 <i>Ceci ne constitue pas un conseil d'achat ou de vente. CryptoScanner Pro fournit uniquement des données techniques à titre informatif.</i>")

@@ -267,22 +267,24 @@ _sent_macro_alerts = set()
 
 def _send_smart_alerts(signals):
     global _alerted_signals
-    now_slot = datetime.now().strftime('%H%M')
-    slot = int(now_slot[-2:]) // 30
-    hour = now_slot[:2]
-    
+    hour = datetime.now().strftime('%H')  # Cooldown 1h par symbole (was 30min)
+
+    sent_this_cycle = 0
+    MAX_PER_CYCLE = 3  # Anti-spam : max 3 alertes par cycle de scan
+
     for s in signals:
-        if s["score"] < 80: continue
+        if sent_this_cycle >= MAX_PER_CYCLE: break
+        if s["score"] < 85: continue        # Score min relevé à 85 (was 80)
         if s["direction"] == "neutral": continue
-        
-        key = f"{s['symbol']}_{s['direction']}_{hour}_{slot}"
-        
+
+        key = f"{s['symbol']}_{s['direction']}_{hour}"
+
         with _alert_lock:
             if key in _alerted_signals: continue
             _alerted_signals.add(key)
             if len(_alerted_signals) > 500:
                 _alerted_signals = set(list(_alerted_signals)[-200:])
-        
+
         msg = build_telegram_alert(s)
         _tk = TELEGRAM_TOKEN
         _ch = TELEGRAM_CHAT
@@ -292,6 +294,7 @@ def _send_smart_alerts(signals):
             except: pass
         # Smart Signals = contenu premium → membres payants + VIP uniquement
         engine._broadcast_to_members(msg, min_role="paid")
+        sent_this_cycle += 1
 
 
 def _send_retrace_alert(symbol: str, rsi_exit: dict, coin: dict):
@@ -739,14 +742,25 @@ def api_auth_register():
     if not ok_user:
         print(f"[Email register user] {err_user}")
 
-    return jsonify({
+    # Créer une session immédiatement après inscription (auto-login fiable)
+    session_token = engine.create_session(user["id"], ip) if user else None
+
+    resp = make_response(jsonify({
         "ok": True,
+        "token": session_token,
+        "user_id": user["id"] if user else None,
+        "username": username,
+        "role": role,
+        "subscription_status": subscription_status,
         "email_sent_user": ok_user,
         "email_sent_admin": ok_admin,
         "email_error_user": err_user if not ok_user else "",
         "email_error_admin": err_admin if not ok_admin else "",
         "email_notice": "Compte cree. L'email de bienvenue est facultatif tant que le SMTP n'est pas configure.",
-    })
+    }))
+    if session_token:
+        _set_session_cookie(resp, session_token)
+    return resp
 
 
 @app.route("/api/auth/login", methods=["POST"])
