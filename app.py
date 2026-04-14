@@ -12,6 +12,7 @@ CryptoScanner Pro V11 — App Principale (CORRIGÉ)
 from flask import Flask, render_template, jsonify, request, make_response, redirect
 from flask_socketio import SocketIO
 import threading, time, os, sys, sqlite3
+from db import get_connection
 import requests as req
 import smtplib
 from email.mime.text import MIMEText
