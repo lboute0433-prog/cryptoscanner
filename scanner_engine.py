@@ -393,8 +393,12 @@ class ScannerEngine:
             )
             conn.commit(); conn.close()
             return {"ok":True}
-        except sqlite3.IntegrityError:
-            conn.close(); return {"ok":False, "error":"Nom d'utilisateur déjà pris"}
+        except (sqlite3.IntegrityError, Exception) as e:
+            conn.close()
+            msg = str(e).lower()
+            if "unique" in msg or "duplicate" in msg or "already exists" in msg:
+                return {"ok":False, "error":"Nom d'utilisateur déjà pris"}
+            raise
 
     def get_user_by_id(self, user_id):
         conn = get_connection()
