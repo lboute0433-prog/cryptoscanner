@@ -75,12 +75,15 @@ LOGIN_MODAL_HTML = r"""
         <label style="display:block;font-size:.65rem;color:var(--muted);letter-spacing:1px;margin-bottom:6px">NOM D&apos;UTILISATEUR <span style="color:var(--red)">*</span></label>
         <input id="lm-reg-username" class="form-input" style="width:100%" placeholder="jean_crypto" required>
       </div>
-      <div style="margin-bottom:8px">
-        <label style="display:block;font-size:.65rem;color:var(--muted);letter-spacing:1px;margin-bottom:6px">MOT DE PASSE <span style="color:var(--red)">*</span></label>
-        <div style="position:relative">
-          <input id="lm-reg-password" class="form-input" style="width:100%;padding-right:38px" type="password" placeholder="Min. 8 caract&egrave;res" required>
-          <button onclick="var i=document.getElementById('lm-reg-password');i.type=i.type==='password'?'text':'password'" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:.9rem">&#128065;</button>
-        </div>
+      <div style="margin-bottom:12px">
+        <label style="display:block;font-size:.65rem;color:var(--muted);letter-spacing:1px;margin-bottom:6px">CONFIRMER LE MOT DE PASSE <span style="color:var(--red)">*</span></label>
+        <input id="lm-reg-password-confirm" class="form-input" style="width:100%" type="password" placeholder="R&eacute;p&eacute;tez le mot de passe" required>
+      </div>
+      <div style="margin-bottom:14px;display:flex;align-items:flex-start;gap:10px">
+        <input type="checkbox" id="lm-reg-terms" style="margin-top:2px;cursor:pointer">
+        <label for="lm-reg-terms" style="font-size:.65rem;color:var(--muted);cursor:pointer;line-height:1.4">
+          J&apos;accepte les <a href="#" style="color:var(--accent)">conditions d&apos;utilisation</a> et la politique de confidentialit&eacute; de CryptoScanner Pro.
+        </label>
       </div>
       <div id="lm-reg-error" style="color:var(--red);font-size:.7rem;margin-bottom:10px;min-height:14px"></div>
       <button onclick="doLmRegister()" class="btn btn-primary" style="width:100%;padding:12px;font-size:.82rem">&#x2736; CR&Eacute;ER MON COMPTE</button>
@@ -184,8 +187,12 @@ async function doLmRegister() {
   var em = (document.getElementById('lm-reg-email') || {}).value || '';
   var us = (document.getElementById('lm-reg-username') || {}).value || '';
   var pw = (document.getElementById('lm-reg-password') || {}).value || '';
+  var pwc = (document.getElementById('lm-reg-password-confirm') || {}).value || '';
+  var terms = (document.getElementById('lm-reg-terms') || {}).checked;
   if (!em || !us || !pw) { if (errEl) errEl.textContent = 'Champs obligatoires manquants'; return; }
+  if (pw !== pwc) { if (errEl) errEl.textContent = 'Les mots de passe ne correspondent pas'; return; }
   if (pw.length < 8) { if (errEl) errEl.textContent = 'Mot de passe trop court (min. 8 caract\\u00e8res)'; return; }
+  if (!terms) { if (errEl) errEl.textContent = 'Veuillez accepter les conditions'; return; }
   if (errEl) errEl.textContent = '';
   if (btn) { btn.disabled = true; btn.textContent = 'Cr\\u00e9ation...'; }
   try {
@@ -198,7 +205,14 @@ async function doLmRegister() {
       if (typeof cfgUpdateProfile === 'function') cfgUpdateProfile(window.currentUser);
       if (typeof showLoggedIn === 'function') showLoggedIn(window.currentUser.username);
       closeLoginModal();
-      startOnboarding(d.username || us);
+      if (typeof showToast === 'function') showToast('Compte cr\\u00e9\\u00e9 avec succ\\u00e8s !', 'success');
+      // Onboarding ou Redirection directe si onboarding echoue
+      try {
+        startOnboarding(d.username || us);
+      } catch(e) {
+        if (typeof showTab === 'function') showTab('dashboard');
+        else window.location.reload();
+      }
     } else {
       if (errEl) errEl.textContent = '\\u274c ' + (d.error || 'Erreur lors de la cr\\u00e9ation');
     }
