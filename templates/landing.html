@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CryptoScanner Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300;1,9..144,400;1,9..144,500&family=IBM+Plex+Mono:wght@300;400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #09090b;
+  --bg2:      #0e0e10;
+  --bg3:      #141416;
+  --card:     #131315;
+  --border:   #232325;
+  --border2:  #1c1c1e;
+  --gold:     #c9a84c;
+  --gold2:    #e2c47a;
+  --gold3:    #8c6e2a;
+  --gold-dim: rgba(201,168,76,.07);
+  --gold-glow:rgba(201,168,76,.14);
+  --gold-line:rgba(201,168,76,.22);
+  --green:    #34d399;
+  --green-dim:rgba(52,211,153,.1);
+  --red:      #f87171;
+  --red-dim:  rgba(248,113,113,.1);
+  --text:     #e8e3d8;
+  --text2:    #b0a99c;
+  --muted:    #5c5850;
+  --serif:    'Fraunces', serif;
+  --mono:     'IBM Plex Mono', monospace;
+  --sans:     'DM Sans', sans-serif;
+  --radius:   4px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Noise */
+body::after {
+  content:'';
+  position:fixed; inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events:none;
+  z-index:9999;
+}
+
+/* ── TICKER ─── */
+.ticker {
+  background:#000;
+  border-bottom:1px solid var(--border2);
+  padding:7px 0;
+  overflow:hidden;
+  white-space:nowrap;
+}
+.ticker-track {
+  display:inline-flex;
+  gap:56px;
+  animation:ticker 36s linear infinite;
+}
+@keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+.t-item { font-family:var(--mono); font-size:.68rem; color:var(--muted); letter-spacing:.3px; }
+.t-item .sym { color:var(--text2); font-weight:500; margin-right:8px; }
+.t-item .up  { color:var(--green); }
+.t-item .dn  { color:var(--red); }
+
+/* ── NAV ─── */
+nav {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 48px; height:52px;
+  background:rgba(9,9,11,.92);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border2);
+  position:sticky; top:0; z-index:200;
+}
+.nav-logo {
+  font-family:var(--serif);
+  font-size:.95rem; font-weight:400;
+  color:var(--text); letter-spacing:.2px;
+}
+.nav-logo em { color:var(--gold); font-style:italic; }
+.nav-links { display:flex; gap:32px; }
+.nav-links a {
+  font-size:.78rem; font-weight:400; color:var(--muted);
+  text-decoration:none; letter-spacing:.3px; transition:color .2s;
+}
+.nav-links a:hover { color:var(--text2); }
+.nav-live {
+  display:flex; align-items:center; gap:6px;
+  font-family:var(--mono); font-size:.62rem; color:var(--muted);
+}
+.live-dot {
+  width:5px; height:5px; border-radius:50%;
+  background:var(--green);
+  box-shadow:0 0 6px rgba(52,211,153,.6);
+  animation:pulse 2s ease infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.nav-actions { display:flex; gap:10px; align-items:center; }
+.btn-link {
+  font-size:.75rem; font-weight:400; color:var(--muted);
+  background:none; border:none; cursor:pointer; transition:color .2s;
+  font-family:var(--sans);
+}
+.btn-link:hover { color:var(--text2); }
+.btn-gold {
+  padding:7px 20px;
+  background:transparent;
+  border:1px solid var(--gold3);
+  color:var(--gold);
+  font-family:var(--sans); font-size:.75rem; font-weight:500;
+  letter-spacing:.3px; cursor:pointer; transition:.2s;
+}
+.btn-gold:hover {
+  background:var(--gold-dim);
+  border-color:var(--gold);
+  box-shadow:0 0 16px var(--gold-glow);
+}
+
+/* ── HERO ─── */
+.hero {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  min-height:calc(92vh - 52px);
+  border-bottom:1px solid var(--border2);
+}
+
+/* LEFT */
+.hero-left {
+  padding:72px 56px;
+  display:flex; flex-direction:column; justify-content:center;
+  border-right:1px solid var(--border2);
+  position:relative;
+}
+.hero-left::before {
+  content:'';
+  position:absolute; top:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg, transparent, var(--gold-line), transparent);
+}
+.hero-eyebrow {
+  display:flex; align-items:center; gap:10px;
+  font-family:var(--mono); font-size:.62rem; color:var(--gold);
+  letter-spacing:2px; text-transform:uppercase; margin-bottom:32px;
+}
+.hero-eyebrow::before {
+  content:'';
+  display:inline-block; width:20px; height:1px;
+  background:linear-gradient(90deg, transparent, var(--gold));
+}
+.hero h1 {
+  font-family:var(--serif);
+  font-size:clamp(2.4rem, 4.5vw, 4rem);
+  font-weight:300; line-height:1.1;
+  letter-spacing:-1.5px; color:var(--text);
+  margin-bottom:24px;
+}
+.hero h1 em { color:var(--gold2); font-style:italic; }
+.hero h1 .dim { color:var(--muted); font-weight:200; }
+.hero-desc {
+  font-size:.88rem; font-weight:300; color:var(--muted);
+  line-height:1.8; max-width:440px; margin-bottom:44px;
+}
+
+/* METRICS ROW */
+.hero-metrics {
+  display:grid; grid-template-columns:repeat(4,1fr);
+  border:1px solid var(--border2);
+  margin-bottom:40px;
+}
+.hm {
+  padding:16px 18px;
+  border-right:1px solid var(--border2);
+}
+.hm:last-child { border-right:none; }
+.hm-label {
+  font-family:var(--mono); font-size:.56rem; color:var(--muted);
+  letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px;
+}
+.hm-val {
+  font-family:var(--mono); font-size:1.1rem; font-weight:500;
+  color:var(--gold2); letter-spacing:-.5px; line-height:1;
+}
+.hm-val.neutral { color:var(--text2); }
+.hm-sub { font-size:.58rem; color:var(--muted); margin-top:3px; }
+
+.hero-cta { display:flex; gap:12px; align-items:center; }
+.btn-hero-gold {
+  padding:11px 32px;
+  background:linear-gradient(135deg, var(--gold3), var(--gold));
+  border:none; color:#09090b;
+  font-family:var(--sans); font-size:.82rem; font-weight:600;
+  letter-spacing:.5px; cursor:pointer; transition:.2s;
+}
+.btn-hero-gold:hover {
+  box-shadow:0 6px 28px rgba(201,168,76,.22);
+  transform:translateY(-1px);
+}
+.btn-hero-ghost {
+  padding:11px 28px;
+  background:transparent;
+  border:1px solid var(--border);
+  color:var(--muted);
+  font-family:var(--sans); font-size:.82rem; font-weight:400;
+  letter-spacing:.3px; cursor:pointer; transition:.2s;
+}
+.btn-hero-ghost:hover { border-color:var(--muted); color:var(--text2); }
+
+/* RIGHT — Terminal window */
+.hero-right {
+  background:#000;
+  display:flex; align-items:center; justify-content:center;
+  padding:48px 44px;
+}
+.terminal {
+  width:100%; max-width:520px;
+  border:1px solid var(--border);
+  background:#070709;
+}
+.terminal-bar {
+  background:#0d0d0f;
+  border-bottom:1px solid var(--border2);
+  padding:10px 16px;
+  display:flex; align-items:center; gap:8px;
+}
+.tb-dot { width:9px; height:9px; border-radius:50%; }
+.tb-dot.r { background:#ff5f56; }
+.tb-dot.y { background:#ffbd2e; }
+.tb-dot.g { background:#27c93f; }
+.tb-title {
+  flex:1; text-align:center;
+  font-family:var(--mono); font-size:.6rem; color:var(--muted);
+  letter-spacing:.5px;
+}
+.terminal-body {
+  padding:22px 22px 26px;
+  font-family:var(--mono); font-size:.72rem; line-height:1.9;
+}
+.tl { display:block; }
+.tl-prompt { color:var(--gold3); }
+.tl-cmd    { color:var(--text2); }
+.tl-comment{ color:#333; }
+.tl-key    { color:var(--text2); }
+.tl-val    { color:var(--gold2); }
+.tl-val.green { color:var(--green); }
+.tl-val.red   { color:var(--red); }
+.tl-val.muted { color:var(--muted); }
+.tl-divider {
+  border:none; border-top:1px solid #1a1a1c; margin:10px 0;
+}
+.tl-cursor {
+  display:inline-block; width:7px; height:13px;
+  background:var(--gold); vertical-align:middle; margin-left:2px;
+  animation:blink .9s steps(1) infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* ── SECTION LAYOUT ─── */
+.section { padding:80px 48px; }
+.section-inner { max-width:1120px; margin:0 auto; }
+.section-label {
+  font-family:var(--mono); font-size:.6rem; color:var(--gold3);
+  letter-spacing:2.5px; text-transform:uppercase; margin-bottom:16px;
+}
+.section-heading {
+  font-family:var(--serif);
+  font-size:clamp(1.6rem, 3vw, 2.6rem);
+  font-weight:300; color:var(--text);
+  letter-spacing:-1px; line-height:1.2; margin-bottom:14px;
+}
+.section-heading em { color:var(--gold2); font-style:italic; }
+.section-desc {
+  font-size:.85rem; font-weight:300; color:var(--muted);
+  max-width:480px; line-height:1.8;
+}
+
+/* ── FEATURES ─── */
+.features-bg { background:var(--bg2); border-top:1px solid var(--border2); border-bottom:1px solid var(--border2); }
+.features-grid {
+  display:grid; grid-template-columns:repeat(3,1fr);
+  gap:1px; background:var(--border2);
+  border:1px solid var(--border2); margin-top:56px;
+}
+.feat {
+  background:var(--bg2); padding:36px 28px; transition:background .2s;
+}
+.feat:hover { background:var(--card); }
+.feat-num {
+  font-family:var(--mono); font-size:.58rem; color:var(--gold3);
+  letter-spacing:2px; margin-bottom:16px;
+}
+.feat h4 {
+  font-family:var(--serif); font-size:1rem; font-weight:400;
+  color:var(--text2); margin-bottom:10px; letter-spacing:-.1px;
+}
+.feat p {
+  font-size:.8rem; font-weight:300; color:var(--muted);
+  line-height:1.75; margin-bottom:16px;
+}
+.feat-tier {
+  display:inline-block; font-family:var(--mono);
+  font-size:.58rem; font-weight:500; letter-spacing:1.5px;
+  padding:3px 10px; border:1px solid;
+}
+.ft-free { color:var(--green); border-color:rgba(52,211,153,.2); }
+.ft-pro  { color:var(--gold); border-color:rgba(201,168,76,.25); }
+.ft-vip  { color:var(--text2); border-color:var(--border); }
+
+/* ── DATA STRIP — exchanges ─── */
+.exchanges-strip {
+  border-top:1px solid var(--border2);
+  border-bottom:1px solid var(--border2);
+  padding:20px 48px;
+  display:flex; align-items:center; justify-content:center; gap:64px;
+  background:#000;
+}
+.ex-label {
+  font-family:var(--mono); font-size:.58rem; color:var(--muted);
+  letter-spacing:2px; text-transform:uppercase; white-space:nowrap;
+}
+.ex-list { display:flex; gap:48px; align-items:center; }
+.ex {
+  font-family:var(--mono); font-size:.72rem; font-weight:500;
+  color:var(--muted); letter-spacing:1px; transition:color .2s;
+}
+.ex:hover { color:var(--gold2); }
+.ex-sep { width:1px; height:16px; background:var(--border2); }
+
+/* ── STATS ROW ─── */
+.stats-row {
+  display:grid; grid-template-columns:repeat(4,1fr);
+  border-bottom:1px solid var(--border2);
+}
+.stat-cell {
+  padding:40px 32px;
+  border-right:1px solid var(--border2);
+  text-align:center;
+}
+.stat-cell:last-child { border-right:none; }
+.stat-num {
+  font-family:var(--serif); font-size:2.8rem; font-weight:300;
+  color:var(--text); letter-spacing:-2px; line-height:1;
+  margin-bottom:8px;
+}
+.stat-gold { color:var(--gold2); }
+.stat-label {
+  font-family:var(--mono); font-size:.6rem; color:var(--muted);
+  letter-spacing:1.5px; text-transform:uppercase;
+}
+
+/* ── HOW IT WORKS ─── */
+.steps-grid {
+  display:grid; grid-template-columns:repeat(3,1fr);
+  gap:1px; background:var(--border2);
+  border:1px solid var(--border2); margin-top:56px;
+}
+.step {
+  background:var(--bg); padding:40px 28px;
+}
+.step-num {
+  font-family:var(--mono); font-size:.62rem; color:var(--gold3);
+  letter-spacing:2px; margin-bottom:20px;
+}
+.step h4 {
+  font-family:var(--serif); font-size:1rem; font-weight:400;
+  color:var(--text2); margin-bottom:10px;
+}
+.step p {
+  font-size:.8rem; font-weight:300; color:var(--muted); line-height:1.75;
+}
+
+/* ── PRICING ─── */
+.pricing-bg { background:var(--bg2); border-top:1px solid var(--border2); }
+.pricing-grid {
+  display:grid; grid-template-columns:repeat(3,1fr);
+  gap:1px; background:var(--border2);
+  border:1px solid var(--border2); margin-top:56px;
+}
+.plan { background:var(--bg2); padding:40px 28px; position:relative; }
+.plan.featured { background:var(--card); }
+.plan-accent {
+  position:absolute; top:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg, transparent, var(--gold), transparent);
+  display:none;
+}
+.plan.featured .plan-accent { display:block; }
+.plan-label {
+  font-family:var(--mono); font-size:.58rem; font-weight:500;
+  letter-spacing:2.5px; color:var(--muted); text-transform:uppercase;
+  margin-bottom:20px;
+}
+.plan.featured .plan-label { color:var(--gold); }
+.plan-price {
+  font-family:var(--serif); font-size:3rem; font-weight:300;
+  color:var(--text); letter-spacing:-2px; line-height:1;
+  margin-bottom:4px;
+}
+.plan-period {
+  font-family:var(--mono); font-size:.62rem; color:var(--muted);
+  margin-bottom:28px;
+}
+.plan-rule { border:none; border-top:1px solid var(--border2); margin-bottom:22px; }
+.plan-features { list-style:none; margin-bottom:28px; }
+.plan-features li {
+  display:flex; align-items:baseline; gap:10px;
+  font-size:.78rem; font-weight:300; color:var(--muted);
+  padding:8px 0; border-bottom:1px solid var(--border2);
+}
+.plan-features li::before { content:'—'; color:var(--gold3); font-family:var(--mono); font-size:.65rem; flex-shrink:0; }
+.plan-features li.off { opacity:.3; }
+.plan-features li.off::before { content:'–'; color:var(--muted); }
+.btn-plan {
+  width:100%; padding:11px;
+  font-family:var(--sans); font-size:.78rem; font-weight:500;
+  letter-spacing:.3px; cursor:pointer; transition:.2s;
+}
+.btn-plan-outline {
+  background:transparent; border:1px solid var(--border); color:var(--muted);
+}
+.btn-plan-outline:hover { border-color:var(--muted); color:var(--text2); }
+.btn-plan-gold {
+  background:linear-gradient(135deg, var(--gold3), var(--gold));
+  border:none; color:#09090b; font-weight:600;
+}
+.btn-plan-gold:hover {
+  box-shadow:0 4px 22px rgba(201,168,76,.2);
+  transform:translateY(-1px);
+}
+
+/* ── CTA ─── */
+.cta-section {
+  padding:96px 48px; text-align:center;
+  position:relative; overflow:hidden;
+  border-top:1px solid var(--border2);
+}
+.cta-section::before {
+  content:'';
+  position:absolute; width:480px; height:480px;
+  background:radial-gradient(circle, rgba(201,168,76,.05) 0%, transparent 70%);
+  top:50%; left:50%; transform:translate(-50%,-50%);
+  pointer-events:none;
+}
+.cta-rule {
+  width:48px; height:1px;
+  background:linear-gradient(90deg, transparent, var(--gold), transparent);
+  margin:0 auto 28px;
+}
+.cta-section h2 {
+  font-family:var(--serif);
+  font-size:clamp(2rem, 5vw, 4rem);
+  font-weight:300; color:var(--text);
+  letter-spacing:-2px; line-height:1.1; margin-bottom:16px;
+}
+.cta-section h2 em { color:var(--gold2); font-style:italic; }
+.cta-section p {
+  font-size:.88rem; font-weight:300; color:var(--muted);
+  max-width:440px; margin:0 auto 40px; line-height:1.8;
+}
+.cta-btns { display:flex; gap:16px; justify-content:center; align-items:center; }
+.cta-note {
+  margin-top:16px; font-family:var(--mono);
+  font-size:.6rem; color:var(--muted); letter-spacing:1px;
+}
+
+/* ── FOOTER ─── */
+footer {
+  background:#000;
+  border-top:1px solid var(--border2);
+  padding:48px 48px 28px;
+}
+.footer-inner { max-width:1120px; margin:0 auto; }
+.footer-top {
+  display:grid; grid-template-columns:2fr 1fr 1fr 1fr;
+  gap:32px; margin-bottom:40px;
+}
+.footer-logo {
+  font-family:var(--serif); font-size:.9rem; font-weight:400;
+  color:var(--text2); margin-bottom:10px;
+}
+.footer-logo em { color:var(--gold); font-style:italic; }
+.footer-tagline { font-size:.75rem; font-weight:300; color:var(--muted); line-height:1.7; max-width:240px; }
+.footer-col h4 {
+  font-family:var(--mono); font-size:.58rem; font-weight:500;
+  letter-spacing:2px; color:var(--muted); text-transform:uppercase;
+  margin-bottom:16px;
+}
+.footer-col a {
+  display:block; font-size:.75rem; font-weight:300;
+  color:var(--muted); text-decoration:none; margin-bottom:10px; transition:color .2s;
+}
+.footer-col a:hover { color:var(--text2); }
+.footer-rule { border:none; border-top:1px solid var(--border2); margin-bottom:22px; }
+.footer-bottom {
+  display:flex; justify-content:space-between;
+  font-family:var(--mono); font-size:.58rem; color:var(--muted); letter-spacing:.5px;
+}
+
+/* ── RESPONSIVE ─── */
+@media(max-width:960px){
+  .hero { grid-template-columns:1fr; min-height:auto; }
+  .hero-right { display:none; }
+  .features-grid { grid-template-columns:1fr 1fr; }
+  .pricing-grid { grid-template-columns:1fr; gap:0; }
+  .steps-grid { grid-template-columns:1fr; gap:0; }
+  .stats-row { grid-template-columns:1fr 1fr; }
+  .stat-cell { border-bottom:1px solid var(--border2); }
+  nav { padding:0 20px; }
+  .nav-links,.nav-live { display:none; }
+  .section { padding:56px 24px; }
+  .footer-top { grid-template-columns:1fr 1fr; }
+  .exchanges-strip { gap:24px; flex-wrap:wrap; padding:16px 24px; }
+  .hero-left { padding:48px 24px; }
+  .hero-metrics { grid-template-columns:1fr 1fr; }
+}
+@media(max-width:600px){
+  .features-grid { grid-template-columns:1fr; }
+  .footer-top { grid-template-columns:1fr; }
+  .stats-row { grid-template-columns:1fr 1fr; }
+  .cta-btns { flex-direction:column; align-items:stretch; }
+  .hero-cta { flex-direction:column; align-items:stretch; }
+}
+</style>
+</head>
+<body>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-track">
+    <span class="t-item"><span class="sym">BTC/USDT</span><span class="up">67,420 ▲ +2.34%</span></span>
+    <span class="t-item"><span class="sym">ETH/USDT</span><span class="dn">3,280 ▼ -0.87%</span></span>
+    <span class="t-item"><span class="sym">SOL/USDT</span><span class="up">142.50 ▲ +4.12%</span></span>
+    <span class="t-item"><span class="sym">BNB/USDT</span><span class="up">412.80 ▲ +1.05%</span></span>
+    <span class="t-item"><span class="sym">XRP/USDT</span><span class="dn">0.6230 ▼ -1.22%</span></span>
+    <span class="t-item"><span class="sym">AVAX/USDT</span><span class="up">35.20 ▲ +2.88%</span></span>
+    <span class="t-item"><span class="sym">COT BTC</span><span class="up">NET LONG +12.4k</span></span>
+    <span class="t-item"><span class="sym">FEAR&GREED</span>68 — GREED</span>
+    <span class="t-item"><span class="sym">DXY</span><span class="dn">104.2 ▼ -0.3%</span></span>
+    <span class="t-item"><span class="sym">FUNDING BTC</span>-0.003%</span>
+    <!-- duplicate -->
+    <span class="t-item"><span class="sym">BTC/USDT</span><span class="up">67,420 ▲ +2.34%</span></span>
+    <span class="t-item"><span class="sym">ETH/USDT</span><span class="dn">3,280 ▼ -0.87%</span></span>
+    <span class="t-item"><span class="sym">SOL/USDT</span><span class="up">142.50 ▲ +4.12%</span></span>
+    <span class="t-item"><span class="sym">BNB/USDT</span><span class="up">412.80 ▲ +1.05%</span></span>
+    <span class="t-item"><span class="sym">XRP/USDT</span><span class="dn">0.6230 ▼ -1.22%</span></span>
+    <span class="t-item"><span class="sym">AVAX/USDT</span><span class="up">35.20 ▲ +2.88%</span></span>
+    <span class="t-item"><span class="sym">COT BTC</span><span class="up">NET LONG +12.4k</span></span>
+    <span class="t-item"><span class="sym">FEAR&GREED</span>68 — GREED</span>
+    <span class="t-item"><span class="sym">DXY</span><span class="dn">104.2 ▼ -0.3%</span></span>
+    <span class="t-item"><span class="sym">FUNDING BTC</span>-0.003%</span>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Crypto<em>Scanner</em> Pro</div>
+  <div class="nav-links">
+    <a href="#features">Fonctionnalités</a>
+    <a href="#tarifs">Tarifs</a>
+    <a href="#acces">Démarrage</a>
+  </div>
+  <div class="nav-live">
+    <div class="live-dot"></div>
+    LIVE · 247 PAIRES
+  </div>
+  <div class="nav-actions">
+    <button class="btn-link" onclick="location.href='/dashboard'">Connexion</button>
+    <button class="btn-gold" onclick="location.href='/dashboard#register'">Accès gratuit</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <!-- LEFT -->
+  <div class="hero-left">
+    <div class="hero-eyebrow">Intelligence de marché institutionnelle</div>
+    <h1>
+      Trader avec<br>
+      <em>l'avantage</em><br>
+      <span class="dim">des institutionnels.</span>
+    </h1>
+    <p class="hero-desc">
+      Scanner multi-exchange temps réel, signaux IA, données COT institutionnelles, forex et backtesting quantitatif. Une seule plateforme. Zéro compromis.
+    </p>
+    <div class="hero-metrics">
+      <div class="hm">
+        <div class="hm-label">Paires</div>
+        <div class="hm-val">247</div>
+        <div class="hm-sub">4 exchanges</div>
+      </div>
+      <div class="hm">
+        <div class="hm-label">Latence</div>
+        <div class="hm-val neutral">&lt;2s</div>
+        <div class="hm-sub">Temps réel</div>
+      </div>
+      <div class="hm">
+        <div class="hm-label">Signaux</div>
+        <div class="hm-val">12</div>
+        <div class="hm-sub">Actifs 24h</div>
+      </div>
+      <div class="hm">
+        <div class="hm-label">Uptime</div>
+        <div class="hm-val neutral">99.9%</div>
+        <div class="hm-sub">30 jours</div>
+      </div>
+    </div>
+    <div class="hero-cta">
+      <button class="btn-hero-gold" onclick="location.href='/dashboard#register'">Commencer gratuitement</button>
+      <button class="btn-hero-ghost" onclick="location.href='/dashboard'">Dashboard live →</button>
+    </div>
+  </div>
+
+  <!-- RIGHT — Terminal -->
+  <div class="hero-right">
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="tb-dot r"></div>
+        <div class="tb-dot y"></div>
+        <div class="tb-dot g"></div>
+        <div class="tb-title">cryptoscanner · scanner_engine · LIVE</div>
+      </div>
+      <div class="terminal-body">
+        <span class="tl"><span class="tl-prompt">›</span> <span class="tl-cmd">scanner --exchanges all --live</span></span>
+        <span class="tl tl-comment">// Connexion multi-exchange initialisée</span>
+        <hr class="tl-divider">
+        <span class="tl"><span class="tl-key">BINANCE </span> <span class="tl-val green">● CONNECTED</span>  <span class="tl-val muted">128 paires</span></span>
+        <span class="tl"><span class="tl-key">BYBIT   </span> <span class="tl-val green">● CONNECTED</span>  <span class="tl-val muted">64 paires</span></span>
+        <span class="tl"><span class="tl-key">KRAKEN  </span> <span class="tl-val green">● CONNECTED</span>  <span class="tl-val muted">32 paires</span></span>
+        <span class="tl"><span class="tl-key">OKX     </span> <span class="tl-val green">● CONNECTED</span>  <span class="tl-val muted">23 paires</span></span>
+        <hr class="tl-divider">
+        <span class="tl tl-comment">// Signaux détectés — RSI + Volume</span>
+        <span class="tl"><span class="tl-key">BTC/USDT</span>  RSI <span class="tl-val">38.2</span>  Vol <span class="tl-val green">+312%</span>  <span class="tl-val green">→ LONG ●</span></span>
+        <span class="tl"><span class="tl-key">SOL/USDT</span>  RSI <span class="tl-val">29.1</span>  Vol <span class="tl-val green">+521%</span>  <span class="tl-val green">→ LONG ⚡</span></span>
+        <span class="tl"><span class="tl-key">ETH/USDT</span>  RSI <span class="tl-val">44.7</span>  Vol <span class="tl-val muted">+87%</span>   <span class="tl-val muted">→ WAIT</span></span>
+        <span class="tl"><span class="tl-key">BNB/USDT</span>  RSI <span class="tl-val">61.3</span>  Vol <span class="tl-val red">-12%</span>   <span class="tl-val red">→ SHORT</span></span>
+        <hr class="tl-divider">
+        <span class="tl tl-comment">// COT · Institutionnels NET LONG +12.4k</span>
+        <span class="tl tl-comment">// Funding BTC : -0.003% · DXY : 104.2</span>
+        <span class="tl tl-comment">// Morning Brief → Telegram ✓ 06h42</span>
+        <hr class="tl-divider">
+        <span class="tl"><span class="tl-prompt">›</span> <span class="tl-cursor"></span></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EXCHANGES -->
+<div class="exchanges-strip">
+  <span class="ex-label">Connecté sur</span>
+  <div class="ex-list">
+    <span class="ex">BINANCE</span>
+    <div class="ex-sep"></div>
+    <span class="ex">BYBIT</span>
+    <div class="ex-sep"></div>
+    <span class="ex">KRAKEN</span>
+    <div class="ex-sep"></div>
+    <span class="ex">OKX</span>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-row">
+  <div class="stat-cell">
+    <div class="stat-num stat-gold">247</div>
+    <div class="stat-label">Paires surveillées</div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-num">4</div>
+    <div class="stat-label">Exchanges connectés</div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-num stat-gold">&lt;2s</div>
+    <div class="stat-label">Latence scan</div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-num">24/7</div>
+    <div class="stat-label">Surveillance continue</div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section id="features" class="section features-bg">
+  <div class="section-inner">
+    <div class="section-label">01 · Fonctionnalités</div>
+    <h2 class="section-heading">Des outils <em>institutionnels</em>,<br>une interface accessible.</h2>
+    <p class="section-desc">Chaque fonctionnalité est conçue pour vous donner un avantage informationnel réel sur les marchés.</p>
+    <div class="features-grid">
+      <div class="feat">
+        <div class="feat-num">01 · SCANNER</div>
+        <h4>Multi-Exchange Temps Réel</h4>
+        <p>247 paires surveillées sur Binance, Bybit, Kraken et OKX. Filtres RSI, volume, variation, funding rate. Latence inférieure à 2 secondes.</p>
+        <span class="feat-tier ft-free">GRATUIT</span>
+      </div>
+      <div class="feat">
+        <div class="feat-num">02 · SIGNAUX</div>
+        <h4>Intelligence IA Multi-Timeframe</h4>
+        <p>Signaux générés par IA sur convergence d'indicateurs multi-TF. Confirmations croisées. Notifications Telegram instantanées.</p>
+        <span class="feat-tier ft-pro">MEMBER</span>
+      </div>
+      <div class="feat">
+        <div class="feat-num">03 · COT</div>
+        <h4>Données CFTC Institutionnelles</h4>
+        <p>Positionnement hebdomadaire des grands fonds sur BTC, ETH. Anticipez les retournements avant qu'ils se produisent.</p>
+        <span class="feat-tier ft-vip">VIP</span>
+      </div>
+      <div class="feat">
+        <div class="feat-num">04 · MACRO</div>
+        <h4>Forex & Contexte Macroéconomique</h4>
+        <p>DXY, S&P500, taux Fed, corrélations intermarché. Calendrier économique intégré. Comprenez le contexte derrière chaque mouvement.</p>
+        <span class="feat-tier ft-pro">MEMBER</span>
+      </div>
+      <div class="feat">
+        <div class="feat-num">05 · QUANTITATIF</div>
+        <h4>Backtesting de Stratégies</h4>
+        <p>Validez vos stratégies sur données historiques. Sharpe ratio, max drawdown, win rate, equity curve. Décidez avant de déployer.</p>
+        <span class="feat-tier ft-vip">VIP</span>
+      </div>
+      <div class="feat">
+        <div class="feat-num">06 · RAPPORT</div>
+        <h4>Morning Brief IA Quotidien</h4>
+        <p>Synthèse matinale générée par IA chaque jour avant l'ouverture. Contexte marché, signaux actifs, niveaux clés. 5 minutes pour être prêt.</p>
+        <span class="feat-tier ft-pro">MEMBER</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="acces" class="section" style="background:var(--bg)">
+  <div class="section-inner">
+    <div class="section-label">02 · Démarrage</div>
+    <h2 class="section-heading">Opérationnel <em>en 2 minutes.</em></h2>
+    <p class="section-desc">Pas d'installation. Pas de configuration complexe. Créez un compte et commencez à scanner immédiatement.</p>
+    <div class="steps-grid">
+      <div class="step">
+        <div class="step-num">01 · INSCRIPTION</div>
+        <h4>Créez votre compte</h4>
+        <p>Inscription gratuite en 30 secondes. Aucune carte bancaire requise pour commencer. Accès immédiat au scanner.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">02 · CONFIGURATION</div>
+        <h4>Choisissez vos paires</h4>
+        <p>Sélectionnez vos exchanges, vos paires et vos critères d'alerte. Connectez Telegram pour les notifications en temps réel.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">03 · TRADING</div>
+        <h4>Analysez et décidez</h4>
+        <p>Le scanner tourne 24/7. Recevez des signaux en temps réel. Appuyez vos décisions sur les données institutionnelles.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="tarifs" class="section pricing-bg">
+  <div class="section-inner">
+    <div class="section-label">03 · Tarifs</div>
+    <h2 class="section-heading">Choisissez votre <em>niveau</em><br>d'accès.</h2>
+    <p class="section-desc">Commencez gratuitement. Évoluez selon votre progression et vos besoins.</p>
+    <div class="pricing-grid">
+      <div class="plan">
+        <div class="plan-accent"></div>
+        <div class="plan-label">Visitor · Gratuit</div>
+        <div class="plan-price">0€</div>
+        <div class="plan-period">Pour toujours gratuit</div>
+        <hr class="plan-rule">
+        <ul class="plan-features">
+          <li>Scanner top 20 paires</li>
+          <li>Données marché temps réel</li>
+          <li>Morning Brief simplifié</li>
+          <li class="off">Signaux intelligents IA</li>
+          <li class="off">Alertes Telegram</li>
+          <li class="off">COT institutionnel</li>
+        </ul>
+        <button class="btn-plan btn-plan-outline" onclick="location.href='/dashboard#register'">Commencer gratuitement</button>
+      </div>
+      <div class="plan featured">
+        <div class="plan-accent"></div>
+        <div class="plan-label">Member · Accès complet</div>
+        <div class="plan-price">—</div>
+        <div class="plan-period">Tarif sur demande</div>
+        <hr class="plan-rule">
+        <ul class="plan-features">
+          <li>Scanner complet 247 paires</li>
+          <li>Signaux intelligents IA</li>
+          <li>Alertes Telegram illimitées</li>
+          <li>Morning Brief personnalisé</li>
+          <li>Forex & macro complet</li>
+          <li class="off">COT institutionnel</li>
+        </ul>
+        <button class="btn-plan btn-plan-gold" onclick="location.href='/dashboard#register'">Obtenir l'accès Member</button>
+      </div>
+      <div class="plan">
+        <div class="plan-accent"></div>
+        <div class="plan-label">VIP · Institutionnel</div>
+        <div class="plan-price">—</div>
+        <div class="plan-period">Tarif sur demande</div>
+        <hr class="plan-rule">
+        <ul class="plan-features">
+          <li>Tout Member inclus</li>
+          <li>COT institutionnel complet</li>
+          <li>Backtesting quantitatif</li>
+          <li>Rapports Telegram quotidiens</li>
+          <li>Consultation 1:1 mensuelle</li>
+          <li>Accès anticipé features</li>
+        </ul>
+        <button class="btn-plan btn-plan-outline" onclick="location.href='/dashboard#register'">Obtenir l'accès VIP</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<div class="cta-section">
+  <div class="cta-rule"></div>
+  <h2>Commencez avec<br><em>l'avantage</em> du marché.</h2>
+  <p>Accès gratuit. Aucune carte requise. Rejoignez les traders qui ont choisi la précision des données institutionnelles.</p>
+  <div class="cta-btns">
+    <button class="btn-hero-gold" onclick="location.href='/dashboard#register'">Créer un compte gratuit</button>
+    <button class="btn-hero-ghost" onclick="location.href='/dashboard'">Dashboard live →</button>
+  </div>
+  <div class="cta-note">GRATUIT POUR TOUJOURS · AUCUNE CARTE · OPÉRATIONNEL EN 2 MIN</div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div>
+        <div class="footer-logo">Crypto<em>Scanner</em> Pro</div>
+        <p class="footer-tagline">Plateforme d'analyse crypto professionnelle. Scanner multi-exchange, signaux IA, données institutionnelles.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Produit</h4>
+        <a href="#features">Fonctionnalités</a>
+        <a href="#tarifs">Tarifs</a>
+        <a href="#acces">Démarrage</a>
+      </div>
+      <div class="footer-col">
+        <h4>Accès</h4>
+        <a href="/dashboard">Connexion</a>
+        <a href="/dashboard#register">Créer un compte</a>
+      </div>
+      <div class="footer-col" id="legal">
+        <h4>Légal</h4>
+        <a href="javascript:void(0)" onclick="showLegalModal('mentions')">Mentions légales</a>
+        <a href="javascript:void(0)" onclick="showLegalModal('cgu')">CGU</a>
+        <a href="javascript:void(0)" onclick="showLegalModal('privacy')">Confidentialité</a>
+        <a href="javascript:void(0)" onclick="showLegalModal('contact')">Contact</a>
+      </div>
+    </div>
+    <hr class="footer-rule">
+    <div class="footer-bottom">
+      <span>© 2024 CRYPTOSCANNER PRO — TOUS DROITS RÉSERVÉS</span>
+      <span>PAS DE CONSEIL EN INVESTISSEMENT FINANCIER</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══ MODALE LÉGALE (POPUP) ═══ -->
+<div id="legal-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);overflow-y:auto;padding:20px;align-items:center;justify-content:center">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;width:min(700px,95vw);max-height:85vh;display:flex;flex-direction:column;box-shadow:0 32px 80px rgba(0,0,0,.8);position:relative">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border2);background:var(--bg3)">
+       <div id="legal-title" style="font-family:var(--mono);font-size:.75rem;color:var(--gold);letter-spacing:2px">DOCUMENTATION LÉGALE</div>
+       <button onclick="document.getElementById('legal-modal').style.display='none'" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.5rem;line-height:1">&times;</button>
+    </div>
+    <div id="legal-content" style="padding:32px;overflow-y:auto;font-size:.85rem;color:var(--text2);line-height:1.8">
+      <!-- Injecté par JS -->
+    </div>
+  </div>
+</div>
+
+<script>
+var _legalContents = {
+  mentions: `
+    <h3 style="color:var(--text);margin-bottom:16px;font-family:var(--serif)">Mentions Légales</h3>
+    <p><b>Éditeur du site :</b> CryptoScanner Pro LTD<br>Siège social : Londres, UK<br>Directeur de publication : Team CryptoScanner</p>
+    <p style="margin-top:12px"><b>Hébérgement :</b> Railway App, Inc.<br>700 Flower St, Los Angeles, CA 90017, USA</p>
+    <p style="margin-top:12px"><b>Contact :</b> team@cryptoscanner.pro</p>
+  `,
+  cgu: `
+    <h3 style="color:var(--gold);margin-bottom:16px;font-family:var(--serif)">CONDITIONS GÉNÉRALES D'UTILISATION</h3>
+    <p style="font-size:.75rem;opacity:.7;margin-bottom:12px">Dernière mise à jour : Mars 2026</p>
+    <p>En utilisant CryptoScanner Pro ("le Service"), vous acceptez les présentes conditions d'utilisation. Veuillez les lire attentivement avant de créer un compte.</p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">1. Description du Service</h4>
+    <p>CryptoScanner Pro est une plateforme d'analyse de marché fournissant des données, indicateurs techniques, signaux de trading et informations macroéconomiques relatifs aux crypto-monnaies, forex et indices boursiers. Le Service est fourni à titre informatif uniquement.</p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">2. Accès et Compte</h4>
+    <p>Vous devez être âgé d'au moins 18 ans pour utiliser ce Service. Vous êtes responsable de la confidentialité de vos identifiants de connexion. Toute activité sur votre compte est de votre responsabilité. Nous nous réservons le droit de suspendre ou supprimer tout compte en cas de violation des présentes CGU.</p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">3. Utilisation Acceptable</h4>
+    <p>Il est interdit d'utiliser le Service pour :</p>
+    <ul style="margin:10px 0;padding-left:20px">
+      <li>Toute activité illégale ou frauduleuse</li>
+      <li>Diffuser des informations fausses ou trompeuses</li>
+      <li>Tenter d'accéder à des systèmes non autorisés</li>
+      <li>Revendre ou redistribuer les données sans autorisation écrite</li>
+    </ul>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">4. Abonnements et Paiements</h4>
+    <p>Les abonnements payants sont facturés à l'avance. Aucun remboursement n'est accordé pour les périodes déjà facturées. Vous pouvez annuler votre abonnement à tout moment depuis votre espace personnel.</p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">5. Modification du Service</h4>
+    <p>Nous nous réservons le droit de modifier, suspendre ou arrêter le Service à tout moment, avec un préavis raisonnable pour les abonnés payants.</p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">6. Loi Applicable</h4>
+    <p>Les présentes CGU sont régies par le droit français. Tout litige sera soumis à la juridiction des tribunaux compétents.</p>
+  `,
+  privacy: `
+    <h3 style="color:var(--gold);margin-bottom:16px;font-family:var(--serif)">POLITIQUE DE CONFIDENTIALITÉ</h3>
+    <p style="font-size:.75rem;opacity:.7;margin-bottom:12px">Dernière mise à jour : Mars 2026</p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">1. Données Collectées</h4>
+    <p>Nous collectons uniquement les données nécessaires au fonctionnement du Service :</p>
+    <ul style="margin:10px 0;padding-left:20px">
+      <li>Nom d'utilisateur et adresse email</li>
+      <li>Identifiant Telegram (si fourni volontairement)</li>
+      <li>Données de connexion (date, heure, IP anonymisée)</li>
+      <li>Préférences d'alertes et watchlist personnelle</li>
+    </ul>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">2. Utilisation des Données</h4>
+    <p>Vos données sont utilisées exclusivement pour :</p>
+    <ul style="margin:10px 0;padding-left:20px">
+      <li>Gérer votre compte et votre accès au Service</li>
+      <li>Envoyer les alertes que vous avez configurées</li>
+      <li>Améliorer la qualité du Service</li>
+    </ul>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">3. Partage des Données</h4>
+    <p>Nous ne vendons, ne louons et ne partageons jamais vos données personnelles avec des tiers à des fins commerciales. Les données peuvent être partagées uniquement si la loi l'exige.</p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">4. Sécurité</h4>
+    <p>Vos mots de passe sont stockés sous forme de hash cryptographique. Les clés API sont chiffrées. Nous appliquons les meilleures pratiques de sécurité pour protéger vos données.</p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">5. Vos Droits (RGPD)</h4>
+    <p>Conformément au RGPD, vous disposez d'un droit d'accès, de rectification, de suppression et de portabilité de vos données. Pour exercer ces droits, contactez-nous via la plateforme.</p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">6. Cookies</h4>
+    <p>Nous utilisons uniquement un cookie de session sécurisé (httpOnly) nécessaire au fonctionnement du Service. Aucun cookie publicitaire ou de tracking n'est utilisé.</p>
+  `,
+  disclaimer: `
+    <h3 style="color:var(--red);margin-bottom:16px;font-family:var(--serif)">⚠️ AVERTISSEMENT — DISCLAIMER FINANCIER</h3>
+    <div style="background:rgba(248,113,113,.1);border:1px solid var(--red);padding:15px;border-radius:8px;margin-bottom:20px;color:var(--red);font-weight:700">
+      IMPORTANT : CryptoScanner Pro N'EST PAS un conseiller financier.
+    </div>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">1. Nature des Informations</h4>
+    <p>Toutes les informations, données, signaux, analyses et indicateurs fournis par CryptoScanner Pro sont à titre strictement informatif et éducatif. Ils ne constituent en aucun cas :</p>
+    <ul style="margin:10px 0;padding-left:20px">
+      <li>Un conseil en investissement ou en trading</li>
+      <li>Une recommandation d'achat ou de vente</li>
+      <li>Une garantie de performance ou de résultat</li>
+      <li>Un service de gestion de portefeuille</li>
+    </ul>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">2. Risques du Trading</h4>
+    <p style="color:var(--red)">Le trading de crypto-monnaies, forex et autres instruments financiers comporte des <b>risques élevés de perte en capital</b>. Les performances passées ne préjugent pas des performances futures. Vous pouvez perdre tout ou partie de votre capital investi.</p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">3. Responsabilité</h4>
+    <p>CryptoScanner Pro et ses créateurs déclinent toute responsabilité pour :</p>
+    <ul style="margin:10px 0;padding-left:20px">
+      <li>Toute perte financière résultant de l'utilisation du Service</li>
+      <li>L'exactitude, l'exhaustivité ou l'actualité des données affichées</li>
+      <li>Les interruptions de service ou erreurs techniques</li>
+      <li>Les décisions de trading prises sur la base des informations fournies</li>
+    </ul>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">4. Recommandation</h4>
+    <p>Avant tout investissement, nous vous recommandons vivement de :</p>
+    <ul style="margin:10px 0;padding-left:20px">
+      <li>Consulter un conseiller financier agréé</li>
+      <li>N'investir que ce que vous êtes prêt à perdre</li>
+      <li>Vous former aux risques du trading</li>
+      <li>Diversifier vos investissements</li>
+    </ul>
+  `,
+  copyright: `
+    <h3 style="color:var(--gold);margin-bottom:16px;font-family:var(--serif)">© COPYRIGHT & PROPRIÉTÉ INTELLECTUELLE</h3>
+    <p><b>© 2024-2026 CryptoScanner Pro. Tous droits réservés.</b></p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">1. Propriété du Service</h4>
+    <p>L'ensemble du Service CryptoScanner Pro, incluant mais non limité à : le code source, le design, les algorithmes, les signaux, les interfaces utilisateur et la documentation, est la propriété exclusive de CryptoScanner Pro et est protégé par les lois françaises et internationales sur la propriété intellectuelle.</p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">2. Licence d'Utilisation</h4>
+    <p>CryptoScanner Pro vous accorde une licence personnelle, non exclusive, non transférable et révocable pour accéder et utiliser le Service selon les présentes CGU. Cette licence ne vous confère aucun droit de propriété sur le Service.</p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">3. Interdictions</h4>
+    <p>Il est strictement interdit de :</p>
+    <ul style="margin:10px 0;padding-left:20px">
+      <li>Copier, reproduire ou redistribuer le code source ou les algorithmes</li>
+      <li>Créer des œuvres dérivées basées sur le Service</li>
+      <li>Utiliser les données pour alimenter un service concurrent</li>
+      <li>Contourner les mesures de protection technique</li>
+      <li>Revendre l'accès au Service sans autorisation écrite</li>
+    </ul>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">4. Marques</h4>
+    <p>Les noms "CryptoScanner Pro", son logo et ses identifiants visuels sont des marques appartenant à CryptoScanner Pro. Toute utilisation sans autorisation est interdite.</p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">5. Sources de Données</h4>
+    <p>Les données affichées proviennent de sources tierces (CoinGecko, Bybit, CFTC, DefiLlama, etc.) et sont soumises à leurs propres conditions d'utilisation. CryptoScanner Pro n'est pas responsable de l'exactitude de ces données.</p>
+  `,
+  contact: `
+    <h3 style="color:var(--text);margin-bottom:16px;font-family:var(--serif)">Contactez-nous</h3>
+    <p>Une question ou un retour technique ?</p>
+    <div style="margin-top:20px;padding:20px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px">
+      <p style="color:var(--gold)">📧 <b>team@cryptoscanner.pro</b></p>
+      <p style="margin-top:8px;font-size:.75rem">Temps de réponse moyen : &lt; 24h</p>
+    </div>
+  `
+};
+
+function showLegalModal(key) {
+  var modal = document.getElementById('legal-modal');
+  var content = document.getElementById('legal-content');
+  if (modal && content && _legalContents[key]) {
+     content.innerHTML = _legalContents[key];
+     modal.style.display = 'flex';
+  }
+}
+
+// Fermeture au clic extérieur
+document.getElementById('legal-modal').onclick = function(e) {
+  if (e.target === this) this.style.display = 'none';
+};
+</script>
+
+</body>
+</html>

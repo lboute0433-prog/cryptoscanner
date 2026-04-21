@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin — CryptoScanner Pro V8</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300;1,9..144,400&family=IBM+Plex+Mono:wght@300;400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg:#07111e;--panel:#0d1828;--card:#132133;--border:#223754;
-  --accent:#3ee7ff;--accent2:#6aa3ff;--green:#00ff88;--red:#ff3366;
-  --yellow:#ffc107;--text:#d7e4fb;--muted:#7a91b3;--line:rgba(255,255,255,.05);
-  --font:'Orbitron',sans-serif;--title:'Orbitron',sans-serif;
+  --bg:#09090b;--panel:#0e0e10;--card:#131315;--border:#232325;
+  --accent:#c9a84c;--accent2:#e2c47a;--green:#34d399;--red:#f87171;
+  --yellow:#c9a84c;--text:#e8e3d8;--muted:#5c5850;--line:rgba(255,255,255,.04);
+  --font:'DM Sans',sans-serif;--title:'IBM Plex Mono',monospace;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 @keyframes adminFadeIn {
@@ -18,17 +18,16 @@
   to { opacity:1; transform:translateY(0); }
 }
 body{
-  background:
-    radial-gradient(circle at top left, rgba(62,231,255,.08), transparent 28%),
-    radial-gradient(circle at top right, rgba(79,140,255,.12), transparent 24%),
-    linear-gradient(180deg, #091321 0%, #07111e 42%, #050d18 100%);
-  color:var(--text);font-family:var(--font);min-height:100vh
+  background: var(--bg);
+  color:var(--text);font-family:var(--font);min-height:100vh;
+  -webkit-font-smoothing:antialiased;
 }
-header{padding:18px 28px;border-bottom:1px solid var(--line);
-  background:linear-gradient(180deg, rgba(10,18,30,.92), rgba(8,16,28,.82));
-  backdrop-filter:blur(18px);
-  display:flex;align-items:center;justify-content:space-between;box-shadow:0 16px 40px rgba(0,0,0,.28)}
-.logo{font-family:var(--title);font-size:1.18rem;letter-spacing:4px;color:#f5fbff}
+header{padding:14px 28px;border-bottom:1px solid var(--border);
+  background:rgba(9,9,11,.94);
+  backdrop-filter:blur(20px);
+  display:flex;align-items:center;justify-content:space-between;}
+.logo{font-family:'Fraunces',serif;font-size:1rem;font-weight:400;letter-spacing:.2px;color:var(--text)}
+.logo em{color:var(--accent);font-style:italic}
 .logo span{color:var(--red)}
 .back-btn{background:none;border:1px solid var(--border);color:var(--muted);
   padding:8px 14px;border-radius:999px;cursor:pointer;font-family:var(--font);font-size:.75rem;transition:.2s ease}
@@ -36,25 +35,25 @@ header{padding:18px 28px;border-bottom:1px solid var(--line);
 
 /* Login */
 #login-screen{display:flex;align-items:center;justify-content:center;min-height:80vh}
-.login-box{background:linear-gradient(180deg, rgba(19,33,51,.94), rgba(11,21,34,.98));border:1px solid rgba(122,145,179,.16);border-radius:24px;
-  padding:36px;width:360px;text-align:center;box-shadow:0 24px 48px rgba(0,0,0,.24);animation:adminFadeIn .35s ease}
-.login-title{font-family:var(--title);color:var(--red);font-size:1rem;margin-bottom:6px}
+.login-box{background:var(--card);border:1px solid var(--border);border-radius:4px;
+  padding:36px;width:360px;text-align:center;box-shadow:0 24px 48px rgba(0,0,0,.32);animation:adminFadeIn .35s ease}
+.login-title{font-family:'Fraunces',serif;font-weight:400;color:var(--accent);font-size:1rem;margin-bottom:6px;letter-spacing:.2px}
 .login-sub{font-size:.7rem;color:var(--muted);margin-bottom:20px}
-.form-input{background:var(--panel);border:1px solid rgba(122,145,179,.18);color:var(--text);
+.form-input{background:var(--panel);border:1px solid rgba(92,88,80,.18);color:var(--text);
   font-family:var(--font);padding:11px 14px;border-radius:12px;font-size:.8rem;
   outline:none;width:100%;margin-bottom:10px}
-.form-input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(62,231,255,.08)}
-.btn-primary{background:linear-gradient(135deg, var(--red), #ff6e8f);border:none;color:#fff;font-family:var(--font);
-  padding:11px 20px;border-radius:999px;cursor:pointer;font-size:.8rem;
-  font-weight:700;width:100%;letter-spacing:1px}
+.form-input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(201,168,76,.08)}
+.btn-primary{background:linear-gradient(135deg, #8c6e2a, var(--accent));border:none;color:#09090b;font-family:var(--font);
+  padding:11px 20px;border-radius:2px;cursor:pointer;font-size:.8rem;
+  font-weight:600;width:100%;letter-spacing:.5px}
 .btn-primary:hover{opacity:.92;transform:translateY(-1px)}
 .error-msg{color:var(--red);font-size:.72rem;margin-top:8px}
 
 /* Dashboard */
 #admin-screen{display:none;padding:24px;max-width:1500px;margin:0 auto;animation:adminFadeIn .4s ease}
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px}
-.stat-card{background:linear-gradient(180deg, rgba(19,33,51,.94), rgba(11,21,34,.96));border:1px solid rgba(122,145,179,.18);border-radius:18px;padding:18px;box-shadow:0 18px 40px rgba(0,0,0,.18);transition:.22s ease}
-.stat-card:hover{transform:translateY(-3px);border-color:rgba(62,231,255,.18)}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:18px;box-shadow:0 18px 40px rgba(0,0,0,.28);transition:.22s ease}
+.stat-card:hover{transform:translateY(-3px);border-color:rgba(201,168,76,.22)}
 .stat-val{font-family:var(--title);font-size:1.5rem;font-weight:700}
 .stat-lbl{font-size:.62rem;color:var(--muted);margin-top:8px;letter-spacing:1.4px}
 .blue .stat-val{color:var(--accent)}
@@ -67,8 +66,8 @@ header{padding:18px 28px;border-bottom:1px solid var(--line);
 .admin-tab{background:rgba(16,29,48,.66);border:1px solid transparent;color:var(--muted);padding:10px 16px;
   cursor:pointer;font-family:var(--font);font-size:.76rem;letter-spacing:1px;
   border-radius:999px;transition:.2s ease}
-.admin-tab:hover{color:var(--text);border-color:rgba(62,231,255,.18)}
-.admin-tab.active{color:var(--accent);border-color:rgba(62,231,255,.34);background:linear-gradient(180deg, rgba(62,231,255,.12), rgba(79,140,255,.08))}
+.admin-tab:hover{color:var(--text);border-color:rgba(201,168,76,.18)}
+.admin-tab.active{color:var(--accent);border-color:rgba(201,168,76,.3);background:rgba(201,168,76,.07)}
 .admin-content{display:none}
 .admin-content.active{display:block}
 
@@ -77,10 +76,10 @@ header{padding:18px 28px;border-bottom:1px solid var(--line);
 .data-table th{background:rgba(12,23,38,.95);color:var(--muted);padding:12px 14px;
   text-align:left;font-size:.65rem;letter-spacing:1px;border-bottom:1px solid var(--border)}
 .data-table td{padding:11px 14px;border-bottom:1px solid rgba(26,48,80,.4)}
-.data-table tr:hover td{background:rgba(62,231,255,.045)}
+.data-table tr:hover td{background:rgba(201,168,76,.045)}
 .badge{padding:2px 8px;border-radius:3px;font-size:.65rem;font-weight:700}
 .badge-admin{background:rgba(255,51,102,.2);color:var(--red);border:1px solid rgba(255,51,102,.3)}
-.badge-member,.badge-trader{background:rgba(0,229,255,.15);color:var(--accent);border:1px solid rgba(0,229,255,.3)}
+.badge-member,.badge-trader{background:rgba(201,168,76,.15);color:var(--accent);border:1px solid rgba(201,168,76,.3)}
 .badge-visitor,.badge-viewer{background:rgba(100,116,128,.15);color:var(--muted);border:1px solid rgba(100,116,128,.3)}
 .badge-paid{background:rgba(255,193,7,.18);color:var(--yellow);border:1px solid rgba(255,193,7,.28)}
 .badge-vip{background:rgba(0,255,136,.16);color:var(--green);border:1px solid rgba(0,255,136,.28)}
@@ -94,16 +93,16 @@ header{padding:18px 28px;border-bottom:1px solid var(--line);
 .action-btn.danger:hover{border-color:var(--red);color:var(--red)}
 
 /* Panels */
-.panel{background:linear-gradient(180deg, rgba(19,33,51,.94), rgba(11,21,34,.98));border:1px solid rgba(122,145,179,.16);border-radius:20px;padding:22px;margin-bottom:16px;box-shadow:0 18px 36px rgba(0,0,0,.16);transition:.22s ease}
-.panel:hover{border-color:rgba(62,231,255,.16)}
-.panel-title{font-family:var(--title);font-size:.8rem;color:var(--accent);
-  letter-spacing:2px;margin-bottom:14px}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:22px;margin-bottom:16px;box-shadow:0 18px 36px rgba(0,0,0,.24);transition:.22s ease}
+.panel:hover{border-color:rgba(201,168,76,.16)}
+.panel-title{font-family:var(--title);font-size:.7rem;color:var(--accent);
+  letter-spacing:2px;margin-bottom:14px;text-transform:uppercase}
 .form-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
 .form-group{display:flex;flex-direction:column;gap:4px}
 .form-group label{font-size:.62rem;color:var(--muted);letter-spacing:1px}
 .btn-sm{font-family:var(--font);cursor:pointer;padding:9px 16px;border-radius:999px;
   font-size:.75rem;border:none}
-.btn-blue{background:linear-gradient(135deg, var(--accent), #72f1ff);color:#04101c;font-weight:700}
+.btn-blue{background:linear-gradient(135deg, #8c6e2a, var(--accent));color:#09090b;font-weight:600}
 .btn-red{background:transparent;border:1px solid var(--red);color:var(--red)}
 .btn-muted{background:transparent;border:1px solid var(--border);color:var(--muted)}
 
@@ -120,19 +119,19 @@ header{padding:18px 28px;border-bottom:1px solid var(--line);
 @media(max-width:600px){.settings-grid{grid-template-columns:1fr}}
 textarea.form-input{resize:vertical;min-height:80px}
 .admin-hero{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr);gap:18px;margin-bottom:20px}
-.admin-hero-card{background:linear-gradient(180deg, rgba(17,30,47,.96), rgba(10,18,30,.98));border:1px solid rgba(122,145,179,.16);border-radius:24px;padding:24px;box-shadow:0 24px 48px rgba(0,0,0,.22)}
-.admin-hero-kicker{display:inline-flex;padding:7px 12px;border-radius:999px;background:rgba(62,231,255,.08);border:1px solid rgba(62,231,255,.16);color:var(--accent);font-size:.64rem;letter-spacing:1.4px;margin-bottom:14px}
+.admin-hero-card{background:linear-gradient(180deg, rgba(17,30,47,.96), rgba(14,14,16,.98));border:1px solid rgba(92,88,80,.16);border-radius:24px;padding:24px;box-shadow:0 24px 48px rgba(0,0,0,.22)}
+.admin-hero-kicker{display:inline-flex;padding:7px 12px;border-radius:999px;background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.16);color:var(--accent);font-size:.64rem;letter-spacing:1.4px;margin-bottom:14px}
 .admin-hero-title{font-family:var(--title);font-size:2rem;letter-spacing:2px;margin-bottom:10px}
 .admin-hero-text{font-size:.76rem;line-height:1.9;color:#b5c7e1;max-width:780px}
 .admin-hero-side{display:grid;gap:12px}
-.admin-side-chip{padding:16px;border-radius:18px;background:rgba(10,18,30,.72);border:1px solid rgba(122,145,179,.16);transition:.2s ease}
-.admin-side-chip:hover{transform:translateY(-2px);border-color:rgba(62,231,255,.18)}
+.admin-side-chip{padding:16px;border-radius:18px;background:rgba(14,14,16,.72);border:1px solid rgba(92,88,80,.16);transition:.2s ease}
+.admin-side-chip:hover{transform:translateY(-2px);border-color:rgba(201,168,76,.18)}
 .admin-side-chip b{display:block;font-family:var(--title);font-size:1.15rem;color:var(--accent);margin-top:6px}
 .admin-side-visual{
   border-radius:18px;
   overflow:hidden;
-  border:1px solid rgba(122,145,179,.16);
-  background:rgba(10,18,30,.72);
+  border:1px solid rgba(92,88,80,.16);
+  background:rgba(14,14,16,.72);
 }
 .admin-side-visual img{
   display:block;
@@ -151,7 +150,7 @@ textarea.form-input{resize:vertical;min-height:80px}
   margin-bottom:12px;
   border-radius:12px;
   overflow:hidden;
-  border:1px solid rgba(122,145,179,.16);
+  border:1px solid rgba(92,88,80,.16);
   background:rgba(9,16,28,.72);
 }
 .admin-tab-visual img{
@@ -167,75 +166,16 @@ textarea.form-input{resize:vertical;min-height:80px}
   color:#9fb2d4;
 }
 .admin-command-bar{display:flex;gap:10px;flex-wrap:wrap;margin:-2px 0 18px}
-.admin-command-pill{padding:8px 12px;border-radius:999px;border:1px solid rgba(122,145,179,.16);background:rgba(10,18,30,.64);color:var(--muted);font-size:.66rem;letter-spacing:1.1px;transition:.2s ease}
-.admin-command-pill:hover{color:var(--text);border-color:rgba(62,231,255,.18)}
+.admin-command-pill{padding:8px 12px;border-radius:999px;border:1px solid rgba(92,88,80,.16);background:rgba(14,14,16,.64);color:var(--muted);font-size:.66rem;letter-spacing:1.1px;transition:.2s ease}
+.admin-command-pill:hover{color:var(--text);border-color:rgba(201,168,76,.18)}
 @media(max-width:900px){.admin-hero{grid-template-columns:1fr}}
 </style>
-<style id="admin-v2-studio-theme">
-  :root{
-    --bg:#050712;
-    --panel:#0b1120;
-    --card:#101933;
-    --border:#223155;
-    --accent:#30e7da;
-    --accent2:#7d7dff;
-    --green:#26dc9f;
-    --red:#ff5f86;
-    --yellow:#ffbf57;
-    --text:#e8f0ff;
-    --muted:#8ea1c7;
-  }
-
-  body{
-    background:
-      radial-gradient(circle at 8% 0%, #3189ff2f 0%, transparent 28%),
-      radial-gradient(circle at 100% -10%, #34f0d930 0%, transparent 30%),
-      linear-gradient(170deg,#04060f,#070c17 35%,#050813 100%) !important;
-  }
-
-  body::before{
-    content:"";
-    position:fixed;
-    inset:-30% -10%;
-    pointer-events:none;
-    z-index:-1;
-    background:
-      radial-gradient(circle at 20% 20%, #30e7da18 0%, transparent 30%),
-      radial-gradient(circle at 70% 30%, #7d7dff14 0%, transparent 28%),
-      radial-gradient(circle at 50% 70%, #ffbf5711 0%, transparent 24%);
-    filter:blur(30px);
-  }
-
-  header,
-  .panel,
-  .stat-card,
-  .admin-hero-card,
-  .admin-side-chip{
-    border-color:var(--border) !important;
-    background:linear-gradient(180deg,#0d1528cc,#0a1020da) !important;
-    box-shadow:0 24px 60px #0000004f, inset 0 1px 0 #ffffff10 !important;
-    backdrop-filter:blur(8px);
-  }
-
-  .admin-tab.active{
-    background:linear-gradient(135deg,#30e7da2e,#7d7dff33) !important;
-    border-color:#335084 !important;
-    color:var(--accent) !important;
-  }
-
-  .btn-blue,
-  .btn-primary{
-    background:linear-gradient(135deg,#30e7da,#7d7dff) !important;
-    color:#081020 !important;
-    border:none !important;
-    font-weight:700;
-  }
-</style>
+<!-- studio theme remplacé par design hybride -->
 </head>
 <body>
 
 <header>
-  <div class="logo">◈ CRYPTO<span>SCANNER</span> · ADMIN</div>
+  <div class="logo">Crypto<em>Scanner</em> Pro · <span>Admin</span></div>
   <div style="display:flex;gap:10px;align-items:center">
     <span id="admin-user-badge" style="font-size:.72rem;color:var(--red);display:none">
       🔐 Connecté en tant qu'admin
@@ -382,10 +322,38 @@ textarea.form-input{resize:vertical;min-height:80px}
           <input class="form-input" id="s-vol-mult" type="number" value="3" step="0.5">
         </div>
         <div class="form-group">
+          <label>VOLUME MINIMUM 24H ($M)</label>
+          <input class="form-input" id="s-vol-min" type="number" value="10" step="1">
+        </div>
+        <div class="form-group">
+          <label>SCORE SIGNAL MINIMUM (0-100)</label>
+          <input class="form-input" id="s-score-min" type="number" value="70" step="5">
+        </div>
+        <div class="form-group">
+          <label>MAX FEAR & GREED (SÉCURITÉ)</label>
+          <input class="form-input" id="s-fng-max" type="number" value="85" step="5">
+        </div>
+        <div class="form-group">
           <label>EXCHANGE PAR DÉFAUT</label>
           <select class="form-input" id="s-exchange">
             <option value="binance">Binance</option>
             <option value="kraken">Kraken</option>
+            <option value="coingecko">CoinGecko</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>ADX MINIMUM (Tendance)</label>
+          <input class="form-input" id="s-adx-min" type="number" value="20" step="1">
+        </div>
+        <div class="form-group">
+          <label>ADR MINIMUM (% Range)</label>
+          <input class="form-input" id="s-adr-min" type="number" value="3" step="0.1">
+        </div>
+        <div class="form-group">
+          <label>FILTRE EMA 200</label>
+          <select class="form-input" id="s-ema-filter">
+            <option value="0">Désactivé</option>
+            <option value="1">Activé (Prix > EMA200)</option>
           </select>
         </div>
       </div>
@@ -688,6 +656,12 @@ async function loadSettings() {
   if (data.scan_interval) document.getElementById('s-scan-interval').value = data.scan_interval;
   if (data.vol_mult)      document.getElementById('s-vol-mult').value      = data.vol_mult;
   if (data.exchange)      document.getElementById('s-exchange').value      = data.exchange;
+  if (data.adx_min)       document.getElementById('s-adx-min').value       = data.adx_min;
+  if (data.adr_min)       document.getElementById('s-adr-min').value       = data.adr_min;
+  if (data.ema_filter)    document.getElementById('s-ema-filter').value    = data.ema_filter;
+  if (data.vol_min)       document.getElementById('s-vol-min').value       = data.vol_min;
+  if (data.score_min)     document.getElementById('s-score-min').value     = data.score_min;
+  if (data.fng_max)       document.getElementById('s-fng-max').value       = data.fng_max;
 }
 
 async function saveSettings() {
@@ -696,6 +670,12 @@ async function saveSettings() {
     scan_interval: document.getElementById('s-scan-interval').value,
     vol_mult:      document.getElementById('s-vol-mult').value,
     exchange:      document.getElementById('s-exchange').value,
+    adx_min:       document.getElementById('s-adx-min').value,
+    adr_min:       document.getElementById('s-adr-min').value,
+    ema_filter:    document.getElementById('s-ema-filter').value,
+    vol_min:       document.getElementById('s-vol-min').value,
+    score_min:     document.getElementById('s-score-min').value,
+    fng_max:       document.getElementById('s-fng-max').value,
   };
   await adminFetch('/api/admin/settings', {method:'POST', body:JSON.stringify(settings)});
   const el = document.getElementById('settings-status');
