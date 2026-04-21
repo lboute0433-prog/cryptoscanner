@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>◈</text></svg>">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CryptoScanner Pro V10</title>
+<title>CryptoScanner Pro V11</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300;1,9..144,400;1,9..144,500&family=IBM+Plex+Mono:wght@300;400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -7095,6 +7095,15 @@ function showLoggedIn(username) {
   // Nom affiché
   _st('cfg-username-display', username);
   _st('user-label', username);
+  // Mise à jour du bouton header (Fix)
+  var hb = document.getElementById('btn-login-header');
+  if (hb && username) {
+    hb.innerHTML = '<span style="opacity:0.7;margin-right:8px">👤</span>' + username.toUpperCase();
+    hb.onclick = function() { if (typeof showTab === 'function') showTab('settings'); };
+    hb.style.background = 'rgba(201,168,76,.15)';
+    hb.style.color = 'var(--gold)';
+    hb.style.border = '1px solid rgba(201,168,76,.3)';
+  }
   // Pill admin
   updateAdminPill(currentUser&&currentUser.role);
 }
@@ -11571,17 +11580,21 @@ async function submitContact() {
 </script>
 
 
+
+</script>
+
+
 <!-- ── LOGIN / REGISTER MODAL ──────────────────────────────── -->
 <div id="login-modal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center" onclick="if(event.target===this)closeLoginModal()">
-  <div style="background:linear-gradient(160deg,rgba(16,16,18,.98),rgba(9,18,30,.99));border:1px solid rgba(201,168,76,.2);border-radius:24px;padding:36px 32px;width:min(440px,95vw);box-shadow:0 32px 80px rgba(0,0,0,.5),0 0 0 1px rgba(201,168,76,.08);position:relative;animation:tabFadeIn .28s ease">
+  <div style="background:linear-gradient(160deg,rgba(13,24,40,.98),rgba(9,18,30,.99));border:1px solid rgba(62,231,255,.2);border-radius:24px;padding:36px 32px;width:min(440px,95vw);box-shadow:0 32px 80px rgba(0,0,0,.5),0 0 0 1px rgba(62,231,255,.08);position:relative;animation:tabFadeIn .28s ease">
     <button onclick="closeLoginModal()" style="position:absolute;top:14px;right:18px;background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;line-height:1;padding:4px 8px">&#x00D7;</button>
     <div style="text-align:center;margin-bottom:24px">
       <div style="font-family:var(--title);font-size:1.1rem;color:var(--accent);letter-spacing:3px;margin-bottom:6px">&#9674; CRYPTOSCANNER PRO</div>
       <div style="font-size:.78rem;color:var(--muted)">Plateforme d&apos;analyse crypto tout-en-un</div>
     </div>
     <!-- Tabs -->
-    <div style="display:flex;background:rgba(12,12,13,.6);border-radius:12px;padding:3px;margin-bottom:22px;gap:3px">
-      <button id="lm-tab-login" onclick="lmSwitch('login')" style="flex:1;padding:9px;border:none;border-radius:9px;background:linear-gradient(135deg,var(--accent),#72f1ff);color:#09090b;font-family:var(--title);font-size:.68rem;font-weight:700;cursor:pointer;letter-spacing:.8px;transition:.2s">SE CONNECTER</button>
+    <div style="display:flex;background:rgba(8,16,28,.6);border-radius:12px;padding:3px;margin-bottom:22px;gap:3px">
+      <button id="lm-tab-login" onclick="lmSwitch('login')" style="flex:1;padding:9px;border:none;border-radius:9px;background:linear-gradient(135deg,var(--accent),#72f1ff);color:#04101c;font-family:var(--title);font-size:.68rem;font-weight:700;cursor:pointer;letter-spacing:.8px;transition:.2s">SE CONNECTER</button>
       <button id="lm-tab-register" onclick="lmSwitch('register')" style="flex:1;padding:9px;border:none;border-radius:9px;background:transparent;color:var(--muted);font-family:var(--title);font-size:.68rem;font-weight:700;cursor:pointer;letter-spacing:.8px;transition:.2s">CR&Eacute;ER UN COMPTE</button>
     </div>
     <!-- Login panel -->
@@ -11597,14 +11610,14 @@ async function submitContact() {
           <button onclick="var i=document.getElementById('lm-password');i.type=i.type==='password'?'text':'password'" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:.9rem">&#128065;</button>
         </div>
       </div>
-      <div id="lm-panel-2fa" style="display:none;margin-bottom:14px;padding:14px;background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.15);border-radius:12px">
+      <div id="lm-panel-2fa" style="display:none;margin-bottom:14px;padding:14px;background:rgba(62,231,255,.06);border:1px solid rgba(62,231,255,.15);border-radius:12px">
         <div style="font-size:.68rem;color:var(--accent);margin-bottom:8px;letter-spacing:1px">&#128272; CODE 2FA REQUIS</div>
         <input id="lm-2fa-code" class="form-input" style="width:100%;text-align:center;font-size:1.1rem;letter-spacing:8px" type="text" placeholder="000000" maxlength="6" autocomplete="one-time-code">
       </div>
       <div id="lm-login-error" style="color:var(--red);font-size:.7rem;margin-bottom:10px;min-height:14px"></div>
       <button onclick="doLmLogin()" class="btn btn-primary" style="width:100%;padding:12px;font-size:.82rem">&rarr; SE CONNECTER</button>
       <div style="text-align:center;margin-top:12px">
-        <a href="#" onclick="lmSwitch('forgot');return false" style="color:var(--muted);font-size:.68rem;text-decoration:none;border-bottom:1px solid rgba(92,88,80,.3)">Mot de passe oubli&eacute; ?</a>
+        <a href="#" onclick="lmSwitch('forgot');return false" style="color:var(--muted);font-size:.68rem;text-decoration:none;border-bottom:1px solid rgba(122,145,179,.3)">Mot de passe oubli&eacute; ?</a>
       </div>
     </div>
     <!-- Forgot panel -->
@@ -11640,12 +11653,22 @@ async function submitContact() {
         <label style="display:block;font-size:.65rem;color:var(--muted);letter-spacing:1px;margin-bottom:6px">NOM D&apos;UTILISATEUR <span style="color:var(--red)">*</span></label>
         <input id="lm-reg-username" class="form-input" style="width:100%" placeholder="jean_crypto" required>
       </div>
-      <div style="margin-bottom:8px">
+      <div style="margin-bottom:12px">
         <label style="display:block;font-size:.65rem;color:var(--muted);letter-spacing:1px;margin-bottom:6px">MOT DE PASSE <span style="color:var(--red)">*</span></label>
         <div style="position:relative">
           <input id="lm-reg-password" class="form-input" style="width:100%;padding-right:38px" type="password" placeholder="Min. 8 caract&egrave;res" required>
           <button onclick="var i=document.getElementById('lm-reg-password');i.type=i.type==='password'?'text':'password'" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:.9rem">&#128065;</button>
         </div>
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="display:block;font-size:.65rem;color:var(--muted);letter-spacing:1px;margin-bottom:6px">CONFIRMER LE MOT DE PASSE <span style="color:var(--red)">*</span></label>
+        <input id="lm-reg-password-confirm" class="form-input" style="width:100%" type="password" placeholder="R&eacute;p&eacute;tez le mot de passe" required>
+      </div>
+      <div style="margin-bottom:14px;display:flex;align-items:flex-start;gap:10px">
+        <input type="checkbox" id="lm-reg-terms" style="margin-top:2px;cursor:pointer">
+        <label for="lm-reg-terms" style="font-size:.65rem;color:var(--muted);cursor:pointer;line-height:1.4">
+          J&apos;accepte les <a href="javascript:void(0)" onclick="showLegalModal('cgu')" style="color:var(--accent);text-decoration:underline">conditions d&apos;utilisation</a> et la politique de confidentialit&eacute; de CryptoScanner Pro.
+        </label>
       </div>
       <div id="lm-reg-error" style="color:var(--red);font-size:.7rem;margin-bottom:10px;min-height:14px"></div>
       <button onclick="doLmRegister()" class="btn btn-primary" style="width:100%;padding:12px;font-size:.82rem">&#x2736; CR&Eacute;ER MON COMPTE</button>
@@ -11656,11 +11679,11 @@ async function submitContact() {
 
 <!-- ── ONBOARDING WIZARD ────────────────────────────────────── -->
 <div id="onboarding-modal" style="display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);align-items:center;justify-content:center">
-  <div style="background:linear-gradient(160deg,rgba(12,22,38,.99),rgba(12,12,13,.99));border:1px solid rgba(201,168,76,.22);border-radius:24px;padding:36px 32px;width:min(500px,95vw);box-shadow:0 40px 100px rgba(0,0,0,.6);position:relative;animation:tabFadeIn .3s ease">
+  <div style="background:linear-gradient(160deg,rgba(12,22,38,.99),rgba(8,16,28,.99));border:1px solid rgba(62,231,255,.22);border-radius:24px;padding:36px 32px;width:min(500px,95vw);box-shadow:0 40px 100px rgba(0,0,0,.6);position:relative;animation:tabFadeIn .3s ease">
     <div id="ob-progress" style="display:flex;gap:6px;margin-bottom:28px"></div>
     <div id="ob-content"></div>
     <div style="display:flex;gap:10px;margin-top:24px">
-      <button id="ob-skip" onclick="obSkip()" style="flex:1;padding:11px;background:transparent;border:1px solid rgba(92,88,80,.2);border-radius:999px;color:var(--muted);font-family:var(--font);font-size:.78rem;cursor:pointer">Ignorer</button>
+      <button id="ob-skip" onclick="obSkip()" style="flex:1;padding:11px;background:transparent;border:1px solid rgba(122,145,179,.2);border-radius:999px;color:var(--muted);font-family:var(--font);font-size:.78rem;cursor:pointer">Ignorer</button>
       <button id="ob-next" onclick="obNext()" class="btn btn-primary" style="flex:2;padding:11px">Suivant &rarr;</button>
     </div>
   </div>
@@ -11686,8 +11709,8 @@ function lmSwitch(tab) {
   var btnR = document.getElementById('lm-tab-register');
   var activeStyle = 'linear-gradient(135deg,var(--accent),#72f1ff)';
   var inactiveStyle = 'transparent';
-  if (btnL) { btnL.style.background = tab === 'register' ? inactiveStyle : activeStyle; btnL.style.color = tab === 'register' ? 'var(--muted)' : '#09090b'; }
-  if (btnR) { btnR.style.background = tab === 'register' ? activeStyle : inactiveStyle; btnR.style.color = tab === 'register' ? '#09090b' : 'var(--muted)'; }
+  if (btnL) { btnL.style.background = tab === 'register' ? inactiveStyle : activeStyle; btnL.style.color = tab === 'register' ? 'var(--muted)' : '#04101c'; }
+  if (btnR) { btnR.style.background = tab === 'register' ? activeStyle : inactiveStyle; btnR.style.color = tab === 'register' ? '#04101c' : 'var(--muted)'; }
 }
 
 async function doLmLogin() {
@@ -11748,8 +11771,12 @@ async function doLmRegister() {
   var em = (document.getElementById('lm-reg-email') || {}).value || '';
   var us = (document.getElementById('lm-reg-username') || {}).value || '';
   var pw = (document.getElementById('lm-reg-password') || {}).value || '';
+  var pwc = (document.getElementById('lm-reg-password-confirm') || {}).value || '';
+  var terms = (document.getElementById('lm-reg-terms') || {}).checked;
   if (!em || !us || !pw) { if (errEl) errEl.textContent = 'Champs obligatoires manquants'; return; }
+  if (pw !== pwc) { if (errEl) errEl.textContent = 'Les mots de passe ne correspondent pas'; return; }
   if (pw.length < 8) { if (errEl) errEl.textContent = 'Mot de passe trop court (min. 8 caract\u00e8res)'; return; }
+  if (!terms) { if (errEl) errEl.textContent = 'Veuillez accepter les conditions'; return; }
   if (errEl) errEl.textContent = '';
   if (btn) { btn.disabled = true; btn.textContent = 'Cr\u00e9ation...'; }
   try {
@@ -11757,12 +11784,14 @@ async function doLmRegister() {
     var d = await r.json();
     if (d.ok && d.token) {
       localStorage.setItem('auth_token', d.token);
-      window.currentUser = window.currentUser || {};
-      Object.assign(window.currentUser, { username: d.username, role: d.role || 'visitor', user_id: d.user_id, subscription_status: 'inactive' });
-      if (typeof cfgUpdateProfile === 'function') cfgUpdateProfile(window.currentUser);
-      if (typeof showLoggedIn === 'function') showLoggedIn(window.currentUser.username);
-      closeLoginModal();
-      startOnboarding(d.username || us);
+      localStorage.setItem('just_registered', 'true'); // Flag pour lancer l'onboarding au reboot
+      
+      // On force la bascule propre
+      if (typeof showToast === 'function') showToast('Compte cr&eacute;&eacute; ! Redirection...', 'success');
+      
+      setTimeout(function() {
+        window.location.href = '/dashboard';
+      }, 800);
     } else {
       if (errEl) errEl.textContent = '\u274c ' + (d.error || 'Erreur lors de la cr\u00e9ation');
     }
@@ -11783,9 +11812,9 @@ var _obSteps = [
       + '<div style="font-family:var(--title);font-size:1.1rem;color:var(--accent);letter-spacing:2px;margin-bottom:10px">BIENVENUE ' + (u||'').toUpperCase() + ' !</div>'
       + '<p style="font-size:.82rem;color:var(--muted);line-height:1.8">CryptoScanner Pro est ta plateforme d\'analyse crypto tout-en-un. Ce guide rapide te prendra moins de 2 minutes.</p>'
       + '<div style="display:flex;flex-direction:column;gap:8px;margin-top:20px;text-align:left">'
-      + '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.1);border-radius:10px"><span>&#128202;</span><span style="font-size:.78rem">Scanner de march\u00e9 en temps r\u00e9el</span></div>'
-      + '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.1);border-radius:10px"><span>&#9889;</span><span style="font-size:.78rem">Signaux automatiques &amp; alertes</span></div>'
-      + '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.1);border-radius:10px"><span>&#129504;</span><span style="font-size:.78rem">IA int\u00e9gr\u00e9e pour l\'analyse</span></div>'
+      + '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(62,231,255,.06);border:1px solid rgba(62,231,255,.1);border-radius:10px"><span>&#128202;</span><span style="font-size:.78rem">Scanner de march\u00e9 en temps r\u00e9el</span></div>'
+      + '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(62,231,255,.06);border:1px solid rgba(62,231,255,.1);border-radius:10px"><span>&#9889;</span><span style="font-size:.78rem">Signaux automatiques &amp; alertes</span></div>'
+      + '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(62,231,255,.06);border:1px solid rgba(62,231,255,.1);border-radius:10px"><span>&#129504;</span><span style="font-size:.78rem">IA int\u00e9gr\u00e9e pour l\'analyse</span></div>'
       + '</div></div>';
   }},
   { title: 'Configuration IA', content: function() {
@@ -11815,8 +11844,8 @@ var _obSteps = [
       + '<p style="font-size:.82rem;color:var(--muted);line-height:1.8;margin-bottom:20px">Ton compte est configur\u00e9. Explore le dashboard pour d\u00e9couvrir toutes les fonctionnalit\u00e9s.</p>'
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:left">'
       + '<div style="padding:10px;background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.12);border-radius:10px;font-size:.72rem"><span style="color:var(--green)">&#10003;</span> Compte cr\u00e9\u00e9</div>'
-      + '<div style="padding:10px;background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.1);border-radius:10px;font-size:.72rem"><span style="color:var(--accent)">&#8594;</span> Dashboard actif</div>'
-      + '<div style="padding:10px;background:rgba(226,196,122,.06);border:1px solid rgba(226,196,122,.1);border-radius:10px;font-size:.72rem"><span style="color:var(--accent2)">&#9674;</span> Signaux temps r\u00e9el</div>'
+      + '<div style="padding:10px;background:rgba(62,231,255,.06);border:1px solid rgba(62,231,255,.1);border-radius:10px;font-size:.72rem"><span style="color:var(--accent)">&#8594;</span> Dashboard actif</div>'
+      + '<div style="padding:10px;background:rgba(106,163,255,.06);border:1px solid rgba(106,163,255,.1);border-radius:10px;font-size:.72rem"><span style="color:var(--accent2)">&#9674;</span> Signaux temps r\u00e9el</div>'
       + '<div style="padding:10px;background:rgba(255,193,7,.06);border:1px solid rgba(255,193,7,.1);border-radius:10px;font-size:.72rem"><span style="color:var(--yellow)">&#9733;</span> Scanner actif</div>'
       + '</div></div>';
   }}
@@ -11840,7 +11869,7 @@ function obRender() {
     prog.innerHTML = '';
     for (var i = 1; i <= _obSteps.length; i++) {
       var d = document.createElement('div');
-      d.style.cssText = 'flex:1;height:3px;border-radius:2px;transition:.3s ease;background:' + (i <= _obStep ? 'var(--accent)' : 'rgba(92,88,80,.2)');
+      d.style.cssText = 'flex:1;height:3px;border-radius:2px;transition:.3s ease;background:' + (i <= _obStep ? 'var(--accent)' : 'rgba(122,145,179,.2)');
       prog.appendChild(d);
     }
   }
@@ -11875,95 +11904,80 @@ function obFinish() {
   if (btn) {
     btn.className = 'btn btn-primary';
     btn.style.cssText = 'padding:7px 18px;font-size:.7rem;letter-spacing:.8px;border-radius:999px';
-    btn.textContent = '\u2192 SE CONNECTER';
-    btn.onclick = showLoginModal;
+    // On ne l'écrase pas si déjà connecté
+    if (!localStorage.getItem('auth_token')) {
+      btn.textContent = '\u2192 SE CONNECTER';
+      btn.onclick = showLoginModal;
+    }
   }
 })();
 </script>
 
-<script>
-// ── THÈME / PERSONNALISATION ──────────────────────────────────
+<!-- ═══ MODALE LÉGALE (POPUP) ═══ -->
+<div id="legal-modal" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);overflow-y:auto;padding:20px;align-items:center;justify-content:center">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;width:min(700px,95vw);max-height:85vh;display:flex;flex-direction:column;box-shadow:0 32px 80px rgba(0,0,0,.8);position:relative">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border2);background:var(--bg3)">
+       <div id="legal-title" style="font-family:var(--mono);font-size:.75rem;color:var(--gold);letter-spacing:2px">DOCUMENTATION LÉGALE</div>
+       <button onclick="document.getElementById('legal-modal').style.display='none'" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.5rem;line-height:1">&times;</button>
+    </div>
+    <div id="legal-content" style="padding:32px;overflow-y:auto;font-size:.85rem;color:var(--text2);line-height:1.8">
+      <!-- Injecté par JS -->
+    </div>
+  </div>
+</div>
 
-var ACCENT_COLORS = {
-  cyan:   { accent: '#c9a84c', accent2: '#e2c47a' },
-  violet: { accent: '#a78bfa', accent2: '#7c3aed' },
-  green:  { accent: '#00ff88', accent2: '#10b981' },
-  orange: { accent: '#ff9a3d', accent2: '#f59e0b' },
-  pink:   { accent: '#f472b6', accent2: '#ec4899' }
+<script>
+var _legalContents = {
+  cgu: `
+    <h3 style="color:var(--gold);margin-bottom:16px;font-family:var(--serif)">CONDITIONS GÉNÉRALES D'UTILISATION</h3>
+    <p style="font-size:.75rem;opacity:.7;margin-bottom:12px">Dernière mise à jour : Mars 2026</p>
+    <p>En utilisant CryptoScanner Pro ("le Service"), vous acceptez les présentes conditions d'utilisation. Veuillez les lire attentivement avant de créer un compte.</p>
+    <h4 style="color:var(--text);margin:20px 0 8px">1. Description du Service</h4>
+    <p>CryptoScanner Pro est une plateforme d'analyse de marché fournissant des données, indicateurs techniques, signaux de trading et informations macroéconomiques. Le Service est fourni à titre informatif uniquement.</p>
+    <h4 style="color:var(--text);margin:20px 0 8px">2. Accès et Compte</h4>
+    <p>Vous devez être âgé d'au moins 18 ans. Vous êtes responsable de la confidentialité de vos identifiants.</p>
+    <h4 style="color:var(--text);margin:20px 0 8px">3. Utilisation Acceptable</h4>
+    <ul style="margin:10px 0;padding-left:20px"><li>Pas d'activité illégale.</li><li>Pas de redistribution des données sans autorisation.</li></ul>
+  `,
+  privacy: `
+    <h3 style="color:var(--gold);margin-bottom:16px;font-family:var(--serif)">POLITIQUE DE CONFIDENTIALITÉ</h3>
+    <h4 style="color:var(--text);margin:20px 0 8px">1. Données Collectées</h4>
+    <p>Email, nom d'utilisateur, et préférences d'alertes nécessaires au service.</p>
+    <h4 style="color:var(--text);margin:20px 0 8px">2. Sécurité</h4>
+    <p>Mots de passe hashés, clés API chiffrées AES-256.</p>
+  `,
+  disclaimer: `
+    <h3 style="color:var(--red);margin-bottom:16px;font-family:var(--serif)">⚠️ DISCLAIMER FINANCIER</h3>
+    <div style="background:rgba(248,113,113,.1);border:1px solid var(--red);padding:15px;border-radius:8px;color:var(--red);font-weight:700">IMPORTANT : NOUS NE SOMMES PAS CONSEILLERS FINANCIERS.</div>
+    <p style="margin-top:10px">Le trading comporte des risques élevés. Vous pouvez perdre TOUT votre capital.</p>
+  `
 };
 
-var CURRENCY_RATES = { USD: 1, EUR: 0.92, BTC: 0.0000145 };
-var CURRENCY_SYMBOLS = { USD: '$', EUR: '€', BTC: '₿' };
-
-function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme === 'light' ? 'light' : 'dark');
-  var btn = document.getElementById('btn-theme-toggle');
-  if (btn) btn.textContent = theme === 'light' ? '☀️' : '🌙';
-  // Update buttons in settings panel
-  var d = document.getElementById('btn-dark-mode');
-  var l = document.getElementById('btn-light-mode');
-  if (d && l) {
-    if (theme === 'light') {
-      l.style.background = 'rgba(8,145,178,.12)'; l.style.color = 'var(--accent)'; l.style.borderColor = 'rgba(8,145,178,.4)';
-      d.style.background = 'transparent'; d.style.color = 'var(--muted)'; d.style.borderColor = 'var(--border)';
-    } else {
-      d.style.background = 'rgba(201,168,76,.1)'; d.style.color = 'var(--accent)'; d.style.borderColor = 'rgba(201,168,76,.35)';
-      l.style.background = 'transparent'; l.style.color = 'var(--muted)'; l.style.borderColor = 'var(--border)';
-    }
+function showLegalModal(key) {
+  var modal = document.getElementById('legal-modal');
+  var content = document.getElementById('legal-content');
+  if (modal && content && _legalContents[key]) {
+     content.innerHTML = _legalContents[key];
+     modal.style.display = 'flex';
   }
 }
+document.getElementById('legal-modal').onclick = function(e) {
+  if (e.target === this) this.style.display = 'none';
+};
+</script>
 
-function setTheme(theme) {
-  localStorage.setItem('cs_theme', theme);
-  applyTheme(theme);
-}
-
-function toggleTheme() {
-  var current = localStorage.getItem('cs_theme') || 'dark';
-  setTheme(current === 'dark' ? 'light' : 'dark');
-}
-
-function applyAccentColor(name) {
-  var c = ACCENT_COLORS[name];
-  if (!c) return;
-  document.documentElement.style.setProperty('--accent', c.accent);
-  document.documentElement.style.setProperty('--accent2', c.accent2);
-  document.querySelectorAll('.accent-btn').forEach(function(btn) {
-    btn.style.borderColor = btn.dataset.color === name ? c.accent : 'transparent';
-    btn.style.boxShadow = btn.dataset.color === name ? '0 0 0 2px ' + c.accent + '55' : 'none';
-  });
-}
-
-function setAccentColor(name) {
-  localStorage.setItem('cs_accent', name);
-  applyAccentColor(name);
-}
-
-function applyCurrency(cur) {
-  document.querySelectorAll('.currency-btn').forEach(function(btn) {
-    var active = btn.dataset.cur === cur;
-    btn.style.background = active ? 'rgba(201,168,76,.1)' : 'transparent';
-    btn.style.color = active ? 'var(--accent)' : 'var(--muted)';
-    btn.style.borderColor = active ? 'rgba(201,168,76,.3)' : 'var(--border)';
-  });
-  var note = document.getElementById('currency-note');
-  if (note) note.textContent = 'Devise active : ' + CURRENCY_SYMBOLS[cur] + ' ' + cur;
-  window.CS_CURRENCY = cur;
-}
-
-function setCurrency(cur) {
-  localStorage.setItem('cs_currency', cur);
-  applyCurrency(cur);
-}
-
-// Initialisation au chargement
-(function initPersonalization() {
-  var theme  = localStorage.getItem('cs_theme')   || 'dark';
-  var accent = localStorage.getItem('cs_accent')  || 'cyan';
-  var cur    = localStorage.getItem('cs_currency') || 'USD';
-  applyTheme(theme);
-  applyAccentColor(accent);
-  applyCurrency(cur);
+<script>
+// Initialisation finale
+(function() {
+  setTimeout(function() {
+    if (localStorage.getItem('just_registered') === 'true') {
+      localStorage.removeItem('just_registered');
+      console.log("Suite de l'inscription : Lancement config IA...");
+      if (typeof startOnboarding === 'function') {
+        startOnboarding(window.currentUser ? window.currentUser.username : '');
+      }
+    }
+  }, 1500);
 })();
 </script>
 

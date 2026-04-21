@@ -846,12 +846,12 @@ footer {
         <a href="/dashboard">Connexion</a>
         <a href="/dashboard#register">Créer un compte</a>
       </div>
-      <div class="footer-col">
+      <div class="footer-col" id="legal">
         <h4>Légal</h4>
-        <a href="#">Mentions légales</a>
-        <a href="#">CGU</a>
-        <a href="#">Confidentialité</a>
-        <a href="#">Contact</a>
+        <a href="javascript:void(0)" onclick="showLegalModal('mentions')">Mentions légales</a>
+        <a href="javascript:void(0)" onclick="showLegalModal('cgu')">CGU</a>
+        <a href="javascript:void(0)" onclick="showLegalModal('privacy')">Confidentialité</a>
+        <a href="javascript:void(0)" onclick="showLegalModal('contact')">Contact</a>
       </div>
     </div>
     <hr class="footer-rule">
@@ -861,6 +861,176 @@ footer {
     </div>
   </div>
 </footer>
+
+<!-- ═══ MODALE LÉGALE (POPUP) ═══ -->
+<div id="legal-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);overflow-y:auto;padding:20px;align-items:center;justify-content:center">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;width:min(700px,95vw);max-height:85vh;display:flex;flex-direction:column;box-shadow:0 32px 80px rgba(0,0,0,.8);position:relative">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border2);background:var(--bg3)">
+       <div id="legal-title" style="font-family:var(--mono);font-size:.75rem;color:var(--gold);letter-spacing:2px">DOCUMENTATION LÉGALE</div>
+       <button onclick="document.getElementById('legal-modal').style.display='none'" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.5rem;line-height:1">&times;</button>
+    </div>
+    <div id="legal-content" style="padding:32px;overflow-y:auto;font-size:.85rem;color:var(--text2);line-height:1.8">
+      <!-- Injecté par JS -->
+    </div>
+  </div>
+</div>
+
+<script>
+var _legalContents = {
+  mentions: `
+    <h3 style="color:var(--text);margin-bottom:16px;font-family:var(--serif)">Mentions Légales</h3>
+    <p><b>Éditeur du site :</b> CryptoScanner Pro LTD<br>Siège social : Londres, UK<br>Directeur de publication : Team CryptoScanner</p>
+    <p style="margin-top:12px"><b>Hébérgement :</b> Railway App, Inc.<br>700 Flower St, Los Angeles, CA 90017, USA</p>
+    <p style="margin-top:12px"><b>Contact :</b> team@cryptoscanner.pro</p>
+  `,
+  cgu: `
+    <h3 style="color:var(--gold);margin-bottom:16px;font-family:var(--serif)">CONDITIONS GÉNÉRALES D'UTILISATION</h3>
+    <p style="font-size:.75rem;opacity:.7;margin-bottom:12px">Dernière mise à jour : Mars 2026</p>
+    <p>En utilisant CryptoScanner Pro ("le Service"), vous acceptez les présentes conditions d'utilisation. Veuillez les lire attentivement avant de créer un compte.</p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">1. Description du Service</h4>
+    <p>CryptoScanner Pro est une plateforme d'analyse de marché fournissant des données, indicateurs techniques, signaux de trading et informations macroéconomiques relatifs aux crypto-monnaies, forex et indices boursiers. Le Service est fourni à titre informatif uniquement.</p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">2. Accès et Compte</h4>
+    <p>Vous devez être âgé d'au moins 18 ans pour utiliser ce Service. Vous êtes responsable de la confidentialité de vos identifiants de connexion. Toute activité sur votre compte est de votre responsabilité. Nous nous réservons le droit de suspendre ou supprimer tout compte en cas de violation des présentes CGU.</p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">3. Utilisation Acceptable</h4>
+    <p>Il est interdit d'utiliser le Service pour :</p>
+    <ul style="margin:10px 0;padding-left:20px">
+      <li>Toute activité illégale ou frauduleuse</li>
+      <li>Diffuser des informations fausses ou trompeuses</li>
+      <li>Tenter d'accéder à des systèmes non autorisés</li>
+      <li>Revendre ou redistribuer les données sans autorisation écrite</li>
+    </ul>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">4. Abonnements et Paiements</h4>
+    <p>Les abonnements payants sont facturés à l'avance. Aucun remboursement n'est accordé pour les périodes déjà facturées. Vous pouvez annuler votre abonnement à tout moment depuis votre espace personnel.</p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">5. Modification du Service</h4>
+    <p>Nous nous réservons le droit de modifier, suspendre ou arrêter le Service à tout moment, avec un préavis raisonnable pour les abonnés payants.</p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">6. Loi Applicable</h4>
+    <p>Les présentes CGU sont régies par le droit français. Tout litige sera soumis à la juridiction des tribunaux compétents.</p>
+  `,
+  privacy: `
+    <h3 style="color:var(--gold);margin-bottom:16px;font-family:var(--serif)">POLITIQUE DE CONFIDENTIALITÉ</h3>
+    <p style="font-size:.75rem;opacity:.7;margin-bottom:12px">Dernière mise à jour : Mars 2026</p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">1. Données Collectées</h4>
+    <p>Nous collectons uniquement les données nécessaires au fonctionnement du Service :</p>
+    <ul style="margin:10px 0;padding-left:20px">
+      <li>Nom d'utilisateur et adresse email</li>
+      <li>Identifiant Telegram (si fourni volontairement)</li>
+      <li>Données de connexion (date, heure, IP anonymisée)</li>
+      <li>Préférences d'alertes et watchlist personnelle</li>
+    </ul>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">2. Utilisation des Données</h4>
+    <p>Vos données sont utilisées exclusivement pour :</p>
+    <ul style="margin:10px 0;padding-left:20px">
+      <li>Gérer votre compte et votre accès au Service</li>
+      <li>Envoyer les alertes que vous avez configurées</li>
+      <li>Améliorer la qualité du Service</li>
+    </ul>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">3. Partage des Données</h4>
+    <p>Nous ne vendons, ne louons et ne partageons jamais vos données personnelles avec des tiers à des fins commerciales. Les données peuvent être partagées uniquement si la loi l'exige.</p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">4. Sécurité</h4>
+    <p>Vos mots de passe sont stockés sous forme de hash cryptographique. Les clés API sont chiffrées. Nous appliquons les meilleures pratiques de sécurité pour protéger vos données.</p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">5. Vos Droits (RGPD)</h4>
+    <p>Conformément au RGPD, vous disposez d'un droit d'accès, de rectification, de suppression et de portabilité de vos données. Pour exercer ces droits, contactez-nous via la plateforme.</p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">6. Cookies</h4>
+    <p>Nous utilisons uniquement un cookie de session sécurisé (httpOnly) nécessaire au fonctionnement du Service. Aucun cookie publicitaire ou de tracking n'est utilisé.</p>
+  `,
+  disclaimer: `
+    <h3 style="color:var(--red);margin-bottom:16px;font-family:var(--serif)">⚠️ AVERTISSEMENT — DISCLAIMER FINANCIER</h3>
+    <div style="background:rgba(248,113,113,.1);border:1px solid var(--red);padding:15px;border-radius:8px;margin-bottom:20px;color:var(--red);font-weight:700">
+      IMPORTANT : CryptoScanner Pro N'EST PAS un conseiller financier.
+    </div>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">1. Nature des Informations</h4>
+    <p>Toutes les informations, données, signaux, analyses et indicateurs fournis par CryptoScanner Pro sont à titre strictement informatif et éducatif. Ils ne constituent en aucun cas :</p>
+    <ul style="margin:10px 0;padding-left:20px">
+      <li>Un conseil en investissement ou en trading</li>
+      <li>Une recommandation d'achat ou de vente</li>
+      <li>Une garantie de performance ou de résultat</li>
+      <li>Un service de gestion de portefeuille</li>
+    </ul>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">2. Risques du Trading</h4>
+    <p style="color:var(--red)">Le trading de crypto-monnaies, forex et autres instruments financiers comporte des <b>risques élevés de perte en capital</b>. Les performances passées ne préjugent pas des performances futures. Vous pouvez perdre tout ou partie de votre capital investi.</p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">3. Responsabilité</h4>
+    <p>CryptoScanner Pro et ses créateurs déclinent toute responsabilité pour :</p>
+    <ul style="margin:10px 0;padding-left:20px">
+      <li>Toute perte financière résultant de l'utilisation du Service</li>
+      <li>L'exactitude, l'exhaustivité ou l'actualité des données affichées</li>
+      <li>Les interruptions de service ou erreurs techniques</li>
+      <li>Les décisions de trading prises sur la base des informations fournies</li>
+    </ul>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">4. Recommandation</h4>
+    <p>Avant tout investissement, nous vous recommandons vivement de :</p>
+    <ul style="margin:10px 0;padding-left:20px">
+      <li>Consulter un conseiller financier agréé</li>
+      <li>N'investir que ce que vous êtes prêt à perdre</li>
+      <li>Vous former aux risques du trading</li>
+      <li>Diversifier vos investissements</li>
+    </ul>
+  `,
+  copyright: `
+    <h3 style="color:var(--gold);margin-bottom:16px;font-family:var(--serif)">© COPYRIGHT & PROPRIÉTÉ INTELLECTUELLE</h3>
+    <p><b>© 2024-2026 CryptoScanner Pro. Tous droits réservés.</b></p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">1. Propriété du Service</h4>
+    <p>L'ensemble du Service CryptoScanner Pro, incluant mais non limité à : le code source, le design, les algorithmes, les signaux, les interfaces utilisateur et la documentation, est la propriété exclusive de CryptoScanner Pro et est protégé par les lois françaises et internationales sur la propriété intellectuelle.</p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">2. Licence d'Utilisation</h4>
+    <p>CryptoScanner Pro vous accorde une licence personnelle, non exclusive, non transférable et révocable pour accéder et utiliser le Service selon les présentes CGU. Cette licence ne vous confère aucun droit de propriété sur le Service.</p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">3. Interdictions</h4>
+    <p>Il est strictement interdit de :</p>
+    <ul style="margin:10px 0;padding-left:20px">
+      <li>Copier, reproduire ou redistribuer le code source ou les algorithmes</li>
+      <li>Créer des œuvres dérivées basées sur le Service</li>
+      <li>Utiliser les données pour alimenter un service concurrent</li>
+      <li>Contourner les mesures de protection technique</li>
+      <li>Revendre l'accès au Service sans autorisation écrite</li>
+    </ul>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">4. Marques</h4>
+    <p>Les noms "CryptoScanner Pro", son logo et ses identifiants visuels sont des marques appartenant à CryptoScanner Pro. Toute utilisation sans autorisation est interdite.</p>
+    
+    <h4 style="color:var(--text);margin:20px 0 8px">5. Sources de Données</h4>
+    <p>Les données affichées proviennent de sources tierces (CoinGecko, Bybit, CFTC, DefiLlama, etc.) et sont soumises à leurs propres conditions d'utilisation. CryptoScanner Pro n'est pas responsable de l'exactitude de ces données.</p>
+  `,
+  contact: `
+    <h3 style="color:var(--text);margin-bottom:16px;font-family:var(--serif)">Contactez-nous</h3>
+    <p>Une question ou un retour technique ?</p>
+    <div style="margin-top:20px;padding:20px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px">
+      <p style="color:var(--gold)">📧 <b>team@cryptoscanner.pro</b></p>
+      <p style="margin-top:8px;font-size:.75rem">Temps de réponse moyen : &lt; 24h</p>
+    </div>
+  `
+};
+
+function showLegalModal(key) {
+  var modal = document.getElementById('legal-modal');
+  var content = document.getElementById('legal-content');
+  if (modal && content && _legalContents[key]) {
+     content.innerHTML = _legalContents[key];
+     modal.style.display = 'flex';
+  }
+}
+
+// Fermeture au clic extérieur
+document.getElementById('legal-modal').onclick = function(e) {
+  if (e.target === this) this.style.display = 'none';
+};
+</script>
 
 </body>
 </html>
