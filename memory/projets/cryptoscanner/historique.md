@@ -16,3 +16,4 @@ tags: [projet/cryptoscanner]
 - [2026-04-13 14h00 — Fixes bugs + Wallet Tracker Phase 1 + GitHub](../../archives/2026-04-13-14h00-cryptoscanner-fixes-wallet-tracker-github.md)
 - [2026-04-13 18h00 — Fix Funding Rate CROWDED POSITIONS](../../archives/2026-04-13-18h00-cryptoscanner-fix-funding-rate.md)
 - [2026-04-14 14h00 — Fix 4 bugs (inscription, investor, forex, signaux)](../../archives/2026-04-14-14h00-cryptoscanner-fix-bugs-inscription-investor-forex-signals.md)
+- [2026-04-14 18h00 — Whale Scanner + Fix Inscription 500 + Fix Analyse Investisseur](../../archives/2026-04-14-18h00-cryptoscanner-whale-scanner-inscription-investisseur.md)

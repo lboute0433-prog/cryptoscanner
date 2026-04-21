@@ -8,9 +8,9 @@ tags: [projet/cryptoscanner]
 # CryptoScanner Pro — Contexte actif
 
 ## État courant
-- Phase : Développement actif — polish UI + Telegram FREE opérationnel + signaux avancés + Wallet Tracker
-- Dernière session : 2026-04-14 14h00 — Fix 4 bugs (inscription, investor, forex, signaux Telegram)
-- En cours : Railway redéploiement à vérifier (webhook potentiellement cassé)
+- Phase : Développement actif — chantiers idées.md (Whale Scanner livré, Portfolio/Watchlist opérationnel)
+- Dernière session : 2026-04-14 18h00 — Fix inscription 500 + Whale Scanner + Fix Analyse Investisseur
+- En cours : Tests prod Railway après redéploiement
 
 ## Stack technique
 - Backend : Python 3.11, Flask, Flask-SocketIO
@@ -21,37 +21,34 @@ tags: [projet/cryptoscanner]
 - Frontend : HTML/CSS/JS dans `templates/`
 
 ## Décisions cumulées
-- `db.py` : adapter PostgreSQL transparent — `get_connection()` partout
+- `db.py` : adapter PostgreSQL transparent — `get_connection()` partout, rollback dans les except
+- **Auto-login inscription** : token retourné directement par `api_auth_register`, cookie cs_token posé
+- **JS cfgRegister()** : si `d.token` → `showTab('settings')` après 600ms (Mon Compte)
+- **Whale Scanner sans API payante** : `_detect_volume_whales()` (Binance, seuils par cap) + `_detect_btc_whales()` (mempool.space)
+- **CoinGecko** : `_cg_headers()` centralisé + stale cache fallback sur 429 + `COINGECKO_API_KEY` env var supportée
+- **Analyse Investisseur** : `loadInvestorPage()` implémentée, `invSearch()` normalisée, 429 affiché avec bouton Réessayer
 - COT CFTC intégré dans Morning Brief (7 blocs Telegram, badge démo si API indisponible)
 - Hero board : Fear&Greed + BTC Dominance + NASDAQ 24H + DXY Dollar
 - **Telegram multi-niveaux** : `_broadcast_to_members(min_role)` + `get_members_by_role(min_role)`
 - **Signal Retrace RSI** : `check_rsi_exit()` + `update_rsi_history()` + `build_retrace_alert()`
 - **Canal FREE Telegram** : ID `-1003997628346`
-- **Bot /start** + **/lier** : opérationnels
-- **Logos crypto** : `coinLogoHTML()` + CDN fallback
-- **Historique Smart Signals** : table `signals_history` + route + UI filtrable
-- **IA multi-providers** : Groq + Anthropic + OpenAI
-- **Matrice permissions** : visitor/member/paid/admin par page
-- **Paramètres Plateforme** : 4 settings seedés en DB (pump_pct=5, scan_interval=10, vol_mult=3, exchange=coingecko)
-- **Auto-login inscription** : token retourné directement par `api_auth_register`
-- **CROWDED POSITIONS** : try/catch isolé pour cross_analysis
-- **Sessions forex** : ZoneInfo("Europe/Paris") — Sydney 00-09, Tokyo 01-10, Londres 09-18, New York 15-23
-- **Wallet Tracker Phase 1** : ETH/BTC/SOL via APIs gratuites dans page Whales
-- **Funding rate fix** : `_fetch_bybit_funding()` guard `fr != ""` + try/except par entrée
 - **Signaux anti-spam** : max 3/cycle, cooldown 1h, score min 85, filtre ADR ≥25% range 24h
 - **MA20 + ADR** dans messages Telegram signaux
-- **Analyse Investisseur** : 🔍 cliquable (`onclick="invSearch()"`)
+- **Sessions forex** : ZoneInfo("Europe/Paris") — Sydney 00-09, Tokyo 01-10, Londres 09-18, New York 15-23
+- **Wallet Tracker Phase 1** : ETH/BTC/SOL via APIs gratuites dans page Whales
 - Rôles : visitor(0) / member(1) / paid(2) / vip(3) / admin(4)
+- Portfolio / Watchlist : tables + routes + UI déjà opérationnels
 
 ## Variables Railway configurées
 - `TG_CHAT_FREE` = `-1003997628346`
 - `SITE_URL` = `https://web-production-34b51.up.railway.app`
+- À ajouter : `COINGECKO_API_KEY` (gratuit sur coingecko.com/api)
 
 ## Prochaines étapes
-1. Vérifier Railway auto-deploy (reconnecter webhook si nécessaire)
-2. Tester Analyse Investisseur en prod (vérifier rate-limit CoinGecko)
-3. Ajuster `MAX_PER_CYCLE` et score min signaux selon observation prod
-4. **Wallet Tracker Phase 2** : wallets whales connus (Binance, Jump, a16z…)
-5. `technical_indicators.py` : centraliser RSI/EMA/ATR/Bollinger
-6. Réfléchir au nouveau nom de la plateforme (marchés financiers au sens large)
-7. PayPal webhook : après serveur dédié
+1. Ajouter `COINGECKO_API_KEY` dans Railway (gratuit, supprime les 429)
+2. Tester inscription prod → redirection Mon Compte
+3. Tester Analyse Investisseur prod → affichage données coin
+4. Tester tab Whales → sections BTC on-chain + volume Binance
+5. Wallet Tracker Phase 2 : wallets whales connus (Binance, Jump, a16z…)
+6. Auto-refresh Whales toutes les 5 minutes
+7. `technical_indicators.py` : centraliser RSI/EMA/ATR/Bollinger
