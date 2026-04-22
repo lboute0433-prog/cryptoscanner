@@ -1504,14 +1504,14 @@ window.hideKpiSkeleton = function() {
         <span class="hero-metric-sub">Force du dollar US</span>
       </div>
       <div class="hero-metric green">
-        <span class="hero-metric-label">NASDAQ TOTAL 3</span>
-        <span class="hero-metric-value" id="dash-nasdaq-total3">—</span>
-        <span class="hero-metric-sub">Agrégation indices US</span>
+        <span class="hero-metric-label">TOTAL 3</span>
+        <span class="hero-metric-value" id="dash-total3">—</span>
+        <span class="hero-metric-sub">Excluding BTC & ETH</span>
       </div>
       <div class="hero-metric yellow">
-        <span class="hero-metric-label">DXY TOTAL 3</span>
-        <span class="hero-metric-value" id="dash-dxy-total3">—</span>
-        <span class="hero-metric-sub">Force du dollar composée</span>
+        <span class="hero-metric-label">OTHERS</span>
+        <span class="hero-metric-value" id="dash-others">—</span>
+        <span class="hero-metric-sub">Excluding Top 10</span>
       </div>
     </div>
     <!-- Strip prix live : BTC · ETH · SOL · BNB -->
@@ -6163,30 +6163,21 @@ function updateDashboard(market, minfo, macro) {
         }
       }
     }
-    // NASDAQ Total 3
-    try {
-      const nasdaqTotal3Res = await fetch('/api/indices/nasdaq-total3');
-      if (nasdaqTotal3Res.ok) {
-        const nasTotal3 = await nasdaqTotal3Res.json();
-        const heroNasTotal3 = document.getElementById('dash-nasdaq-total3');
-        if (heroNasTotal3 && nasTotal3.change_pct != null) {
-          heroNasTotal3.textContent = `${nasTotal3.change_pct > 0 ? '+' : ''}${nasTotal3.change_pct.toFixed(2)}%`;
-          heroNasTotal3.style.color = nasTotal3.change_pct >= 0 ? 'var(--green)' : 'var(--red)';
-        }
+    // TOTAL 3 & OTHERS (Crypto)
+    fetch('/api/crypto/total3').then(r => r.json()).then(data => {
+      if (data && data.mcap_fmt) {
+        const el = document.getElementById('dash-total3');
+        if (el) el.textContent = data.mcap_fmt;
       }
-    } catch(e) { console.log('[NASDAQ Total3]', e); }
-    // DXY Total 3
-    try {
-      const dxyTotal3Res = await fetch('/api/indices/dxy-total3');
-      if (dxyTotal3Res.ok) {
-        const dxyTotal3 = await dxyTotal3Res.json();
-        const heroDxyTotal3 = document.getElementById('dash-dxy-total3');
-        if (heroDxyTotal3 && dxyTotal3.change_pct != null) {
-          heroDxyTotal3.textContent = `${dxyTotal3.change_pct > 0 ? '+' : ''}${dxyTotal3.change_pct.toFixed(2)}%`;
-          heroDxyTotal3.style.color = dxyTotal3.change_pct > 0 ? 'var(--red)' : 'var(--green)';
-        }
+    }).catch(e => console.log('[TOTAL3]', e));
+
+    fetch('/api/crypto/others').then(r => r.json()).then(data => {
+      if (data && data.mcap_fmt) {
+        const el = document.getElementById('dash-others');
+        if (el) el.textContent = data.mcap_fmt;
       }
-    } catch(e) { console.log('[DXY Total3]', e); }
+    }).catch(e => console.log('[OTHERS]', e));
+
     const stable = macro.stablecoins;
     if (stable?.USDT) {
       const el = document.getElementById('dash-usdt');

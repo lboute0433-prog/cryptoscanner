@@ -16,6 +16,12 @@ from db import get_connection
 TG_TOKEN = TELEGRAM_TOKEN
 TG_CHAT  = TELEGRAM_CHAT
 
+import threading
+_ff_lock = threading.Lock()
+_ff_cache_xml = None
+_ff_cache_ts = 0
+_FF_CACHE_TTL = 1800  # 30 minutes
+
 # ── Catégories news ───────────────────────────────────────────
 CATEGORIES = {
     "regulation": {
@@ -208,6 +214,14 @@ def init_news_db():
         actual TEXT DEFAULT '',
         alerted INTEGER DEFAULT 0
     );
+    """)
+    
+    # Nettoyage historique (Python)
+    try:
+        c.execute("DELETE FROM econ_events WHERE event_date < date('now', '-30 days')")
+    except: pass
+    
+    c.executescript("""
     CREATE TABLE IF NOT EXISTS macro_cache (
         key TEXT PRIMARY KEY,
         value TEXT,
@@ -226,10 +240,9 @@ def init_news_db():
         smtp_pass TEXT DEFAULT ''
     );
     """)
-    # Ajouter colonne category si elle n'existe pas
+    # Ajouter colonnes manquantes
     try: c.execute("ALTER TABLE news_items ADD COLUMN category TEXT DEFAULT 'market'")
     except: pass
-        # Ajouter colonne lang si elle n'existe pas
     try: conn.execute("ALTER TABLE news_items ADD COLUMN lang TEXT DEFAULT 'en'")
     except: pass
     conn.commit(); conn.close()
@@ -580,6 +593,41 @@ def _macro_event_key(title: str, currency: str = "") -> str:
     return f"{c}:{base}"
 
 
+def _fetch_ff_xml():
+    """Récupère le XML avec cache et User-Agent pour éviter les 429"""
+    global _ff_cache_xml, _ff_cache_ts
+    import time
+    now = time.time()
+    
+    with _ff_lock:
+        if _ff_cache_xml and (now - _ff_cache_ts) < _FF_CACHE_TTL:
+            return _ff_cache_xml
+            
+        try:
+            # Essayer plusieurs instances si possible (fallback)
+            urls = [
+                "https://nfs.faireconomy.media/ff_calendar_thisweek.xml",
+                "https://www.forexfactory.com/ff_calendar_thisweek.xml"
+            ]
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+            
+            for url in urls:
+                try:
+                    r = requests.get(url, headers=headers, timeout=15)
+                    if r.status_code == 200 and len(r.text) > 1000:
+                        _ff_cache_xml = r.text
+                        _ff_cache_ts = now
+                        return _ff_cache_xml
+                    else:
+                        print(f"[FF] HTTP {r.status_code} sur {url}")
+                except Exception as e:
+                    print(f"[FF] Erreur sur {url}: {e}")
+                    
+        except Exception as e:
+            print(f"[FF Cache Fetch] {e}")
+            
+    return _ff_cache_xml if _ff_cache_xml else None
+
 def _merge_forexfactory_actuals(events):
     """
     Quand ForexFactory publie ff_actual, met à jour les lignes calendrier correspondantes.
@@ -587,7 +635,10 @@ def _merge_forexfactory_actuals(events):
     Persiste les résultats dans ECON_ACTUAL_CACHE pour les requêtes suivantes.
     """
     try:
-        feed = feedparser.parse("https://nfs.faireconomy.media/ff_calendar_thisweek.xml")
+        xml_data = _fetch_ff_xml()
+        if not xml_data:
+            return
+        feed = feedparser.parse(xml_data)
         for entry in feed.entries:
             actual = (entry.get("ff_actual") or "").strip()
             if not actual:
@@ -727,7 +778,10 @@ def get_calendar(date_str=None, view="week"):
 def _fetch_forexfactory_rss():
     events = []
     try:
-        feed = feedparser.parse("https://nfs.faireconomy.media/ff_calendar_thisweek.xml")
+        xml_data = _fetch_ff_xml()
+        if not xml_data:
+            return []
+        feed = feedparser.parse(xml_data)
         for entry in feed.entries[:120]:
             title   = entry.get("title","").strip()
             country = entry.get("ff_country","")
