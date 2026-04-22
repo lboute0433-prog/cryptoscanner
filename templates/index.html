@@ -399,7 +399,7 @@ tbody tr { transition:background .15s ease; }
   color:#a09a8e;
   letter-spacing:.4px;
 }
-.dashboard-columns { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+.dashboard-columns { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 .dashboard-side-stack { display:flex; flex-direction:column; gap:12px; }
 .dashboard-mode-bar{
   display:flex;
@@ -1608,7 +1608,7 @@ window.hideKpiSkeleton = function() {
   <div class="dashboard-columns">
 
     <!-- News critiques -->
-    <div class="table-wrap dashboard-expert-only" style="padding:16px">
+    <div class="table-wrap dashboard-expert-only" style="padding:16px;min-height:350px;display:flex;flex-direction:column">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div class="form-title" style="margin:0">🚨 NEWS CRITIQUES</div>
         <button class="btn" style="padding:3px 10px;font-size:.65rem;border:1px solid var(--border);color:var(--muted)" onclick="showTab('news')">Toutes →</button>
@@ -1617,7 +1617,7 @@ window.hideKpiSkeleton = function() {
     </div>
 
     <!-- Dernières stats macro publiées -->
-    <div class="table-wrap" style="padding:16px">
+    <div class="table-wrap" style="padding:16px;min-height:350px;display:flex;flex-direction:column">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div class="form-title" style="margin:0">📅 DERNIÈRES STATS</div>
         <button class="btn" style="padding:3px 10px;font-size:.65rem;border:1px solid var(--border);color:var(--muted)" onclick="showTab('macro')">Calendrier →</button>
