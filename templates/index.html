@@ -429,8 +429,7 @@ tbody tr { transition:background .15s ease; }
   background:linear-gradient(135deg,var(--accent),#72f1ff);
   border-color:transparent;
 }
-.dashboard-expert-only{display:none}
-body.dashboard-mode-expert .dashboard-expert-only{display:inherit}
+/* Expert sections now always visible — Essential/Expert mode removed */
 .desk-ribbon {
   display:grid;
   grid-template-columns:repeat(4,minmax(0,1fr));
@@ -1544,13 +1543,7 @@ window.hideKpiSkeleton = function() {
     </div>
   </div>
 
-  <div class="dashboard-mode-bar">
-    <div class="dashboard-mode-copy">Mode d'affichage du dashboard: Essentiel pour lecture rapide, Expert pour tous les blocs.</div>
-    <div class="dashboard-mode-actions">
-      <button id="dash-mode-essential" class="dashboard-mode-btn active" onclick="setDashboardMode('essential')">Essentiel</button>
-      <button id="dash-mode-expert" class="dashboard-mode-btn" onclick="setDashboardMode('expert')">Expert</button>
-    </div>
-  </div>
+  <!-- Mode switcher removed — all content now visible by default -->
 
   <!-- IDs cachés expert pour compatibilité JS -->
   <span id="expert-fg-val" style="display:none"></span>
@@ -6060,22 +6053,12 @@ function showTab_noEvent(name) {
   document.getElementById('tab-' + name).classList.add('active');
 }
 
-function setDashboardMode(mode) {
-  const m = (mode === 'expert') ? 'expert' : 'essential';
-  document.body.classList.toggle('dashboard-mode-expert', m === 'expert');
-  const bEss = document.getElementById('dash-mode-essential');
-  const bExp = document.getElementById('dash-mode-expert');
-  if (bEss) bEss.classList.toggle('active', m === 'essential');
-  if (bExp) bExp.classList.toggle('active', m === 'expert');
-  try { localStorage.setItem('dash_mode', m); } catch (_) {}
-}
+/* setDashboardMode() removed — all sections now always visible */
 
 // Charger la clé au démarrage
 window.addEventListener('load', () => {
   loadApiKey();
-  let mode = 'essential';
-  try { mode = localStorage.getItem('dash_mode') || 'essential'; } catch (_) {}
-  setDashboardMode(mode);
+  // Dashboard mode switcher removed — all sections visible by default
 });
 
 // ── DASHBOARD ─────────────────────────────────────────────────
