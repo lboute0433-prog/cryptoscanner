@@ -6251,7 +6251,7 @@ function updateHeroStrip(totalVol) {
 
 // Dashboard news critiques
 async function loadDashNews() {
-  const res  = await fetch('/api/news?critical=true&limit=5');
+  const res  = await fetch('/api/news?critical=true&limit=10');
   const data = await res.json();
   const el   = document.getElementById('dash-news');
   if(!el) return;
@@ -6277,7 +6277,7 @@ async function loadDashCalendar() {
     const evs   = data.events || [];
     const published = (data.recent_releases || [])
       .sort((a,b) => `${b.date||''} ${b.time||''}`.localeCompare(`${a.date||''} ${a.time||''}`))
-      .slice(0,4);
+      .slice(0,8);
     if (published.length) {
       el.innerHTML = published.map(e => {
         const a = e.assessment || {};
@@ -6321,7 +6321,7 @@ async function loadDashCalendar() {
     const upcoming     = evs.filter(e => !e.actual && !e.is_past);
     const pastNoActual = evs.filter(e => !e.actual && e.is_past);
 
-    const toShow = [...withActual, ...upcoming, ...pastNoActual].slice(0, 5);
+    const toShow = [...withActual, ...upcoming, ...pastNoActual].slice(0, 8);
 
     const _impactDot = e => e.impact === 'High' ? '🔴' : '🟡';
     const _statusLabel = e => {
