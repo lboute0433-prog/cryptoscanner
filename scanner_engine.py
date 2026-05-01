@@ -724,36 +724,55 @@ class ScannerEngine:
 
     def fetch_market_info(self):
         info = {}
-        try:
-            r = requests.get(FEAR_GREED_URL, timeout=8)
-            d = r.json()["data"][0]
-            info["fear_greed"] = {
-                "value": int(d["value"]),
-                "label": d["value_classification"],
-                "ts":    d["timestamp"]
-            }
-        except:
+        headers_robust = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "application/json",
+            "Accept-Encoding": "gzip, deflate",
+            "Connection": "keep-alive"
+        }
+
+        # Fear & Greed Index avec retry
+        for attempt in range(2):
             try:
-                r = requests.get("https://api.alternative.me/fng/", params={"limit":1,"format":"json"}, timeout=6)
+                r = requests.get(FEAR_GREED_URL, timeout=12, headers=headers_robust)
+                r.raise_for_status()
                 d = r.json()["data"][0]
-                info["fear_greed"] = {"value": int(d["value"]), "label": d["value_classification"], "ts": d["timestamp"]}
-            except:
-                info["fear_greed"] = None
-        try:
-            r = requests.get(GLOBAL_MARKET, timeout=8, headers={"Accept":"application/json"})
-            d    = r.json().get("data", {})
-            pcts = d.get("market_cap_percentage", {})
-            if pcts.get("btc"):
-                info["dominance"] = {
-                    "btc":        round(pcts.get("btc", 0), 1),
-                    "eth":        round(pcts.get("eth", 0), 1),
-                    "total_mcap": d.get("total_market_cap", {}).get("usd", 0),
-                    "total_vol":  d.get("total_volume", {}).get("usd", 0),
+                info["fear_greed"] = {
+                    "value": int(d["value"]),
+                    "label": d["value_classification"],
+                    "ts":    d["timestamp"]
                 }
-            else:
-                raise Exception("Empty data")
-        except:
-            info["dominance"] = None
+                break
+            except Exception as e:
+                if attempt == 0:
+                    time.sleep(1)
+                    continue
+                else:
+                    info["fear_greed"] = None
+
+        # Global Market Info (Dominance) avec retry
+        for attempt in range(2):
+            try:
+                r = requests.get(GLOBAL_MARKET, timeout=12, headers=headers_robust)
+                r.raise_for_status()
+                d    = r.json().get("data", {})
+                pcts = d.get("market_cap_percentage", {})
+                if pcts.get("btc"):
+                    info["dominance"] = {
+                        "btc":        round(pcts.get("btc", 0), 1),
+                        "eth":        round(pcts.get("eth", 0), 1),
+                        "total_mcap": d.get("total_market_cap", {}).get("usd", 0),
+                        "total_vol":  d.get("total_volume", {}).get("usd", 0),
+                    }
+                else:
+                    raise Exception("Empty data")
+                break
+            except Exception as e:
+                if attempt == 0:
+                    time.sleep(1)
+                    continue
+                else:
+                    info["dominance"] = None
         try:
             r = requests.get(BINANCE_FUNDING, timeout=8)
             data = r.json()
@@ -1397,14 +1416,4 @@ class ScannerEngine:
                     api_secret TEXT DEFAULT '', api_key_enc TEXT DEFAULT '',
                     api_secret_enc TEXT DEFAULT '', migrated INTEGER DEFAULT 0,
                     updated TEXT DEFAULT '', PRIMARY KEY (user_id, exchange))""")
-                except: pass
-                conn.commit()
-                row = conn.execute("SELECT api_key, api_secret, api_key_enc, api_secret_enc, migrated FROM user_exchange_keys WHERE user_id=? AND exchange=?", (user_id, exchange)).fetchone()
-                conn.close()
-                if row:
-                    if row["migrated"] and row["api_key_enc"]:
-                        from security import vault
-                        return {"api_key": vault.decrypt(row["api_key_enc"]), "api_secret": vault.decrypt(row["api_secret_enc"])}
-                    return {"api_key": row["api_key"], "api_secret": row["api_secret"]}
-            except: pass
-            return None
+                except: 
