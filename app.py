@@ -83,6 +83,7 @@ from indices_engine import (
     fetch_okx_spot, fetch_okx_perp,
     fetch_multi_exchange, get_cross_market_analysis,
     calc_market_mood_score, init_indices_db,
+    calc_crypto_total3, calc_crypto_others,
 )
 from cvd_engine import get_cvd_data, get_cvd_multi
 
@@ -175,6 +176,7 @@ except Exception as e:
     scheduler = None
     telegram_bot = None
 
+
 # ── Cache Smart Signals (Thread-Safe) ────────────────────────
 _smart_signals_cache = []
 _smart_signals_ts = None
@@ -207,7 +209,7 @@ def smart_signal_loop():
                     if rsi is not None:
                         retrace = check_rsi_exit(sym, rsi)
                         if retrace:
-                            _send_retrace_alert(sym, retrace, coin)
+                            _send_retrace_alert(sym, retrace, coin, candles_15m=candles)
                         update_rsi_history(sym, rsi)
                     # Signal standard
                     signal = analyze_coin_smart(sym, candles)
@@ -225,7 +227,7 @@ def smart_signal_loop():
                     if rsi is not None:
                         retrace = check_rsi_exit(sym, rsi)
                         if retrace:
-                            _send_retrace_alert(sym, retrace, coin)
+                            _send_retrace_alert(sym, retrace, coin, candles_15m=candles)
                         update_rsi_history(sym, rsi)
                 except: continue
 
@@ -286,22 +288,26 @@ def _send_smart_alerts(signals):
             if len(_alerted_signals) > 500:
                 _alerted_signals = set(list(_alerted_signals)[-200:])
 
-        msg = build_telegram_alert(s)
+        # Envoyer version FREE sur le canal public Telegram
+        msg_free = build_telegram_alert(s, for_role="free")
         _tk = TELEGRAM_TOKEN
         _ch = TELEGRAM_CHAT
         if _tk and _ch:
             try:
-                req.post(f"https://api.telegram.org/bot{_tk}/sendMessage", json={"chat_id":_ch,"text":msg,"parse_mode":"HTML"},timeout=5)
+                req.post(f"https://api.telegram.org/bot{_tk}/sendMessage", json={"chat_id":_ch,"text":msg_free,"parse_mode":"HTML"},timeout=5)
             except: pass
-        # Smart Signals = contenu premium → membres payants + VIP uniquement
-        engine._broadcast_to_members(msg, min_role="paid")
+
+        # Envoyer version PAID aux membres payants (via dashboard websocket)
+        msg_paid = build_telegram_alert(s, for_role="paid")
+        engine._broadcast_to_members(msg_paid, min_role="paid")
         sent_this_cycle += 1
 
 
-def _send_retrace_alert(symbol: str, rsi_exit: dict, coin: dict):
+def _send_retrace_alert(symbol: str, rsi_exit: dict, coin: dict, candles_15m=None):
     """
     Envoie une alerte Telegram de retournement RSI.
     Dédup : 1 alerte par symbol + direction par heure.
+    candles_15m : données OHLCV pour enrichissements PAID (volume confirmation, SR proximity, volatility)
     """
     global _alerted_retraces
     hour = datetime.now().strftime('%H')
@@ -317,21 +323,24 @@ def _send_retrace_alert(symbol: str, rsi_exit: dict, coin: dict):
     change_pct = coin.get("change_pct", 0)
     volume_usd = coin.get("volume_usdt", 0)
 
-    msg = build_retrace_alert(symbol, rsi_exit, price, change_pct, volume_usd)
     print(f"[Retrace] {symbol} — {rsi_exit['name']} RSI {rsi_exit['rsi_prev']}→{rsi_exit['rsi_now']}")
 
+    # Envoyer version FREE sur le canal public Telegram
+    msg_free = build_retrace_alert(symbol, rsi_exit, price, change_pct, volume_usd, for_role="free", candles_15m=candles_15m)
     _tk = TELEGRAM_TOKEN
     _ch = TELEGRAM_CHAT
     if _tk and _ch:
         try:
             req.post(
                 f"https://api.telegram.org/bot{_tk}/sendMessage",
-                json={"chat_id": _ch, "text": msg, "parse_mode": "HTML"},
+                json={"chat_id": _ch, "text": msg_free, "parse_mode": "HTML"},
                 timeout=5
             )
         except: pass
-    # Retrace = contenu premium → membres payants + VIP uniquement
-    engine._broadcast_to_members(msg, min_role="paid")
+
+    # Envoyer version PAID aux membres payants (via dashboard websocket)
+    msg_paid = build_retrace_alert(symbol, rsi_exit, price, change_pct, volume_usd, for_role="paid", candles_15m=candles_15m)
+    engine._broadcast_to_members(msg_paid, min_role="paid")
 
 
 # ── Boucles Background ───────────────────────────────────────
@@ -350,23 +359,23 @@ def scan_loop():
                     try:
                         data["dna_score"] = calc_market_dna_score(fg, dom.get("btc"), len(data.get("signals",[])), len(coins), gainers)
                     except: pass
-                    socketio.emit("market_update", data)
+                    socketio.emit("market_update", data, broadcast=True)
                     print(f"[Scan] {len(coins)} coins | {len(data.get('signals',[]))} signaux")
             
             if cycle % 30 == 0:
                 try:
                     info = engine.fetch_market_info()
-                    if info: socketio.emit("market_info_update", info)
+                    if info: socketio.emit("market_info_update", info, broadcast=True)
                 except: pass
                 try:
-                    socketio.emit("whale_update", engine.fetch_whale_alerts())
+                    socketio.emit("whale_update", engine.fetch_whale_alerts(), broadcast=True)
                 except: pass
             
             if cycle % 60 == 0:
                 try:
                     news = fetch_news_rss()
                     critical = [n for n in news if n.get("is_critical")]
-                    socketio.emit("news_update", {"all":news[:20],"critical":critical[:5]})
+                    socketio.emit("news_update", {"all":news[:20],"critical":critical[:5]}, broadcast=True)
                 except: pass
         except Exception as e:
             print(f"[scan_loop] {e}")
@@ -385,7 +394,7 @@ def macro_loop():
                 "econ_cal": fetch_economic_calendar(view="week"),
                 "ts": datetime.now().strftime("%H:%M:%S")
             }
-            socketio.emit("macro_update", macro_data)
+            socketio.emit("macro_update", macro_data, broadcast=True)
             
             if datetime.now().weekday() == 4:
                 for asset in ["BTC","ETH"]:
@@ -572,7 +581,7 @@ def _send_system_email(to_address, subject, html_body, reply_to=""):
             msg["Reply-To"] = reply_to
         msg.attach(MIMEText(html_body, "html", "utf-8"))
         smtp_cls = smtplib.SMTP_SSL if SMTP_USE_SSL else smtplib.SMTP
-        with smtp_cls(SMTP_SERVER, SMTP_PORT, timeout=20) as server:
+        with smtp_cls(SMTP_SERVER, SMTP_PORT, timeout=3) as server:
             if SMTP_USE_STARTTLS and not SMTP_USE_SSL:
                 server.starttls()
             server.login(smtp_login, SMTP_PASSWORD)
@@ -580,6 +589,22 @@ def _send_system_email(to_address, subject, html_body, reply_to=""):
         return True, ""
     except Exception as e:
         return False, str(e)
+
+
+def _send_email_async(to_address, subject, html_body, reply_to=""):
+    """Envoie un email en arrière-plan (non-bloquant)"""
+    def _send():
+        try:
+            ok, err = _send_system_email(to_address, subject, html_body, reply_to)
+            if not ok:
+                print(f"[Email async] {to_address}: {err}")
+            else:
+                print(f"[Email async] Sent to {to_address}")
+        except Exception as e:
+            print(f"[Email async error] {to_address}: {e}")
+
+    thread = threading.Thread(target=_send, daemon=True)
+    thread.start()
 
 # ── Pages ─────────────────────────────────────────────────────
 @app.route("/health")
@@ -637,7 +662,20 @@ def ready():
 
 @app.route("/")
 def index():
+    # Vérifier si l'utilisateur est authentifié
+    sess = get_session()
+    if not sess:
+        # Pas authentifié → landing page
+        return render_template("landing.html")
+    # Authentifié → dashboard
     return render_template("index.html")
+
+
+@app.route("/dashboard")
+def dashboard():
+    """Route dashboard — affiche index.html pour tout le monde (formulaire d'inscription accessible publiquement)"""
+    return render_template("index.html")
+
 
 @app.route("/admin")
 def admin_page():
@@ -738,12 +776,9 @@ def api_auth_register():
         f"<p><b>Email:</b> {email}</p>"
         f"<p><b>Date:</b> {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</p>"
     )
-    ok_admin = False
-    err_admin = ""
+    # Envoyer l'email admin en arrière-plan (non-bloquant)
     if ADMIN_NOTIFY_EMAIL:
-        ok_admin, err_admin = _send_system_email(ADMIN_NOTIFY_EMAIL, admin_subject, admin_html, reply_to=email)
-        if not ok_admin:
-            print(f"[Email register admin] {err_admin}")
+        _send_email_async(ADMIN_NOTIFY_EMAIL, admin_subject, admin_html, reply_to=email)
 
     user_subject = "Bienvenue sur CryptoScanner Pro"
     user_html = (
@@ -751,9 +786,8 @@ def api_auth_register():
         f"<p>Ton compte <b>{username}</b> a bien été créé.</p>"
         f"<p>Tu peux maintenant te connecter, configurer Google Authenticator et lier ton Telegram depuis l'onglet Config.</p>"
     )
-    ok_user, err_user = _send_system_email(email, user_subject, user_html)
-    if not ok_user:
-        print(f"[Email register user] {err_user}")
+    # Envoyer l'email utilisateur en arrière-plan (non-bloquant)
+    _send_email_async(email, user_subject, user_html)
 
     # Créer une session immédiatement après inscription (auto-login fiable)
     session_token = None
@@ -770,11 +804,7 @@ def api_auth_register():
         "username": username,
         "role": role,
         "subscription_status": subscription_status,
-        "email_sent_user": ok_user,
-        "email_sent_admin": ok_admin,
-        "email_error_user": err_user if not ok_user else "",
-        "email_error_admin": err_admin if not ok_admin else "",
-        "email_notice": "Compte cree. L'email de bienvenue est facultatif tant que le SMTP n'est pas configure.",
+        "email_notice": "Compte cree. Les emails sont envoyes en arriere-plan.",
     }))
     if session_token:
         _set_session_cookie(resp, session_token)
@@ -2165,8 +2195,94 @@ def api_crypto_others():
     data = calc_crypto_others()
     return jsonify(data) if data else jsonify({"error": "Donnees indisponibles"}), 503
 
-if __name__ == "__main__":
-    start_runtime_services()
-    port = int(os.environ.get("PORT", "5000"))
-    socketio.run(app, host="0.0.0.0", port=port)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+# ══════════════════════════════════════════════════════════════
+# ALERT SETTINGS — Gestion des paramètres d'alertes
+# ══════════════════════════════════════════════════════════════
+@app.route("/api/alert_settings", methods=["GET"])
+def api_get_all_alert_settings():
+    """Récupère toutes les configurations d'alertes"""
+    try:
+        configs = engine.get_all_alert_configs()
+        return jsonify({"ok": True, "settings": configs})
+    except Exception as e:
+        print(f"[/api/alert_settings GET] {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/alert_settings/<alert_type>", methods=["GET"])
+def api_get_alert_setting(alert_type):
+    """Récupère la configuration d'un type d'alerte spécifique"""
+    try:
+        config = engine.get_alert_config(alert_type)
+        return jsonify({"ok": True, "alert_type": alert_type, "config": config})
+    except Exception as e:
+        print(f"[/api/alert_settings/{alert_type} GET] {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/alert_settings/<alert_type>", methods=["POST"])
+def api_set_alert_setting(alert_type):
+    """Sauvegarde la configuration d'un type d'alerte"""
+    try:
+        data = _json_body()
+        config = data.get("config", {})
+
+        engine.set_alert_config(alert_type, config, modified_by="admin")
+
+        return jsonify({"ok": True, "alert_type": alert_type, "config": config})
+    except Exception as e:
+        print(f"[/api/alert_settings/{alert_type} POST] {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/ticker")
+def api_ticker():
+    """Retourne les coins formatés pour le ticker défilant"""
+    try:
+        data = engine.get_last()
+        coins = data.get("coins", []) or []
+        if not coins:
+            scanned = engine.scan()
+            if scanned:
+                coins = scanned.get("coins", [])
+
+        # Formatte pour le ticker : {items: [{sym, price, change_str, trend}, ...]}
+        items = []
+        for coin in coins[:15]:  # Top 15 coins pour le ticker
+            try:
+                sym = coin.get("symbol", "").split("/")[0]  # BTC from BTC/USDT
+                price = coin.get("price", 0)
+                change = coin.get("change_pct", 0)
+                trend = "up" if change > 0 else ("down" if change < 0 else "neutral")
+                change_str = f"{change:+.2f}%" if change else "—"
+
+                items.append({
+                    "sym": sym,
+                    "price": f"${price:.2f}" if price else "—",
+                    "change_str": change_str,
+                    "trend": trend
+                })
+            except:
+                pass
+
+        return jsonify({"items": items})
+    except Exception as e:
+        print(f"[/api/ticker] {e}")
+        return jsonify({"items": []})
+
+# ══════════════════════════════════════════════════════════════
+# HEATMAP OI+VOLUME ENDPOINTS
+# ══════════════════════════════════════════════════════════════
+
+try:
+    from heatmap_engine import HeatmapCalculator, assign_color
+    heatmap_calc = HeatmapCalculator()
+
+    @app.route('/api/heatmap/all', methods=['GET'])
+    def get_heatmap_all():
+        """Global heatmap — all cryptos with intensity."""
+        user_id = request.cookies.get('cs_token') or request.values.get('cs_token')
+        if not user_id:
+            return jsonify({"error": "Unauthorized"}), 401
+
+        try:
+            cryptos = heatmap_calc.get_all_from_cache()
+            if not cryptos:
+           
