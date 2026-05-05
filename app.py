@@ -12,7 +12,7 @@ CryptoScanner Pro V11 — App Principale (CORRIGÉ)
 from flask import Flask, render_template, jsonify, request, make_response, redirect
 from flask_socketio import SocketIO
 import threading, time, os, sys, sqlite3
-from db import get_connection
+from db import get_connection, migrate_add_subscription_tier
 import requests as req
 import smtplib
 from email.mime.text import MIMEText
@@ -86,6 +86,7 @@ from indices_engine import (
     calc_crypto_total3, calc_crypto_others,
 )
 from cvd_engine import get_cvd_data, get_cvd_multi
+from security import require_tier, get_user_tier, TIER_LEVELS
 
 # ── Initialisation Flask ─────────────────────────────────────
 app = Flask(__name__)
@@ -147,6 +148,7 @@ init_cot_db()
 init_forex_db()
 init_backtest_db()
 init_indices_db()
+migrate_add_subscription_tier()
 
 try:
     scheduler = DailyReportScheduler(engine, fetch_etf_flows, fetch_economic_calendar)
@@ -2232,6 +2234,73 @@ def api_set_alert_setting(alert_type):
         print(f"[/api/alert_settings/{alert_type} POST] {e}")
         return jsonify({"ok": False, "error": str(e)}), 500
 
+# ══════════════════════════════════════════════════════════════
+# ADMIN ALERTS CONFIG — Routes pour admin.html
+# ══════════════════════════════════════════════════════════════
+
+# Configs d'alertes en mémoire (à persister en BDD plus tard)
+_alert_configs = {
+    'smart_signals': {
+        'score_min': 55,
+        'pump_pct': 4.0,
+        'dump_pct': -4.0,
+        'volume_mult': 5.0,
+        'criteria_min': 3,
+        'adr_pct': 25,
+        'cooldown_hours': 1,
+        'max_per_cycle': 3
+    },
+    'retrace_rsi': {
+        'rsi_overbought': 70,
+        'rsi_oversold': 30,
+        'cooldown_hours': 1
+    },
+    'macro_events': {
+        'impact_filter': 'High',
+        'window_start': 7,
+        'window_end': 22
+    }
+}
+
+@app.route("/api/admin/alerts/config", methods=["GET"])
+def api_admin_alerts_config_get_all():
+    """Récupère toutes les configs d'alertes"""
+    sess, denied = _admin_guard()
+    if denied:
+        return denied
+    return jsonify({
+        'smart_signals': {'config': _alert_configs.get('smart_signals', {})},
+        'retrace_rsi': {'config': _alert_configs.get('retrace_rsi', {})},
+        'macro_events': {'config': _alert_configs.get('macro_events', {})}
+    })
+
+@app.route("/api/admin/alerts/config/<alert_type>", methods=["POST"])
+def api_admin_alerts_config_save(alert_type):
+    """Sauvegarde la config d'un type d'alerte"""
+    sess, denied = _admin_guard()
+    if denied:
+        return denied
+
+    if alert_type not in _alert_configs:
+        return jsonify({"ok": False, "error": f"Type d'alerte inconnu: {alert_type}"}), 400
+
+    data = _json_body()
+    try:
+        # Mettre à jour la config en mémoire
+        _alert_configs[alert_type].update(data)
+
+        # TODO: Persister en base de données
+        # conn = connect_sqlite()
+        # conn.execute("""INSERT OR REPLACE INTO alert_configs (alert_type, config)
+        #             VALUES (?, ?)""", (alert_type, json.dumps(data)))
+        # conn.commit()
+        # conn.close()
+
+        return jsonify({"ok": True, "alert_type": alert_type, "config": _alert_configs[alert_type]})
+    except Exception as e:
+        print(f"[/api/admin/alerts/config/{alert_type} POST] {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
 @app.route("/api/ticker")
 def api_ticker():
     """Retourne les coins formatés pour le ticker défilant"""
@@ -2285,4 +2354,69 @@ try:
         try:
             cryptos = heatmap_calc.get_all_from_cache()
             if not cryptos:
-           
+                cryptos = heatmap_calc.run_update_cycle()
+                if not cryptos:
+                    return jsonify({"error": "No data available"}), 503
+
+            return jsonify({
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "cryptos": cryptos
+            }), 200
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route('/api/heatmap/<symbol>', methods=['GET'])
+    def get_heatmap_detail(symbol):
+        """Detailed heatmap by price level for a specific crypto."""
+        user_id = request.cookies.get('cs_token') or request.values.get('cs_token')
+        if not user_id:
+            return jsonify({"error": "Unauthorized"}), 401
+
+        try:
+            resp = req.get(
+                f"https://api.binance.com/api/v3/ticker/price",
+                params={"symbol": f"{symbol}USDT"},
+                timeout=5
+            )
+            current_price = float(resp.json()["price"])
+
+            price_levels = []
+            for i in range(-3, 4):
+                level_price = current_price * (1 + i * 0.01)
+                distance_pct = abs(i) / 3.0
+                intensity = 1.0 - distance_pct
+                color = assign_color(intensity)
+
+                price_levels.append({
+                    "price": round(level_price, 2),
+                    "intensity": round(intensity, 4),
+                    "color": color
+                })
+
+            return jsonify({
+                "symbol": symbol,
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "price_levels": price_levels
+            }), 200
+
+        except Exception as e:
+            return jsonify({"error": "Failed to fetch price levels"}), 503
+
+except ImportError:
+    print("[Heatmap] Warning: heatmap_engine not available")
+
+# ══════════════════════════════════════════════════════════════
+# LANCER LES THREADS DE FOND AU DÉMARRAGE DU MODULE
+# ══════════════════════════════════════════════════════════════
+# Cet appel s'exécute APRÈS que toutes les fonctions soient définies
+# mais AVANT le if __name__ block, garantissant que sur Gunicorn,
+# les threads (scan_loop, macro_loop, smart_signal_loop) se lancent
+try:
+    start_runtime_services()
+    print("[Init] Background services lancés ✓")
+except Exception as e:
+    print(f"[Init] Erreur au lancement background services: {e}")
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", "5000"))
+    socketio.run(app, host="0.0.0.0", port=port)

@@ -858,3 +858,49 @@ def init_security():
         "fernet":  _FERNET_AVAILABLE,
         "totp":    _TOTP_AVAILABLE,
     }
+
+
+# ══════════════════════════════════════════════════════════════
+# 12. TIER PERMISSIONS — Système de niveaux d'accès
+# ══════════════════════════════════════════════════════════════
+
+TIER_LEVELS = {'free': 0, 'member': 1, 'vip': 2}
+
+
+def get_user_tier(user_id):
+    """Get user tier from database."""
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute('SELECT subscription_tier FROM users WHERE id = ?', (user_id,))
+        row = cur.fetchone()
+        return row[0] if row else 'free'
+    except Exception:
+        return 'free'
+    finally:
+        conn.close()
+
+
+def require_tier(minimum_tier):
+    """Decorator: Check if user has minimum tier."""
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            from security import get_session
+            user = get_session()
+            if not user:
+                try:
+                    from flask import jsonify
+                    return jsonify({'error': 'Not authenticated'}), 401
+                except Exception:
+                    return {'error': 'Not authenticated'}, 401
+            user_tier = get_user_tier(user['id'])
+            if TIER_LEVELS.get(user_tier, 0) < TIER_LEVELS.get(minimum_tier, 0):
+                try:
+                    from flask import jsonify
+                    return jsonify({'error': f'Minimum tier required: {minimum_tier}'}), 403
+                except Exception:
+                    return {'error': f'Minimum tier required: {minimum_tier}'}, 403
+            return f(*args, **kwargs)
+        return wrapper
+    return decorator

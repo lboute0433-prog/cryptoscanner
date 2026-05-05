@@ -326,3 +326,45 @@ def print_db_mode() -> None:
         print(f"[DB] Mode PostgreSQL — {host}")
     else:
         print(f"[DB] Mode SQLite — {DB_PATH}")
+
+
+def init_users_db():
+    """Initialize users table with subscription schema."""
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY,
+                email TEXT UNIQUE NOT NULL,
+                username TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                subscription_tier TEXT DEFAULT 'free',
+                subscription_expires DATETIME,
+                telegram_id TEXT,
+                telegram_verified INTEGER DEFAULT 0,
+                role TEXT DEFAULT 'visitor'
+            )
+        ''')
+        conn.commit()
+        print("[DB] Users table initialized")
+    except Exception as e:
+        print(f"[DB] Error initializing users table: {e}")
+    finally:
+        conn.close()
+
+
+def migrate_add_subscription_tier():
+    """Add subscription_tier column if it doesn't exist."""
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute('ALTER TABLE users ADD COLUMN subscription_tier TEXT DEFAULT "free"')
+        cur.execute('ALTER TABLE users ADD COLUMN subscription_expires DATETIME')
+        conn.commit()
+        print("[DB] Migration: Added subscription_tier columns")
+    except Exception:
+        pass
+    finally:
+        conn.close()
