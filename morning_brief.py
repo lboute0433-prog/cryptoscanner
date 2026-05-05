@@ -116,23 +116,18 @@ def fetch_brief_data():
             }
             prices = {}
             total_mcap = 0
-            has_valid_changes = False
             for c in coins:
                 sym = c.get("symbol","").upper()
                 cg_id = sym_map.get(sym)
                 if cg_id:
-                    change = float(c.get("change_pct", 0) or 0)
                     prices[cg_id] = {
                         "usd": c.get("price", 0),
-                        "usd_24h_change": change,
+                        "usd_24h_change": c.get("change_pct", 0),
                         "usd_7d_change": c.get("change_7d", 0),
                         "usd_market_cap": c.get("market_cap", 0),
                     }
-                    if change != 0:
-                        has_valid_changes = True
                 total_mcap += c.get("market_cap", 0)
-            # ✓ Utiliser scanner SEULEMENT si les données ont des changes valides
-            if prices and has_valid_changes:
+            if prices:
                 data["prices"] = prices
                 data["global"] = {
                     "total_market_cap": {"usd": total_mcap},
@@ -140,13 +135,11 @@ def fetch_brief_data():
                         "btc": (prices.get("bitcoin",{}).get("usd_market_cap",0) / total_mcap * 100) if total_mcap else 0
                     }
                 }
-                print(f"[Brief] Scanner cache OK {len(prices)} coins (avec changes valides)")
-            elif prices:
-                print(f"[Brief] Scanner cache incomplet (changes = 0), fallback CoinGecko")
+                print(f"[Brief] Scanner cache OK {len(prices)} coins")
     except Exception as e:
         print(f"[Brief] Scanner cache: {e}")
 
-    # ── Priorité 2 : CoinGecko API si pas de cache ou data incomplète ────────────
+    # ── Priorité 2 : CoinGecko API si pas de cache ────────────
     if not data.get("prices"):
         try:
             r = requests.get(
@@ -454,11 +447,9 @@ def build_brief_html(analysis, market_data, token):
     btc_dom = g.get("market_cap_percentage",{}).get("btc",0)
 
     alt_rows = "".join([
-        f'<tr style="border-bottom:1px solid #2a2a40;transition:background .15s">'
-        f'<td style="padding:10px 8px;color:#ffd700;font-weight:700;font-size:13px">{a.get("symbole","")}</td>'
-        f'<td style="padding:10px 8px;color:#aaa;font-size:12px">{a.get("nom","")}</td>'
-        f'<td style="padding:10px 8px;color:{clr(a.get("variation_24h",0))};font-weight:700;font-size:13px;text-align:right">{pct(a.get("variation_24h",0))}</td>'
-        f'</tr>'
+        f'<tr><td style="color:#ffd700;font-weight:700">{a.get("symbole","")}</td>'
+        f'<td style="color:#888">{a.get("nom","")}</td>'
+        f'<td style="color:{clr(a.get("variation_24h",0))};font-weight:700">{pct(a.get("variation_24h",0))}</td></tr>'
         for a in alts])
     winners = "".join([f'<div style="color:#4caf50;padding:2px 0;font-size:12px">▸ {t}</div>' for t in analysis.get("top_gagnants",[])])
     losers  = "".join([f'<div style="color:#f44336;padding:2px 0;font-size:12px">▸ {t}</div>' for t in analysis.get("top_perdants",[])])
@@ -470,53 +461,16 @@ def build_brief_html(analysis, market_data, token):
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Morning Brief — {date_str}</title>
 <style>
-:root{{
-  --bg-gradient: linear-gradient(135deg, #0f1428 0%, #1e1a4a 100%);
-  --accent-gold: #ffd700;
-  --sentiment-green: #4caf50;
-  --sentiment-red: #f44336;
-  --text-primary: #e0e0f0;
-  --text-secondary: #ccc;
-  --text-muted: #aaa;
-  --text-subtle: #666;
-  --card-bg: rgba(37,37,64,0.8);
-  --row-alt-1: rgba(255,255,255,0.02);
-  --row-alt-2: rgba(0,0,0,0.2);
-}}
-
 *{{box-sizing:border-box;margin:0;padding:0}}
-
-body{{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg-gradient);color:var(--text-primary);min-height:100vh}}
-.hdr{{background:linear-gradient(135deg,#1a1a2e,#16213e);padding:20px 24px;border-bottom:2px solid var(--accent-gold);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}}
-
+body{{font-family:'Segoe UI',Arial,sans-serif;background:#12121e;color:#e0e0f0;min-height:100vh}}
+.hdr{{background:linear-gradient(135deg,#1a1a2e,#16213e);padding:20px 24px;border-bottom:2px solid #ffd700;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}}
 .wrap{{max-width:900px;margin:20px auto;padding:0 16px 60px}}
-
-.score-card{{background:rgba(30,30,48,0.6);border-radius:12px;padding:20px;margin-bottom:14px;display:flex;gap:20px;align-items:center;flex-wrap:wrap;border-left:4px solid var(--accent-gold)}}
-
-.score-card > div:first-child{{display:flex;flex-direction:column;align-items:center}}
-
-.score-value{{font-size:72px;font-weight:700;line-height:1}}
-
-.score-max{{color:var(--text-subtle);font-size:12px}}
-
-.score-signal{{font-size:20px;font-weight:700;margin-bottom:6px}}
-
-.score-bar{{background:#333;border-radius:6px;height:10px;overflow:hidden;margin-bottom:8px;width:100%}}
-
-.score-bar-fill{{height:100%;background:linear-gradient(90deg,#f44336,#ffd700,#4caf50)}}
+.score-card{{background:#1e1e30;border-radius:12px;padding:20px;margin-bottom:14px;display:flex;gap:20px;align-items:center;flex-wrap:wrap}}
 .sec{{background:#1e1e30;border-radius:10px;margin-bottom:8px;overflow:hidden}}
-
-.sec-head{{display:flex;justify-content:space-between;align-items:center;padding:13px 18px;cursor:pointer;font-size:14px;font-weight:600;transition:background 0.15s;background:rgba(0,0,0,0.3);border-bottom:2px solid var(--accent-gold)}}
-
-.sec-head:hover{{background:rgba(37,37,64,0.5)}}
-
-.sec-body{{display:none;padding:16px 18px}}
-
+.sec-head{{display:flex;justify-content:space-between;align-items:center;padding:13px 18px;cursor:pointer;font-size:14px;font-weight:600;transition:background .15s}}
+.sec-head:hover{{background:#252540}}
+.sec-body{{display:none;padding:4px 18px 16px}}
 .sec.open .sec-body{{display:block}}
-
-.sec-head span:last-child{{transition:transform 0.2s}}
-
-.sec.open .sec-head span:last-child{{transform:scaleY(-1)}}
 .row{{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #1a1a28;font-size:13px}}
 .row:last-child{{border-bottom:none}}
 .rl{{color:#888}}.rv{{font-weight:700}}
@@ -588,23 +542,10 @@ td{{padding:7px 8px;border-bottom:1px solid #1a1a28}}
 <div class="sec">
   <div class="sec-head" onclick="tog(this)"><span>🪙 Altcoins</span><span>▼</span></div>
   <div class="sec-body">
-    <table style="width:100%;border-collapse:collapse;background:#252540;border-radius:6px;overflow:hidden;margin-bottom:14px">
-      <thead><tr style="background:#2a2a40">
-        <th style="padding:10px 8px;text-align:left;color:#888;font-weight:600;font-size:11px;text-transform:uppercase;border-bottom:1px solid #1a1a28">Symbole</th>
-        <th style="padding:10px 8px;text-align:left;color:#888;font-weight:600;font-size:11px;text-transform:uppercase;border-bottom:1px solid #1a1a28">Nom</th>
-        <th style="padding:10px 8px;text-align:right;color:#888;font-weight:600;font-size:11px;text-transform:uppercase;border-bottom:1px solid #1a1a28">24h %</th>
-      </tr></thead>
-      <tbody>{alt_rows}</tbody>
-    </table>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-      <div style="background:#1a2a1a;border-radius:6px;padding:10px;border-left:3px solid #4caf50">
-        <div style="color:#4caf50;font-weight:700;font-size:12px;margin-bottom:6px">🟢 Gagnants</div>
-        <div style="font-size:12px">{winners or '<div style=\"color:#666\">—</div>'}</div>
-      </div>
-      <div style="background:#2a1a1a;border-radius:6px;padding:10px;border-left:3px solid #f44336">
-        <div style="color:#f44336;font-weight:700;font-size:12px;margin-bottom:6px">🔴 Perdants</div>
-        <div style="font-size:12px">{losers or '<div style=\"color:#666\">—</div>'}</div>
-      </div>
+    <table><tr><th>Token</th><th>Nom</th><th>24h</th></tr>{alt_rows}</table>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+      <div><div style="color:#4caf50;font-weight:700;font-size:12px;margin-bottom:6px">🟢 Gagnants</div>{winners}</div>
+      <div><div style="color:#f44336;font-weight:700;font-size:12px;margin-bottom:6px">🔴 Perdants</div>{losers}</div>
     </div>
   </div>
 </div>
@@ -873,4 +814,66 @@ def get_brief_recipients():
 # ── Job principal ────────────────────────────────────────────
 def run_morning_brief():
     global _current_brief_html, _current_brief_date, _current_brief_score, _current_brief_signal
-    print(f"\n{'='*50}\nMORNING BRIEF - {datetime.now(BRIEF_TZ).strftime('%d/%
+    print(f"\n{'='*50}\nMORNING BRIEF - {datetime.now(BRIEF_TZ).strftime('%d/%m/%Y %H:%M')}\n{'='*50}")
+    try:
+        print("  1/4 Données marché...")
+        market_data = fetch_brief_data()
+
+        print("  2/4 Analyse...")
+        analysis = generate_analysis(market_data)
+        sv = analysis.get("score",{}).get("valeur",50)
+        ss = analysis.get("score",{}).get("signal","Neutral")
+        print(f"  Score: {sv}/100 — {ss}")
+
+        print("  3/4 Génération HTML...")
+        token = generate_daily_token()
+        html  = build_brief_html(analysis, market_data, token)
+
+        # Sauvegarder en mémoire ET en DB (persistant)
+        _current_brief_html   = html
+        _current_brief_date   = get_today_str()
+        _current_brief_score  = sv
+        _current_brief_signal = ss
+        _save_brief(html, _current_brief_date, sv, ss)
+
+        print("  4/4 Envoi membres...")
+        members  = get_brief_recipients()
+        tg_token = TELEGRAM_TOKEN or os.environ.get("TG_TOKEN","")
+        admin_ch = TELEGRAM_CHAT  or os.environ.get("TG_CHAT","")
+        base_url = os.environ.get("BASE_URL","https://web-production-34b51.up.railway.app")
+        sent_e = sent_t = 0
+
+        try:
+            from app import _send_system_email as _send_fn
+        except: _send_fn = None
+
+        for m in members:
+            if m.get("email") and _send_fn:
+                try:
+                    subj = f"📊 Morning Brief {datetime.now(BRIEF_TZ).strftime('%d/%m/%Y')} — {ss} ({sv}/100)"
+                    ok, _ = _send_fn(m["email"], subj, build_brief_email_html(token, sv, ss))
+                    if ok: sent_e += 1
+                except Exception as e: print(f"  Email error {m.get('email')}: {e}")
+
+            if m.get("tg_chat_id") and m["tg_chat_id"] != admin_ch and tg_token:
+                try:
+                    requests.post(f"https://api.telegram.org/bot{tg_token}/sendMessage",
+                        json={"chat_id":m["tg_chat_id"],"text":build_brief_telegram(analysis,token),"parse_mode":"HTML"},
+                        timeout=5)
+                    sent_t += 1
+                except Exception as e: print(f"  Telegram error: {e}")
+
+        if tg_token and admin_ch:
+            try:
+                requests.post(f"https://api.telegram.org/bot{tg_token}/sendMessage",
+                    json={"chat_id":admin_ch,"text":build_brief_telegram(analysis,token),"parse_mode":"HTML"},
+                    timeout=5)
+            except Exception as e: print(f"  Admin Telegram error: {e}")
+
+        print(f"\n  Done: {sent_e} email(s), {sent_t} Telegram(s)")
+        base = os.environ.get("BASE_URL","https://web-production-34b51.up.railway.app")
+        print(f"  Link: {base}/brief?token={token}\n")
+
+    except Exception as e:
+        print(f"\n  ERROR: {e}")
+        import traceback; traceback.print_exc()
