@@ -2337,13 +2337,13 @@ def api_ticker():
         return jsonify({"items": []})
 
 @app.route('/api/institutional-flows/liquidations', methods=['GET'])
-def api_liquidations():
+def api_inst_liquidations():
     """Get liquidations for symbol. Requires tier >= member."""
     user = get_session()
     if not user:
         return jsonify({'error': 'Not authenticated'}), 401
 
-    user_tier = get_user_tier(user['id'])
+    user_tier = get_user_tier(user['user_id'])
     if TIER_LEVELS.get(user_tier, 0) < TIER_LEVELS.get('member', 0):
         return jsonify({'error': 'Upgrade to Membre for live data', 'data': None}), 403
 
@@ -2364,7 +2364,7 @@ def api_funding_rates():
     if not user:
         return jsonify({'error': 'Not authenticated'}), 401
 
-    user_tier = get_user_tier(user['id'])
+    user_tier = get_user_tier(user['user_id'])
     if TIER_LEVELS.get(user_tier, 0) < TIER_LEVELS.get('member', 0):
         return jsonify({'error': 'Upgrade to Membre for funding data'}), 403
 
@@ -2378,6 +2378,32 @@ def api_funding_rates():
         result = get_funding_rates()
 
     return jsonify(result)
+
+# ══════════════════════════════════════════════════════════════
+# CORRELATIONS ENDPOINTS
+# ══════════════════════════════════════════════════════════════
+
+@app.route('/api/correlations/matrix', methods=['GET'])
+def api_correlations_matrix():
+    """Get correlation matrix for top assets."""
+    try:
+        from correlations_engine import calculate_correlation_matrix
+        result = calculate_correlation_matrix()
+        return jsonify(result)
+    except Exception as e:
+        print(f"[/api/correlations/matrix] Error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/correlations/clusters', methods=['GET'])
+def api_correlations_clusters():
+    """Get asset clusters based on correlation."""
+    try:
+        from correlations_engine import get_asset_clusters
+        result = get_asset_clusters()
+        return jsonify(result)
+    except Exception as e:
+        print(f"[/api/correlations/clusters] Error: {e}")
+        return jsonify({'error': str(e)}), 500
 
 # ══════════════════════════════════════════════════════════════
 # HEATMAP OI+VOLUME ENDPOINTS
