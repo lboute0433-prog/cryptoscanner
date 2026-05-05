@@ -2357,6 +2357,28 @@ def api_liquidations():
         print(f"[/api/institutional-flows/liquidations] Error: {e}")
         return jsonify({'error': str(e), 'symbol': symbol}), 500
 
+@app.route('/api/institutional-flows/funding-rates', methods=['GET'])
+def api_funding_rates():
+    """Get current funding rates. Requires tier >= member."""
+    user = get_session()
+    if not user:
+        return jsonify({'error': 'Not authenticated'}), 401
+
+    user_tier = get_user_tier(user['id'])
+    if TIER_LEVELS.get(user_tier, 0) < TIER_LEVELS.get('member', 0):
+        return jsonify({'error': 'Upgrade to Membre for funding data'}), 403
+
+    from funding_engine import get_funding_rates, get_funding_extremes
+
+    extremes_only = request.args.get('extremes', 'false').lower() == 'true'
+
+    if extremes_only:
+        result = get_funding_extremes()
+    else:
+        result = get_funding_rates()
+
+    return jsonify(result)
+
 # ══════════════════════════════════════════════════════════════
 # HEATMAP OI+VOLUME ENDPOINTS
 # ══════════════════════════════════════════════════════════════
