@@ -5,34 +5,34 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>◈</text></svg>">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CryptoScanner Pro V11</title>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300;1,9..144,400;1,9..144,500&family=IBM+Plex+Mono:wght@300;400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root {
-  --bg:      #09090b;
-  --panel:   #0e0e10;
-  --card:    #131315;
-  --border:  #232325;
-  --accent:  #c9a84c;
-  --accent2: #e2c47a;
-  --green:   #34d399;
-  --red:     #f87171;
-  --yellow:  #c9a84c;
-  --orange:  #e2c47a;
-  --text:    #e8e3d8;
-  --muted:   #5c5850;
-  --soft:    #111113;
-  --line:    rgba(255,255,255,.04);
-  --glow:    rgba(201,168,76,.14);
-  --glow-blue: rgba(201,168,76,.10);
-  --glass-bg:  rgba(14,14,16,.80);
-  --glass-border: rgba(201,168,76,.12);
-  --radius-card: 4px;
-  --shadow-card: 0 20px 44px rgba(0,0,0,.32), 0 1px 0 rgba(255,255,255,.03) inset;
-  --font:    'DM Sans', sans-serif;
-  --title:   'IBM Plex Mono', monospace;
-  --transition: .22s cubic-bezier(.4,0,.2,1);
+  --bg:      #050505;
+  --panel:   #0a0a0a;
+  --card:    rgba(255, 255, 255, 0.08);
+  --border:  rgba(212, 175, 55, 0.2);
+  --accent:  #d4af37;
+  --accent2: #10b981;
+  --green:   #10b981;
+  --red:     #ef4444;
+  --yellow:  #d4af37;
+  --orange:  #d4af37;
+  --text:    #ffffff;
+  --muted:   #a0a0a8;
+  --soft:    #0a0a0a;
+  --line:    rgba(212, 175, 55, 0.1);
+  --glow:    rgba(212, 175, 55, 0.15);
+  --glow-blue: rgba(16, 185, 129, 0.15);
+  --glass-bg:  rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(212, 175, 55, 0.2);
+  --radius-card: 20px;
+  --shadow-card: 0 20px 50px rgba(212, 175, 55, 0.15);
+  --font:    'Sora', sans-serif;
+  --title:   'Playfair Display', serif;
+  --transition: .4s cubic-bezier(.4,0,.2,1);
 }
 
 /* ── THÈME CLAIR — désactivé, thème sombre uniquement ─── */
@@ -40,7 +40,7 @@
 * { margin:0; padding:0; box-sizing:border-box; }
 html { scroll-behavior:smooth; }
 body {
-  background: var(--bg);
+  background: linear-gradient(135deg, var(--bg) 0%, #0f0f1f 50%, #1a0a2e 100%);
   color:var(--text);
   font-family:var(--font);
   font-size:14px;
@@ -265,12 +265,12 @@ tbody tr { transition:background .15s ease; }
   gap:18px;
   margin-bottom:18px;
   padding:22px;
-  border:1px solid var(--border);
-  border-radius:4px;
-  background:
-    radial-gradient(circle at top right, rgba(201,168,76,.06), transparent 30%),
-    linear-gradient(180deg, rgba(18,18,20,.96), rgba(9,9,11,.98));
-  box-shadow:0 24px 48px rgba(0,0,0,.32);
+  border:1px solid rgba(212, 175, 55, 0.2);
+  border-radius:20px;
+  background:rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow:0 4px 30px rgba(0,0,0,.1);
   overflow:hidden;
   animation:fadeSlideIn .45s ease;
 }
@@ -281,11 +281,11 @@ tbody tr { transition:background .15s ease; }
   font-family:var(--title); font-size:.6rem; letter-spacing:2px; margin-bottom:16px;
 }
 .hero-title {
-  font-family:'Fraunces', serif; font-size:clamp(1.8rem, 4vw, 3.2rem); font-weight:300; line-height:1.1; letter-spacing:-1px;
-  margin-bottom:14px; color:var(--text);
+  font-family:'Playfair Display', serif; font-size:clamp(1.8rem, 4vw, 3.2rem); font-weight:800; line-height:1.1; letter-spacing:-1px;
+  margin-bottom:14px; color:#10b981 !important;
   text-wrap:balance;
 }
-.hero-title span { color:var(--accent2); font-style:italic; }
+.hero-title span { color:#d4af37 !important; font-style:italic; }
 .hero-lead {
   max-width:720px; font-size:.84rem; line-height:1.9; color:#b0a99c; margin-bottom:20px;
 }
@@ -399,7 +399,7 @@ tbody tr { transition:background .15s ease; }
   color:#a09a8e;
   letter-spacing:.4px;
 }
-.dashboard-columns { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.dashboard-columns { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
 .dashboard-side-stack { display:flex; flex-direction:column; gap:12px; }
 .dashboard-mode-bar{
   display:flex;
@@ -1128,6 +1128,81 @@ tbody tr { transition:background .15s ease; }
 .news-skeleton-item { display:flex; flex-direction:column; gap:7px; padding:14px 16px;
                       border-bottom:1px solid rgba(26,48,80,.35); }
 
+/* ── TICKER SCROLLING ────────────────────────── */
+.ticker {
+  background:linear-gradient(135deg, rgba(14,14,16,.92), rgba(12,18,28,.88));
+  border:1px solid rgba(201,168,76,.15);
+  border-radius:16px;
+  padding:20px 24px;
+  overflow:hidden;
+  grid-column:1 / -1;
+  margin:0 0 18px 0;
+  width:100%;
+  box-shadow:0 8px 32px rgba(0,0,0,.3), inset 0 1px 0 rgba(201,168,76,.1);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+}
+.ticker-track {
+  display:inline-flex;
+  gap:100px;
+  animation:ticker 65s linear infinite;
+  will-change:transform;
+}
+@keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+.t-item {
+  font-family:var(--font);
+  font-size:.85rem;
+  color:var(--muted);
+  letter-spacing:.3px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:3px;
+  white-space:nowrap;
+  padding:12px 16px;
+  border-radius:8px;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(201,168,76,.12);
+  transition:.3s ease;
+  flex-shrink:0;
+  min-width:120px;
+}
+.t-item:hover { background:rgba(201,168,76,.10); border-color:rgba(201,168,76,.24); }
+.t-item .sym { color:var(--accent); font-weight:700; letter-spacing:.4px; text-transform:uppercase; font-size:.9rem; }
+.t-item .up  { color:var(--green); font-weight:600; font-size:.82rem; }
+.t-item .dn  { color:var(--red); font-weight:600; font-size:.82rem; }
+
+/* ─── INSTITUTIONAL FLOWS ─── */
+.institutional-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: .75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.institutional-card .card-title {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: .7rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.institutional-card .card-value {
+  font-size: .85rem;
+  font-weight: 700;
+}
+.institutional-card.extreme-high {
+  border-color: rgba(239,68,68,.4);
+  background: rgba(239,68,68,.05);
+}
+.institutional-card.extreme-low {
+  border-color: rgba(16,185,129,.4);
+  background: rgba(16,185,129,.05);
+}
+
 </style>
 <style id="v2-studio-theme">
   :root {
@@ -1420,6 +1495,7 @@ window.hideKpiSkeleton = function() {
       <button class="nav-page-btn" onclick="showTab('journal')"><div style="font-size:1.8rem;margin-bottom:8px">📓</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">JOURNAL</div><div style="font-size:.68rem;color:var(--muted)">Historique trades</div></button>
       <button class="nav-page-btn" onclick="showTab('alertes')"><div style="font-size:1.8rem;margin-bottom:8px">🔔</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">ALERTES</div><div style="font-size:.68rem;color:var(--muted)">Alertes prix</div></button>
       <button class="nav-page-btn" onclick="showTab('blacklist')"><div style="font-size:1.8rem;margin-bottom:8px">⚫</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">BLACKLIST</div><div style="font-size:.68rem;color:var(--muted)">Coins exclus</div></button>
+      <button class="nav-page-btn" onclick="showTab('institutional_flows')" style="position:relative"><div style="font-size:1.8rem;margin-bottom:8px">🏛️</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">INSTITUTIONAL</div><div style="font-size:.68rem;color:var(--muted)">Liquidations · Funding rates</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(16,185,129,.12);color:var(--green);border:1px solid rgba(16,185,129,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">🔒 MEMBRE</span></button>
     </div>
   </div>
 </div>
@@ -1513,32 +1589,10 @@ window.hideKpiSkeleton = function() {
         <span class="hero-metric-sub">Excluding Top 10</span>
       </div>
     </div>
-    <!-- Strip prix live : BTC · ETH · SOL · BNB -->
-    <div class="hero-market-strip">
-      <div class="hms-item">
-        <span class="hms-sym">₿ BTC</span>
-        <span class="hms-price" id="hms-btc-price">—</span>
-        <span class="hms-chg" id="hms-btc-chg">—</span>
-      </div>
-      <div class="hms-item">
-        <span class="hms-sym">Ξ ETH</span>
-        <span class="hms-price" id="hms-eth-price">—</span>
-        <span class="hms-chg" id="hms-eth-chg">—</span>
-      </div>
-      <div class="hms-item">
-        <span class="hms-sym">◎ SOL</span>
-        <span class="hms-price" id="hms-sol-price">—</span>
-        <span class="hms-chg" id="hms-sol-chg">—</span>
-      </div>
-      <div class="hms-item">
-        <span class="hms-sym">💠 BNB</span>
-        <span class="hms-price" id="hms-bnb-price">—</span>
-        <span class="hms-chg" id="hms-bnb-chg">—</span>
-      </div>
-      <div class="hms-item">
-        <span class="hms-sym">📊 VOL TOTAL 24H</span>
-        <span class="hms-price" id="hms-total-vol">—</span>
-        <span class="hms-chg" style="color:var(--muted)">marché crypto</span>
+    <!-- Ticker prix live défilant -->
+    <div class="ticker">
+      <div class="ticker-track">
+        <!-- Populated by ticker.js from /api/ticker -->
       </div>
     </div>
   </div>
@@ -3258,6 +3312,59 @@ function renderCotConclusions(btcSig, ethSig, sp5Sig, goldSig) {
   <div id="alerts-triggered-list"></div>
 </div>
 
+<!-- ═══ TAB: INSTITUTIONAL FLOWS ═══ -->
+<div class="tab" id="tab-institutional_flows">
+  <div style="padding:20px 24px">
+    <!-- Header -->
+    <div style="margin-bottom:24px">
+      <div style="font-family:var(--title);font-size:1.1rem;color:var(--accent);letter-spacing:3px;margin-bottom:6px">🏛️ INSTITUTIONAL FLOWS — LIVE DATA</div>
+      <div style="font-size:.72rem;color:var(--muted)">Liquidations 24h · Funding rates extremes · Smart signals</div>
+    </div>
+
+    <!-- Liquidations Heatmap -->
+    <div class="table-wrap" style="padding:14px;margin-bottom:14px;background:linear-gradient(180deg,rgba(16,185,129,.04),transparent)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-family:var(--title);font-size:.85rem;color:var(--text);letter-spacing:2px">💧 LIQUIDATIONS 24H</div>
+        <div style="font-size:.7rem;color:var(--muted)">Auto-refresh: 30s</div>
+      </div>
+      <canvas id="liquidation-canvas" style="max-height:300px;width:100%"></canvas>
+      <div id="liquidation-stats" style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:.75rem">
+        <div style="background:rgba(16,185,129,.1);padding:8px;border-radius:8px;border:1px solid rgba(16,185,129,.2)">
+          <div style="color:var(--muted);font-size:.65rem;letter-spacing:1px;margin-bottom:4px">LONGS LIQUIDÉS</div>
+          <div id="liq-longs" style="color:var(--green);font-weight:700;font-size:.9rem">$0</div>
+        </div>
+        <div style="background:rgba(239,68,68,.1);padding:8px;border-radius:8px;border:1px solid rgba(239,68,68,.2)">
+          <div style="color:var(--muted);font-size:.65rem;letter-spacing:1px;margin-bottom:4px">SHORTS LIQUIDÉS</div>
+          <div id="liq-shorts" style="color:var(--red);font-weight:700;font-size:.9rem">$0</div>
+        </div>
+        <div style="background:rgba(212,175,55,.1);padding:8px;border-radius:8px;border:1px solid rgba(212,175,55,.2)">
+          <div style="color:var(--muted);font-size:.65rem;letter-spacing:1px;margin-bottom:4px">NET</div>
+          <div id="liq-net" style="color:var(--accent);font-weight:700;font-size:.9rem">$0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Funding Rates Alert -->
+    <div class="table-wrap" style="padding:14px;margin-bottom:14px;background:linear-gradient(180deg,rgba(239,68,68,.04),transparent)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-family:var(--title);font-size:.85rem;color:var(--text);letter-spacing:2px">💸 FUNDING RATES EXTREMES</div>
+        <button class="btn btn-primary" onclick="refreshInstitutional()" style="padding:4px 8px;font-size:.7rem">🔄 Actualiser</button>
+      </div>
+      <div id="funding-extremes" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <!-- Smart Signal -->
+    <div class="table-wrap" style="padding:14px;background:linear-gradient(135deg,rgba(239,68,68,.05),rgba(16,185,129,.05));border:1px solid rgba(212,175,55,.15)">
+      <div style="font-family:var(--title);font-size:.85rem;color:var(--text);letter-spacing:2px;margin-bottom:8px">⚡ SMART SIGNAL</div>
+      <div id="smart-signal" style="font-size:.8rem;line-height:1.6;color:var(--muted)">
+        Chargement...
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ TAB: CONFIG ═══ -->
 <div class="tab" id="tab-settings">
 <style>
@@ -4803,6 +4910,23 @@ Que veux-tu analyser ?</div>
       <button class="interval-btn" onclick="changeInterval('4h',this)">4h</button>
       <button class="interval-btn" onclick="changeInterval('1d',this)">1J</button>
     </div>
+    <div style="margin:8px 0;padding:10px 12px;background:rgba(0,229,255,0.08);border-left:3px solid rgba(0,229,255,0.4);border-radius:4px;font-size:.7rem">
+      <div style="color:var(--accent);font-weight:bold;margin-bottom:6px">📊 Zones d'intensité — Guide de trading :</div>
+      <div style="color:var(--text);line-height:1.5;space-y:4px">
+        <div style="margin-bottom:4px">
+          <span style="color:#e74c3c;font-weight:bold">🔴 ROUGE (Forte)</span> — Prix actuel ±0%<br>
+          <span style="color:#aaa;font-size:.65rem">Zone "chaude" où se passe l'action. Support/résistance immédiat. Vise court terme (15m-1h).</span>
+        </div>
+        <div style="margin-bottom:4px">
+          <span style="color:#e67e22;font-weight:bold">🟠 ORANGE (Moyen)</span> — ±1% du prix actuel<br>
+          <span style="color:#aaa;font-size:.65rem">Niveaux de rebond court terme. Où placer tes take profit/stop loss (1h-4h).</span>
+        </div>
+        <div>
+          <span style="color:#3498db;font-weight:bold">🔵 BLEU (Faible)</span> — ±3% du prix actuel<br>
+          <span style="color:#aaa;font-size:.65rem">Support/résistance lointains. Objectifs long terme ou crashs d'urgence (1J+).</span>
+        </div>
+      </div>
+    </div>
     <div id="candle-container" style="position:relative">
       <canvas id="candle-canvas" style="width:100%;height:300px;display:block"></canvas>
       <div id="candle-tooltip" style="position:absolute;top:10px;left:10px;background:var(--panel);
@@ -4917,7 +5041,7 @@ function showTab(name) {
     if (oc.includes(`'${name}'`)) b.classList.add('active');
     if (['cot','cvd','market','signals','heatmap','smart'].includes(name) && oc.includes("'nav_analyse'")) b.classList.add('active');
     if (['macro','news','whales','watchlist'].includes(name) && oc.includes("'nav_data'")) b.classList.add('active');
-    if (['portfolio','journal','alertes','blacklist'].includes(name) && oc.includes("'nav_trading'")) b.classList.add('active');
+    if (['portfolio','journal','alertes','blacklist','institutional_flows'].includes(name) && oc.includes("'nav_trading'")) b.classList.add('active');
     if (['calculator','settings','lexique','exchange_connect','ai'].includes(name) && oc.includes("'nav_outils'")) b.classList.add('active');
   });
 
@@ -4954,6 +5078,7 @@ function showTab(name) {
     'mood':             () => loadMood(),
     'investor':         () => loadInvestorPage(),
     'multiex':          () => loadMultiEx(),
+    'institutional_flows': () => loadInstitutional(),
   };
 
   if (loaders[name]) loaders[name]();
@@ -5531,6 +5656,56 @@ function drawChart(data) {
     ctx.fillStyle = '#4a6080'; ctx.font = '10px monospace';
     ctx.textAlign = 'right';
     ctx.fillText('$' + (price < 0.01 ? price.toFixed(6) : price < 1 ? price.toFixed(4) : price.toFixed(2)), W - 4, y + 4);
+  }
+
+  // ── PRICE ZONES (BLUE/ORANGE/RED) ──────────────────────────
+  const coin = allCoins.find(c => c.symbol === chartSymbol);
+  if (coin && coin.price) {
+    const currentPrice = coin.price;
+    const zones = [];
+    // Create 7 price levels: -3%, -2%, -1%, 0%, +1%, +2%, +3%
+    for (let i = -3; i <= 3; i++) {
+      const levelPrice = currentPrice * (1 + i * 0.01);
+      const intensity = 1.0 - Math.abs(i) / 3.0;
+      let zoneColor = intensity < 0.4 ? 'blue' : intensity < 0.7 ? 'orange' : 'red';
+      zones.push({ price: levelPrice, intensity: intensity, color: zoneColor, level: i });
+    }
+    // Draw semi-transparent zone bands
+    const blueLevels = zones.filter(z => z.color === 'blue').sort((a, b) => a.price - b.price);
+    const orangeLevels = zones.filter(z => z.color === 'orange').sort((a, b) => a.price - b.price);
+    const redLevels = zones.filter(z => z.color === 'red').sort((a, b) => a.price - b.price);
+
+    if (blueLevels.length >= 2) {
+      const blueMinY = toY(blueLevels[blueLevels.length-1].price);
+      const blueMaxY = toY(blueLevels[0].price);
+      ctx.fillStyle = 'rgba(52, 152, 219, 0.15)';
+      ctx.fillRect(PAD.left, blueMinY, W - PAD.left - PAD.right, blueMaxY - blueMinY);
+    }
+    if (orangeLevels.length >= 2) {
+      const orangeMinY = toY(orangeLevels[orangeLevels.length-1].price);
+      const orangeMaxY = toY(orangeLevels[0].price);
+      ctx.fillStyle = 'rgba(230, 126, 34, 0.15)';
+      ctx.fillRect(PAD.left, orangeMinY, W - PAD.left - PAD.right, orangeMaxY - orangeMinY);
+    }
+    if (redLevels.length >= 1) {
+      const redMinY = toY(redLevels[redLevels.length-1].price);
+      const redMaxY = toY(redLevels[0].price);
+      ctx.fillStyle = 'rgba(231, 76, 60, 0.15)';
+      ctx.fillRect(PAD.left, redMinY, W - PAD.left - PAD.right, redMaxY - redMinY);
+    }
+    // Draw boundary lines for each zone
+    zones.forEach(z => {
+      const y = toY(z.price);
+      const colorMap = { blue: '#3498db', orange: '#e67e22', red: '#e74c3c' };
+      ctx.strokeStyle = colorMap[z.color];
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(PAD.left, y);
+      ctx.lineTo(W - PAD.right, y);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    });
   }
 
   if (currentChartType === 'candle') {
@@ -6863,6 +7038,7 @@ const TAB_ACCESS_RULES = {
   forex:           'member',   // taux forex live
   indices:         'member',   // indices globaux
   mood:            'member',   // market mood
+  institutional_flows: 'member', // liquidations + funding rates
   // ── Paid ─────────────────────────────────────────────────────────────────────
   smart:           'paid',     // Smart Signals avancés (avantage compétitif)
   cot:             'paid',     // COT CFTC institutionnel
@@ -11987,7 +12163,145 @@ document.getElementById('legal-modal').onclick = function(e) {
     }
   }, 1500);
 })();
+
+// ══════════════════════════════════════════════════════════════
+// INSTITUTIONAL FLOWS — Liquidations & Funding Rates
+// ══════════════════════════════════════════════════════════════
+
+async function loadInstitutional() {
+  try {
+    // Load liquidations
+    const liqResp = await fetch('/api/institutional-flows/liquidations?symbol=BTC');
+    if (liqResp.ok) {
+      const liqData = await liqResp.json();
+      document.getElementById('liq-longs').textContent = '$' + (liqData.total_long / 1e6).toFixed(1) + 'M';
+      document.getElementById('liq-shorts').textContent = '$' + (liqData.total_short / 1e6).toFixed(1) + 'M';
+      document.getElementById('liq-net').textContent = '$' + (liqData.net_liquidations / 1e6).toFixed(1) + 'M';
+      renderLiquidationChart(liqData.price_levels);
+
+      // Load funding rates
+      const fundingResp = await fetch('/api/institutional-flows/funding-rates?extremes=true');
+      if (fundingResp.ok) {
+        const fundingData = await fundingResp.json();
+        renderFundingExtremes(fundingData);
+        generateSmartSignal(liqData, fundingData);
+      }
+    }
+  } catch(e) {
+    console.error('[Institutional] Error:', e);
+    document.getElementById('smart-signal').textContent = '⚠️ Erreur chargement données.';
+  }
+}
+
+function renderLiquidationChart(priceLevels) {
+  const canvas = document.getElementById('liquidation-canvas');
+  if (!canvas || !priceLevels || !Array.isArray(priceLevels)) return;
+
+  const labels = priceLevels.map(p => '$' + p.price.toLocaleString());
+  const longData = priceLevels.map(p => p.long_liquidated / 1e6);
+  const shortData = priceLevels.map(p => p.short_liquidated / 1e6);
+
+  if (window.liquidationChart) {
+    window.liquidationChart.destroy();
+  }
+
+  window.liquidationChart = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: 'Longs', data: longData, backgroundColor: 'rgba(16,185,129,.6)', borderColor: 'rgba(16,185,129,.8)', borderWidth: 1 },
+        { label: 'Shorts', data: shortData, backgroundColor: 'rgba(239,68,68,.6)', borderColor: 'rgba(239,68,68,.8)', borderWidth: 1 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { callback: (v) => '$' + v.toFixed(0) + 'M', color: 'rgba(255,255,255,.6)', font: { size: 10 } },
+          grid: { color: 'rgba(212,175,55,.1)' }
+        },
+        x: {
+          ticks: { color: 'rgba(255,255,255,.6)', font: { size: 10 } },
+          grid: { color: 'rgba(212,175,55,.1)' }
+        }
+      },
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: 'rgba(255,255,255,.7)', font: { size: 11, weight: '600' }, padding: 15 }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0,0,0,.8)',
+          titleColor: '#d4af37',
+          bodyColor: 'rgba(255,255,255,.8)',
+          borderColor: 'rgba(212,175,55,.3)',
+          borderWidth: 1,
+          padding: 10,
+          displayColors: true
+        }
+      }
+    }
+  });
+}
+
+function renderFundingExtremes(fundingData) {
+  const container = document.getElementById('funding-extremes');
+  if (!container || !fundingData || !Array.isArray(fundingData)) return;
+
+  container.innerHTML = fundingData.map(f => {
+    const isExtreme = Math.abs(f.funding_rate) > 0.002;
+    return `
+      <div class="institutional-card ${isExtreme ? (f.funding_rate > 0 ? 'extreme-high' : 'extreme-low') : ''}">
+        <div class="card-title">${f.symbol}</div>
+        <div class="card-value" style="color: ${f.funding_rate > 0 ? 'var(--red)' : 'var(--green)'}">
+          ${(f.funding_rate_pct).toFixed(3)}%
+        </div>
+        <div style="font-size:.65rem;color:var(--muted)">${f.urgency || '—'}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function generateSmartSignal(liqData, fundingData) {
+  const signal = document.getElementById('smart-signal');
+  if (!signal || !liqData || !fundingData) return;
+
+  let message = '';
+  const extremeFunding = fundingData.find(f => f.symbol === 'BTC' && Math.abs(f.funding_rate) > 0.002);
+
+  if (liqData.net_liquidations > 1e6) {
+    message = `🔴 <strong>${(liqData.net_liquidations / 1e6).toFixed(1)}M$ shorts liquidés</strong> en 24h — Rebond probable. `;
+  } else if (liqData.net_liquidations < -1e6) {
+    message = `🟢 <strong>${Math.abs(liqData.net_liquidations / 1e6).toFixed(1)}M$ longs liquidés</strong> — Correction probable. `;
+  }
+
+  if (extremeFunding) {
+    message += `Attention: Funding BTC à ${extremeFunding.funding_rate_pct.toFixed(3)}% = non-durable. ${extremeFunding.funding_rate > 0 ? '⚠️ Shorts en danger' : '📈 Retournement possible'}`;
+  }
+
+  signal.innerHTML = message || '✓ Données normales. Pas de signal extrême.';
+}
+
+function refreshInstitutional() {
+  loadInstitutional();
+}
+
+// Auto-refresh every 30 seconds if viewing institutional section
+setInterval(() => {
+  if (document.getElementById('institutional_flows-section') &&
+      document.getElementById('tab-institutional_flows').style.display !== 'none') {
+    loadInstitutional();
+  }
+}, 30000);
+
 </script>
+
+<!-- Ticker script -->
+<script src="/static/ticker.js"></script>
+
 </div>
 </body>
 </html>
