@@ -2336,6 +2336,27 @@ def api_ticker():
         print(f"[/api/ticker] {e}")
         return jsonify({"items": []})
 
+@app.route('/api/institutional-flows/liquidations', methods=['GET'])
+def api_liquidations():
+    """Get liquidations for symbol. Requires tier >= member."""
+    user = get_session()
+    if not user:
+        return jsonify({'error': 'Not authenticated'}), 401
+
+    user_tier = get_user_tier(user['id'])
+    if TIER_LEVELS.get(user_tier, 0) < TIER_LEVELS.get('member', 0):
+        return jsonify({'error': 'Upgrade to Membre for live data', 'data': None}), 403
+
+    symbol = request.args.get('symbol', 'BTC').upper()
+
+    try:
+        from liquidation_engine import get_liquidations_24h
+        result = get_liquidations_24h(symbol)
+        return jsonify(result)
+    except Exception as e:
+        print(f"[/api/institutional-flows/liquidations] Error: {e}")
+        return jsonify({'error': str(e), 'symbol': symbol}), 500
+
 # ══════════════════════════════════════════════════════════════
 # HEATMAP OI+VOLUME ENDPOINTS
 # ══════════════════════════════════════════════════════════════
