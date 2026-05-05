@@ -1465,7 +1465,10 @@ window.hideKpiSkeleton = function() {
       <button class="nav-page-btn" onclick="showTab('signals')"><div style="font-size:1.8rem;margin-bottom:8px">⚡</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">SIGNAUX</div><div style="font-size:.68rem;color:var(--muted)">PUMP · DUMP · Volume</div></button>
       <button class="nav-page-btn" onclick="showTab('cvd')" style="position:relative"><div style="font-size:1.8rem;margin-bottom:8px">📉</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">CVD FLOW</div><div style="font-size:.68rem;color:var(--muted)">Delta volume · divergences</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(0,229,255,.12);color:var(--accent);border:1px solid rgba(0,229,255,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">💎 PAID</span></button>
       <button class="nav-page-btn" onclick="showTab('heatmap')"><div style="font-size:1.8rem;margin-bottom:8px">🌡️</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">HEATMAP</div><div style="font-size:.68rem;color:var(--muted)">Vue thermique</div></button>
+      <button class="nav-page-btn" onclick="showTab('correlations')"><div style="font-size:1.8rem;margin-bottom:8px">🔗</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">CORRELATIONS</div><div style="font-size:.68rem;color:var(--muted)">Mouvements couples · Clusters</div></button>
+      <button class="nav-page-btn" onclick="showTab('brief_vip')" style="border-color:rgba(201,168,76,.3);position:relative"><div style="font-size:1.8rem;margin-bottom:8px">🌍</div><div style="font-family:var(--title);font-size:.8rem;color:var(--gold);margin-bottom:4px">BRIEF VIP</div><div style="font-size:.68rem;color:var(--muted)">Analyse géo. · Macro exclusive</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(201,168,76,.12);color:var(--gold);border:1px solid rgba(201,168,76,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">👑 VIP</span></button>
       <button class="nav-page-btn" onclick="showTab('smart')" style="position:relative"><div style="font-size:1.8rem;margin-bottom:8px">🧠</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">SMART SIGNALS</div><div style="font-size:.68rem;color:var(--muted)">Patterns · Breakouts</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(0,229,255,.12);color:var(--accent);border:1px solid rgba(0,229,255,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">💎 PAID</span></button>
+      <button class="nav-page-btn" onclick="showTab('setups')" style="border-color:rgba(201,168,76,.3);position:relative"><div style="font-size:1.8rem;margin-bottom:8px">📚</div><div style="font-family:var(--title);font-size:.8rem;color:var(--gold);margin-bottom:4px">SETUPS</div><div style="font-size:.68rem;color:var(--muted)">Patterns validés · Statistiques</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(201,168,76,.12);color:var(--gold);border:1px solid rgba(201,168,76,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">👑 VIP</span></button>
     </div>
   </div>
 </div>
@@ -3362,6 +3365,165 @@ function renderCotConclusions(btcSig, ethSig, sp5Sig, goldSig) {
         Chargement...
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ═══ TAB: CORRELATIONS ═══ -->
+<div class="tab" id="tab-correlations">
+  <div style="padding:20px 24px">
+    <!-- Header -->
+    <div style="margin-bottom:24px">
+      <div style="font-family:var(--title);font-size:1.1rem;color:var(--accent);letter-spacing:3px;margin-bottom:6px">🔗 CORRELATIONS — Mouvements couples</div>
+      <div style="font-size:.72rem;color:var(--muted)">Matrice de corrélation · Asset clusters · Mouvements synchrones</div>
+    </div>
+
+    <!-- Asset Clusters -->
+    <div class="table-wrap" style="padding:14px;margin-bottom:14px;background:linear-gradient(180deg,rgba(0,229,255,.04),transparent)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-family:var(--title);font-size:.85rem;color:var(--text);letter-spacing:2px">🎯 ASSET CLUSTERS</div>
+        <button class="btn btn-primary" onclick="loadCorrelations()" style="padding:4px 8px;font-size:.7rem">🔄 Rafraîchir</button>
+      </div>
+      <div id="clusters-container" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <!-- Correlation Matrix Heatmap -->
+    <div class="table-wrap" style="padding:14px;background:linear-gradient(135deg,rgba(212,175,55,.05),rgba(0,229,255,.05))">
+      <div style="font-family:var(--title);font-size:.85rem;color:var(--text);letter-spacing:2px;margin-bottom:12px">📊 MATRICE DE CORRELATION</div>
+      <div style="overflow-x:auto;padding:8px;background:rgba(0,0,0,.2);border-radius:8px">
+        <canvas id="correlation-heatmap" style="max-width:100%;height:400px"></canvas>
+      </div>
+      <div style="font-size:.65rem;color:var(--muted);margin-top:8px;text-align:center">Rouge: corrélation positive (0.7-1.0) · Bleu: faible/négative</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TAB: BRIEF VIP ═══ -->
+<div class="tab" id="tab-brief_vip">
+  <div style="padding:20px 24px">
+    <!-- Header -->
+    <div style="margin-bottom:24px">
+      <div style="font-family:var(--title);font-size:1.1rem;color:var(--gold);letter-spacing:3px;margin-bottom:6px">🌍 BRIEF VIP — Analyse Géopolitique</div>
+      <div style="font-size:.72rem;color:var(--muted)">Risques macro · Catalyseurs · Insights exclusifs</div>
+    </div>
+
+    <!-- Risk Score Card -->
+    <div class="table-wrap" style="padding:20px;margin-bottom:14px;background:linear-gradient(135deg,rgba(201,168,76,.08),rgba(0,229,255,.04))">
+      <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+        <div style="flex:0 0 auto">
+          <div style="font-family:var(--title);font-size:.85rem;color:var(--muted);letter-spacing:2px;margin-bottom:6px">⚠️ RISQUE GÉOPOLITIQUE</div>
+          <div style="font-size:2.2rem;font-weight:700;color:var(--gold)" id="vip-risk-score">—</div>
+          <div style="font-size:.65rem;color:var(--muted);margin-top:4px" id="vip-sentiment">Chargement...</div>
+        </div>
+        <div style="flex:1;min-width:200px">
+          <div style="background:rgba(0,0,0,.3);height:8px;border-radius:4px;overflow:hidden;margin-bottom:6px">
+            <div id="vip-risk-bar" style="width:50%;height:100%;background:linear-gradient(90deg,#4caf50,#ffd700,#f44336);border-radius:4px;transition:width 0.3s ease"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.65rem;color:var(--muted)">
+            <div>Bas <span style="color:var(--green)">1</span></div>
+            <div style="text-align:right">Élevé <span style="color:var(--red)">10</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIP Insights -->
+    <div class="table-wrap" style="padding:14px;margin-bottom:14px;background:linear-gradient(180deg,rgba(201,168,76,.04),transparent)">
+      <div style="font-family:var(--title);font-size:.85rem;color:var(--gold);letter-spacing:2px;margin-bottom:10px">💡 INSIGHTS EXCLUSIFS</div>
+      <div id="vip-insights" style="display:flex;flex-direction:column;gap:8px">
+        <div style="padding:10px;background:rgba(201,168,76,.1);border-left:2px solid var(--gold);border-radius:4px;color:var(--text);font-size:.72rem">Chargement des insights...</div>
+      </div>
+    </div>
+
+    <!-- Top Risks & Catalysts -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+      <!-- Top Risks -->
+      <div class="table-wrap" style="padding:14px;background:linear-gradient(180deg,rgba(244,67,54,.05),transparent)">
+        <div style="font-family:var(--title);font-size:.85rem;color:var(--red);letter-spacing:2px;margin-bottom:10px">⛔ RISQUES</div>
+        <div id="vip-risks" style="display:flex;flex-direction:column;gap:8px;font-size:.7rem">
+          <div style="color:var(--muted)">Chargement...</div>
+        </div>
+      </div>
+
+      <!-- Catalysts -->
+      <div class="table-wrap" style="padding:14px;background:linear-gradient(180deg,rgba(76,175,80,.05),transparent)">
+        <div style="font-family:var(--title);font-size:.85rem;color:var(--green);letter-spacing:2px;margin-bottom:10px">🚀 CATALYSEURS</div>
+        <div id="vip-catalysts" style="display:flex;flex-direction:column;gap:8px;font-size:.7rem">
+          <div style="color:var(--muted)">Chargement...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Economic Calendar -->
+    <div class="table-wrap" style="padding:14px;margin-bottom:14px;background:linear-gradient(135deg,rgba(0,229,255,.05),transparent)">
+      <div style="font-family:var(--title);font-size:.85rem;color:var(--accent);letter-spacing:2px;margin-bottom:10px">📅 CALENDRIER ÉCONOMIQUE</div>
+      <div id="vip-calendar" style="display:flex;flex-direction:column;gap:8px;font-size:.7rem;max-height:200px;overflow-y:auto">
+        <div style="color:var(--muted)">Chargement...</div>
+      </div>
+    </div>
+
+    <!-- Regulatory News -->
+    <div class="table-wrap" style="padding:14px;background:linear-gradient(135deg,rgba(156,39,176,.05),transparent)">
+      <div style="font-family:var(--title);font-size:.85rem;color:var(--accent2);letter-spacing:2px;margin-bottom:10px">⚖️ ACTUALITÉS RÉGLEMENTAIRES</div>
+      <div id="vip-news" style="display:flex;flex-direction:column;gap:8px;font-size:.7rem;max-height:200px;overflow-y:auto">
+        <div style="color:var(--muted)">Chargement...</div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="loadVIPBrief()" style="margin-top:14px;width:100%;padding:10px">🔄 Rafraîchir Brief VIP</button>
+  </div>
+</div>
+
+<!-- ═══ TAB: SETUPS LIBRARY ═══ -->
+<div class="tab" id="tab-setups">
+  <div style="padding:20px 24px">
+    <!-- Header -->
+    <div style="margin-bottom:24px">
+      <div style="font-family:var(--title);font-size:1.1rem;color:var(--gold);letter-spacing:3px;margin-bottom:6px">📚 SETUPS LIBRARY — Patterns Validés</div>
+      <div style="font-size:.72rem;color:var(--muted)">Stratégies à haut taux de gain · Statistiques réelles · Exemples de trades</div>
+    </div>
+
+    <!-- Statistics Card -->
+    <div class="table-wrap" style="padding:16px;margin-bottom:14px;background:linear-gradient(135deg,rgba(201,168,76,.08),rgba(0,229,255,.04))">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
+        <div style="text-align:center;padding:8px">
+          <div style="font-size:1.6rem;font-weight:700;color:var(--gold)" id="setups-total">—</div>
+          <div style="font-size:.65rem;color:var(--muted);margin-top:4px">Setups Disponibles</div>
+        </div>
+        <div style="text-align:center;padding:8px">
+          <div style="font-size:1.6rem;font-weight:700;color:var(--green)" id="setups-high-prob">—</div>
+          <div style="font-size:.65rem;color:var(--muted);margin-top:4px">Haute Probabilité (>60%)</div>
+        </div>
+        <div style="text-align:center;padding:8px">
+          <div style="font-size:1.6rem;font-weight:700;color:var(--accent)" id="setups-avg-wr">—</div>
+          <div style="font-size:.65rem;color:var(--muted);margin-top:4px">Taux Moyen</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="loadSetups()" style="padding:6px 12px;font-size:.7rem">🔄 Tous</button>
+      <button class="btn btn-outline" onclick="filterSetupsByAsset('BTC')" style="padding:6px 12px;font-size:.7rem">BTC</button>
+      <button class="btn btn-outline" onclick="filterSetupsByAsset('ETH')" style="padding:6px 12px;font-size:.7rem">ETH</button>
+      <button class="btn btn-outline" onclick="filterSetupsByAsset('SOL')" style="padding:6px 12px;font-size:.7rem">SOL</button>
+      <button class="btn btn-outline" onclick="filterHighProbability()" style="padding:6px 12px;font-size:.7rem">⭐ Haute Proba</button>
+    </div>
+
+    <!-- Setups Grid -->
+    <div id="setups-container" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px">
+      <div style="padding:20px;background:var(--card);border-radius:8px;text-align:center;color:var(--muted)">Chargement des setups...</div>
+    </div>
+
+    <!-- Setup Detail Modal -->
+    <div id="setup-detail-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.8);z-index:1000;padding:20px;overflow-y:auto;backdrop-filter:blur(4px)">
+      <div style="background:var(--card);border-radius:10px;max-width:700px;margin:20px auto;padding:20px;border:1px solid var(--border)">
+        <button onclick="closeSetupDetail()" style="position:absolute;top:10px;right:10px;background:none;border:none;color:var(--muted);font-size:1.4rem;cursor:pointer">×</button>
+        <div id="setup-detail-content">Loading...</div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -12172,24 +12334,34 @@ async function loadInstitutional() {
   try {
     // Load liquidations
     const liqResp = await fetch('/api/institutional-flows/liquidations?symbol=BTC');
-    if (liqResp.ok) {
-      const liqData = await liqResp.json();
-      document.getElementById('liq-longs').textContent = '$' + (liqData.total_long / 1e6).toFixed(1) + 'M';
-      document.getElementById('liq-shorts').textContent = '$' + (liqData.total_short / 1e6).toFixed(1) + 'M';
-      document.getElementById('liq-net').textContent = '$' + (liqData.net_liquidations / 1e6).toFixed(1) + 'M';
-      renderLiquidationChart(liqData.price_levels);
-
-      // Load funding rates
-      const fundingResp = await fetch('/api/institutional-flows/funding-rates?extremes=true');
-      if (fundingResp.ok) {
-        const fundingData = await fundingResp.json();
-        renderFundingExtremes(fundingData);
-        generateSmartSignal(liqData, fundingData);
-      }
+    if (!liqResp.ok) {
+      const errData = await liqResp.json();
+      console.error('[Institutional] Liquidations error:', liqResp.status, errData);
+      document.getElementById('smart-signal').textContent = 'Erreur: ' + (errData.error || 'Impossible de charger les donnees');
+      return;
     }
+
+    const liqData = await liqResp.json();
+    document.getElementById('liq-longs').textContent = '$' + (liqData.total_long / 1e6).toFixed(1) + 'M';
+    document.getElementById('liq-shorts').textContent = '$' + (liqData.total_short / 1e6).toFixed(1) + 'M';
+    document.getElementById('liq-net').textContent = '$' + (liqData.net_liquidations / 1e6).toFixed(1) + 'M';
+    renderLiquidationChart(liqData.price_levels);
+
+    // Load funding rates
+    const fundingResp = await fetch('/api/institutional-flows/funding-rates?extremes=true');
+    if (!fundingResp.ok) {
+      const errData = await fundingResp.json();
+      console.error('[Institutional] Funding rates error:', fundingResp.status, errData);
+      document.getElementById('smart-signal').textContent = 'Erreur: ' + (errData.error || 'Impossible de charger les donnees');
+      return;
+    }
+
+    const fundingData = await fundingResp.json();
+    renderFundingExtremes(fundingData);
+    generateSmartSignal(liqData, fundingData);
   } catch(e) {
     console.error('[Institutional] Error:', e);
-    document.getElementById('smart-signal').textContent = '⚠️ Erreur chargement données.';
+    document.getElementById('smart-signal').textContent = 'Erreur: ' + e.message;
   }
 }
 
@@ -12288,6 +12460,498 @@ function generateSmartSignal(liqData, fundingData) {
 function refreshInstitutional() {
   loadInstitutional();
 }
+
+// CORRELATIONS — Asset correlation matrix & clusters
+// ══════════════════════════════════════════════════════════════
+
+async function loadCorrelations() {
+  try {
+    // Load correlation matrix
+    const matrixResp = await fetch('/api/correlations/matrix');
+    if (!matrixResp.ok) {
+      console.error('Correlation matrix error:', matrixResp.status);
+      return;
+    }
+    const matrixData = await matrixResp.json();
+
+    // Load asset clusters
+    const clustersResp = await fetch('/api/correlations/clusters');
+    if (!clustersResp.ok) {
+      console.error('Clusters error:', clustersResp.status);
+      return;
+    }
+    const clustersData = await clustersResp.json();
+
+    renderClusters(clustersData);
+    renderCorrelationHeatmap(matrixData);
+  } catch(e) {
+    console.error('[Correlations] Error:', e);
+  }
+}
+
+function renderClusters(data) {
+  const container = document.getElementById('clusters-container');
+  if (!container) return;
+
+  container.innerHTML = data.clusters.map((cluster, idx) => {
+    const strength = (cluster.strength * 100).toFixed(0);
+    return `
+      <div style="background:linear-gradient(135deg,rgba(0,229,255,.1),rgba(16,185,129,.05));border:1px solid rgba(0,229,255,.2);border-radius:8px;padding:12px">
+        <div style="font-family:var(--title);color:var(--accent);font-size:.8rem;margin-bottom:4px;letter-spacing:1px">Cluster ${idx + 1}: Leader ${cluster.leader}</div>
+        <div style="color:var(--muted);font-size:.75rem;margin-bottom:6px">Membres: ${cluster.members.join(', ')}</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="flex:1;height:4px;background:rgba(255,255,255,.1);border-radius:2px">
+            <div style="width:${strength}%;height:100%;background:linear-gradient(90deg,var(--green),var(--accent));border-radius:2px"></div>
+          </div>
+          <div style="color:var(--green);font-weight:700;font-size:.75rem">${strength}%</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  if (data.ungrouped.length > 0) {
+    container.innerHTML += `
+      <div style="background:rgba(255,255,255,.05);border:1px dashed rgba(255,255,255,.1);border-radius:8px;padding:12px">
+        <div style="color:var(--muted);font-size:.75rem">Non groupés: ${data.ungrouped.join(', ')}</div>
+      </div>
+    `;
+  }
+}
+
+function renderCorrelationHeatmap(data) {
+  const canvas = document.getElementById('correlation-heatmap');
+  if (!canvas || !data.correlation_matrix) return;
+
+  const matrix = data.correlation_matrix;
+  const symbols = data.symbols;
+  const n = symbols.length;
+
+  // Simple heatmap: draw rectangles colored by correlation strength
+  const ctx = canvas.getContext('2d');
+  const cellSize = Math.max(30, canvas.width / n);
+
+  canvas.width = cellSize * n;
+  canvas.height = cellSize * n;
+
+  // Draw heatmap cells
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      const corr = matrix[i][j];
+      const x = j * cellSize;
+      const y = i * cellSize;
+
+      // Color from red (1.0) to white (0.0) to blue (-1.0)
+      let color;
+      if (corr > 0) {
+        // Red gradient: white -> red
+        const intensity = corr;
+        color = `rgb(255, ${Math.round(255 * (1 - intensity))}, ${Math.round(255 * (1 - intensity))})`;
+      } else {
+        // Blue gradient: white -> blue
+        const intensity = Math.abs(corr);
+        color = `rgb(${Math.round(255 * (1 - intensity))}, ${Math.round(255 * (1 - intensity))}, 255)`;
+      }
+
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, cellSize, cellSize);
+
+      // Draw border
+      ctx.strokeStyle = 'rgba(255,255,255,.1)';
+      ctx.lineWidth = 0.5;
+      ctx.strokeRect(x, y, cellSize, cellSize);
+
+      // Draw correlation value
+      if (Math.abs(corr) > 0.05) {
+        ctx.fillStyle = 'rgba(0,0,0,.7)';
+        ctx.font = '10px var(--font)';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(corr.toFixed(2), x + cellSize / 2, y + cellSize / 2);
+      }
+    }
+  }
+
+  // Draw symbol labels on left
+  ctx.fillStyle = 'var(--muted)';
+  ctx.font = '11px var(--font)';
+  ctx.textAlign = 'right';
+  for (let i = 0; i < n; i++) {
+    ctx.fillText(symbols[i], -5, i * cellSize + cellSize / 2);
+  }
+
+  // Draw symbol labels on top
+  ctx.textAlign = 'center';
+  for (let j = 0; j < n; j++) {
+    ctx.fillText(symbols[j], j * cellSize + cellSize / 2, -5);
+  }
+}
+
+// VIP BRIEF — Geopolitical & Macro Analysis for VIP users
+// ══════════════════════════════════════════════════════════════
+
+async function loadVIPBrief() {
+  try {
+    const resp = await fetch('/api/morning-brief/vip');
+    if (!resp.ok) {
+      if (resp.status === 401) {
+        document.getElementById('vip-insights').innerHTML = '<div style="padding:10px;background:rgba(244,67,54,.1);border-left:2px solid var(--red);border-radius:4px;color:var(--red);font-size:.72rem">🔒 Connexion requise pour accéder aux données VIP</div>';
+      } else {
+        throw new Error(`Status ${resp.status}`);
+      }
+      return;
+    }
+
+    const data = await resp.json();
+    renderVIPRiskScore(data.geopolitical_context);
+    renderVIPInsights(data.geopolitical_context);
+    renderVIPRisksAndCatalysts(data.geopolitical_context);
+    renderVIPEconomicCalendar(data.geopolitical_context);
+    renderVIPNews(data.geopolitical_context);
+  } catch(e) {
+    console.error('[VIP Brief] Error:', e);
+    document.getElementById('vip-insights').innerHTML = '<div style="color:var(--red)">Erreur de chargement</div>';
+  }
+}
+
+function renderVIPRiskScore(geopol) {
+  const score = geopol.risk_score || 5;
+  const sentiment = geopol.sentiment || 'neutral';
+  const container = document.getElementById('vip-risk-score');
+  const bar = document.getElementById('vip-risk-bar');
+  const sentimentEl = document.getElementById('vip-sentiment');
+
+  if (container) container.textContent = score.toFixed(1);
+  if (bar) {
+    bar.style.width = (score * 10) + '%';
+    if (score <= 3) bar.style.background = 'linear-gradient(90deg,#4caf50,#00ff88)';
+    else if (score >= 7) bar.style.background = 'linear-gradient(90deg,#f44336,#ff5252)';
+    else bar.style.background = 'linear-gradient(90deg,#ffd700,#ff9800)';
+  }
+
+  if (sentimentEl) {
+    const sentimentMap = {
+      'risk-on': '🟢 Risk-On — Conditions favorables',
+      'risk-off': '🔴 Risk-Off — Prudence recommandée',
+      'neutral': '🟡 Neutre — Volatilité maintenue'
+    };
+    sentimentEl.textContent = sentimentMap[sentiment] || 'Neutre';
+  }
+}
+
+function renderVIPInsights(geopol) {
+  const container = document.getElementById('vip-insights');
+  const insights = geopol.vip_insights || [];
+
+  if (insights.length === 0) {
+    container.innerHTML = '<div style="color:var(--muted);font-size:.72rem">Pas d\'insights significatifs aujourd\'hui</div>';
+    return;
+  }
+
+  container.innerHTML = insights.map(insight => `
+    <div style="padding:10px;background:rgba(201,168,76,.1);border-left:2px solid var(--gold);border-radius:4px;color:var(--text);font-size:.72rem;line-height:1.4">
+      ${insight}
+    </div>
+  `).join('');
+}
+
+function renderVIPRisksAndCatalysts(geopol) {
+  const risksContainer = document.getElementById('vip-risks');
+  const catalystsContainer = document.getElementById('vip-catalysts');
+
+  // Top Risks
+  const risks = geopol.top_risks || [];
+  if (risks.length === 0) {
+    risksContainer.innerHTML = '<div style="color:var(--muted);font-size:.7rem">Aucun risque majeur identifié</div>';
+  } else {
+    risksContainer.innerHTML = risks.map(r => `
+      <div style="padding:8px;background:rgba(244,67,54,.1);border-radius:4px;border-left:2px solid var(--red)">
+        <div style="color:var(--red);font-weight:700;font-size:.7rem">${r.title}</div>
+        <div style="color:var(--muted);font-size:.65rem;margin-top:2px">${(r.sectors || []).join(' · ') || 'Impact général'}</div>
+      </div>
+    `).join('');
+  }
+
+  // Catalysts
+  const catalysts = geopol.catalysts || [];
+  if (catalysts.length === 0) {
+    catalystsContainer.innerHTML = '<div style="color:var(--muted);font-size:.7rem">Pas de catalyseurs imminents</div>';
+  } else {
+    catalystsContainer.innerHTML = catalysts.map(c => `
+      <div style="padding:8px;background:rgba(76,175,80,.1);border-radius:4px;border-left:2px solid var(--green)">
+        <div style="color:var(--green);font-weight:700;font-size:.7rem">${c.title}</div>
+        <div style="color:var(--muted);font-size:.65rem;margin-top:2px">${c.time || c.source || 'À surveiller'}</div>
+      </div>
+    `).join('');
+  }
+}
+
+function renderVIPEconomicCalendar(geopol) {
+  const container = document.getElementById('vip-calendar');
+  const calendar = geopol.economic_calendar || {};
+  const upcoming = calendar.upcoming_events || [];
+  const recent = calendar.recent_releases || [];
+
+  if (upcoming.length === 0 && recent.length === 0) {
+    container.innerHTML = '<div style="color:var(--muted)">Aucun événement majeur</div>';
+    return;
+  }
+
+  let html = '';
+
+  // Upcoming events
+  if (upcoming.length > 0) {
+    html += '<div style="margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid rgba(0,229,255,.1)"><div style="color:var(--accent);font-weight:700;font-size:.65rem;margin-bottom:4px">À VENIR</div>';
+    html += upcoming.slice(0, 3).map(e => `
+      <div style="font-size:.65rem;color:var(--text);margin-bottom:4px;padding-left:4px;border-left:2px solid var(--accent)">
+        <strong>${e.title}</strong> (${e.currency})<br>
+        <span style="color:var(--muted);font-size:.6rem">${e.time} — Impact: ${e.impact_crypto?.score || '?'}/10</span>
+      </div>
+    `).join('');
+    html += '</div>';
+  }
+
+  // Recent releases
+  if (recent.length > 0) {
+    html += '<div style="margin-bottom:8px"><div style="color:var(--accent);font-weight:700;font-size:.65rem;margin-bottom:4px">PUBLIÉS</div>';
+    html += recent.slice(0, 2).map(e => `
+      <div style="font-size:.65rem;color:var(--text);margin-bottom:4px;padding-left:4px;border-left:2px solid var(--accent2)">
+        <strong>${e.title}</strong> (${e.currency})<br>
+        <span style="color:var(--muted);font-size:.6rem">Réel: ${e.actual} · Prévision: ${e.forecast}</span>
+      </div>
+    `).join('');
+    html += '</div>';
+  }
+
+  container.innerHTML = html;
+}
+
+function renderVIPNews(geopol) {
+  const container = document.getElementById('vip-news');
+  const news = geopol.regulatory_news || [];
+
+  if (news.length === 0) {
+    container.innerHTML = '<div style="color:var(--muted)">Pas d\'actualités réglementaires</div>';
+    return;
+  }
+
+  container.innerHTML = news.slice(0, 5).map(n => {
+    const sentiment = n.crypto_relevance?.sentiment || 'neutral';
+    const icon = sentiment === 'positive' ? '✅' : sentiment === 'negative' ? '⚠️' : '📰';
+    const color = sentiment === 'positive' ? 'var(--green)' : sentiment === 'negative' ? 'var(--red)' : 'var(--accent)';
+
+    return `
+      <div style="padding:8px;background:rgba(0,229,255,.05);border-radius:4px;border-left:2px solid ${color};margin-bottom:6px">
+        <div style="color:${color};font-weight:700;font-size:.7rem">${icon} ${n.title}</div>
+        <div style="color:var(--muted);font-size:.65rem;margin-top:2px">${n.source || 'Source'}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Auto-load VIP brief when tab is shown
+window.addEventListener('vipBriefTabShown', () => {
+  loadVIPBrief();
+});
+
+// SETUPS LIBRARY — Trading patterns & strategies
+// ══════════════════════════════════════════════════════════════
+
+async function loadSetups() {
+  try {
+    const resp = await fetch('/api/setups/all');
+    if (!resp.ok) {
+      if (resp.status === 401) {
+        document.getElementById('setups-container').innerHTML = '<div style="padding:20px;color:var(--red);text-align:center">🔒 Connexion requise pour accéder aux setups VIP</div>';
+      }
+      return;
+    }
+
+    const data = await resp.json();
+    renderSetupsList(data.setups);
+    renderSetupStats(data.stats);
+  } catch(e) {
+    console.error('[Setups] Error:', e);
+  }
+}
+
+function renderSetupStats(stats) {
+  document.getElementById('setups-total').textContent = stats.total_setups || '0';
+  document.getElementById('setups-high-prob').textContent = stats.high_probability_count || '0';
+  document.getElementById('setups-avg-wr').textContent = ((stats.average_win_rate || 0) * 100).toFixed(0) + '%';
+}
+
+function renderSetupsList(setups) {
+  const container = document.getElementById('setups-container');
+
+  if (setups.length === 0) {
+    container.innerHTML = '<div style="padding:20px;color:var(--muted);text-align:center">Aucun setup disponible</div>';
+    return;
+  }
+
+  container.innerHTML = setups.map(s => {
+    const wr = ((s.avg_win_rate || 0) * 100).toFixed(0);
+    const difficulty = s.difficulty || 'Intermediate';
+    const diffColor = difficulty === 'Beginner' ? 'var(--green)' : difficulty === 'Advanced' ? 'var(--red)' : 'var(--yellow)';
+
+    return `
+      <div onclick="showSetupDetail(${s.id})" style="padding:14px;background:linear-gradient(135deg,rgba(201,168,76,.05),rgba(0,229,255,.02));border:1px solid rgba(201,168,76,.15);border-radius:8px;cursor:pointer;transition:all .2s;hover:box-shadow:0 4px 12px rgba(201,168,76,.15)">
+        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
+          <div>
+            <div style="font-family:var(--title);color:var(--gold);font-size:.85rem;font-weight:700;margin-bottom:2px">${s.name}</div>
+            <div style="color:var(--muted);font-size:.65rem">${s.asset} · ${s.pattern_type} · ${s.timeframe}</div>
+          </div>
+          <div style="background:${diffColor}22;color:${diffColor};padding:2px 6px;border-radius:4px;font-size:.6rem;font-weight:700;border:1px solid ${diffColor}44">${difficulty}</div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px;padding:8px;background:rgba(0,0,0,.2);border-radius:4px">
+          <div style="text-align:center">
+            <div style="color:var(--green);font-weight:700;font-size:.8rem">${wr}%</div>
+            <div style="color:var(--muted);font-size:.6rem">Win Rate</div>
+          </div>
+          <div style="text-align:center">
+            <div style="color:var(--accent);font-weight:700;font-size:.8rem">${s.total_trades || '0'}</div>
+            <div style="color:var(--muted);font-size:.6rem">Trades</div>
+          </div>
+          <div style="text-align:center">
+            <div style="color:var(--yellow);font-weight:700;font-size:.8rem">${(s.risk_reward_ratio || 1).toFixed(1)}:1</div>
+            <div style="color:var(--muted);font-size:.6rem">R:R</div>
+          </div>
+        </div>
+
+        <div style="font-size:.7rem;color:var(--text);line-height:1.4;max-height:50px;overflow:hidden;text-overflow:ellipsis">${s.description || ''}</div>
+        <div style="margin-top:8px;color:var(--gold);font-size:.65rem;font-weight:700">Voir détails →</div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function filterSetupsByAsset(asset) {
+  try {
+    const resp = await fetch(`/api/setups/asset/${asset}`);
+    if (!resp.ok) return;
+    const data = await resp.json();
+    renderSetupsList(data.setups);
+  } catch(e) {
+    console.error('[Setups] Filter error:', e);
+  }
+}
+
+async function filterHighProbability() {
+  try {
+    const resp = await fetch('/api/setups/high-probability?min_win_rate=0.6');
+    if (!resp.ok) return;
+    const data = await resp.json();
+    renderSetupsList(data.setups);
+  } catch(e) {
+    console.error('[Setups] High prob filter error:', e);
+  }
+}
+
+async function showSetupDetail(setupId) {
+  try {
+    const resp = await fetch(`/api/setups/${setupId}`);
+    if (!resp.ok) return;
+    const data = await resp.json();
+    renderSetupDetail(data);
+    document.getElementById('setup-detail-modal').style.display = 'block';
+  } catch(e) {
+    console.error('[Setups] Detail error:', e);
+  }
+}
+
+function renderSetupDetail(data) {
+  const setup = data.setup;
+  const examples = data.examples || [];
+
+  const wr = ((setup.avg_win_rate || 0) * 100).toFixed(0);
+  const difficulty = setup.difficulty || 'Intermediate';
+  const diffColor = difficulty === 'Beginner' ? 'var(--green)' : difficulty === 'Advanced' ? 'var(--red)' : 'var(--yellow)';
+
+  let html = `
+    <div style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
+        <div>
+          <div style="font-family:var(--title);color:var(--gold);font-size:.95rem;font-weight:700">${setup.name}</div>
+          <div style="color:var(--muted);font-size:.7rem;margin-top:4px">${setup.asset} · ${setup.pattern_type} · ${setup.timeframe}</div>
+        </div>
+        <div style="background:${diffColor}22;color:${diffColor};padding:4px 10px;border-radius:4px;font-size:.65rem;font-weight:700">${difficulty}</div>
+      </div>
+      <div style="color:var(--text);font-size:.75rem;margin-top:8px;line-height:1.5">${setup.description || ''}</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px;padding:10px;background:rgba(0,0,0,.2);border-radius:6px">
+      <div>
+        <div style="color:var(--muted);font-size:.65rem">Taux de Gain</div>
+        <div style="color:var(--green);font-weight:700;font-size:.85rem">${wr}%</div>
+      </div>
+      <div>
+        <div style="color:var(--muted);font-size:.65rem">Risk:Reward</div>
+        <div style="color:var(--yellow);font-weight:700;font-size:.85rem">${(setup.risk_reward_ratio || 1).toFixed(2)}:1</div>
+      </div>
+      <div>
+        <div style="color:var(--muted);font-size:.65rem">Total Trades</div>
+        <div style="color:var(--accent);font-weight:700;font-size:.85rem">${setup.total_trades} (${setup.winning_trades || 0} W)</div>
+      </div>
+      <div>
+        <div style="color:var(--muted);font-size:.65rem">Marché Idéal</div>
+        <div style="color:var(--text);font-weight:700;font-size:.75rem">${setup.market_condition || '—'}</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="color:var(--gold);font-weight:700;font-size:.75rem;margin-bottom:6px">📋 RÈGLES D'ENTRÉE</div>
+      <div style="background:rgba(0,0,0,.2);padding:8px;border-radius:4px;color:var(--text);font-size:.7rem;line-height:1.4">${setup.entry_rule || '—'}</div>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="color:var(--gold);font-weight:700;font-size:.75rem;margin-bottom:6px">🎯 SORTIE / STOP / TP</div>
+      <div style="background:rgba(0,0,0,.2);padding:8px;border-radius:4px;font-size:.7rem;line-height:1.4">
+        <div><strong style="color:var(--text)">Sortie:</strong> <span style="color:var(--muted)">${setup.exit_rule || '—'}</span></div>
+        <div style="margin-top:4px"><strong style="color:var(--red)">Stop:</strong> <span style="color:var(--muted)">${setup.stop_loss_rule || '—'}</span></div>
+        <div style="margin-top:4px"><strong style="color:var(--green)">TP:</strong> <span style="color:var(--muted)">${setup.take_profit_rule || '—'}</span></div>
+      </div>
+    </div>
+  `;
+
+  // Examples
+  if (examples.length > 0) {
+    html += `<div style="margin-bottom:12px">
+      <div style="color:var(--gold);font-weight:700;font-size:.75rem;margin-bottom:6px">📊 EXEMPLES RÉELS (${examples.length})</div>
+      <div style="max-height:150px;overflow-y:auto">
+        ${examples.slice(0, 3).map(e => {
+          const color = e.result === 'win' ? 'var(--green)' : 'var(--red)';
+          return `
+            <div style="padding:6px;background:rgba(0,0,0,.2);border-left:2px solid ${color};margin-bottom:6px;border-radius:2px;font-size:.65rem">
+              <div><strong style="color:${color}">${e.result.toUpperCase()}</strong> · ${e.asset}</div>
+              <div style="color:var(--muted);margin-top:2px">Entry: ${e.entry_price} · Exit: ${e.exit_price} · Profit: $${e.profit_usd}</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('setup-detail-content').innerHTML = html;
+}
+
+function closeSetupDetail() {
+  document.getElementById('setup-detail-modal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', (e) => {
+  const modal = document.getElementById('setup-detail-modal');
+  if (e.target === modal) {
+    modal.style.display = 'none';
+  }
+});
+
+// Load setups when page ready
+document.addEventListener('DOMContentLoaded', () => {
+  if (document.getElementById('setups-container')) {
+    loadSetups();
+  }
+});
 
 // Auto-refresh every 30 seconds if viewing institutional section
 setInterval(() => {

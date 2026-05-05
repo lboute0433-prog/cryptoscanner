@@ -2008,6 +2008,139 @@ def api_brief_status():
         "url":    f"{base_url}/brief?token={token}"
     })
 
+@app.route("/api/morning-brief/vip")
+def api_vip_brief():
+    """VIP Morning Brief with geopolitical context — restricted to VIP tier."""
+    sess, denied = _role_guard("vip")
+    if denied:
+        return denied
+    try:
+        from geopolitical_engine import get_geopolitical_summary
+        from morning_brief import fetch_brief_data, generate_analysis
+
+        # Fetch market data
+        market_data = fetch_brief_data()
+        analysis = generate_analysis(market_data)
+
+        # Fetch geopolitical context (VIP exclusive)
+        geopol = get_geopolitical_summary(market_data)
+
+        return jsonify({
+            "market_analysis": {
+                "score": analysis.get("score", {}),
+                "sentiment": analysis.get("apercu", {}).get("sentiment", "—"),
+                "btc": analysis.get("btc", {}),
+                "eth": analysis.get("eth", {}),
+                "altcoins": analysis.get("altcoins", [])[:5],
+                "fear_greed": analysis.get("fear_greed", {}),
+                "derives": analysis.get("derives", {}),
+                "etf": analysis.get("etf", {})
+            },
+            "geopolitical_context": {
+                "risk_score": geopol.get("risk_score", 5),
+                "sentiment": geopol.get("sentiment", "neutral"),
+                "top_risks": geopol.get("top_risks", []),
+                "catalysts": geopol.get("catalysts", []),
+                "vip_insights": geopol.get("vip_insights", []),
+                "economic_calendar": geopol.get("economic_calendar", {}),
+                "regulatory_news": geopol.get("regulatory_news", [])
+            },
+            "cot": analysis.get("cot", {}),
+            "timestamp": datetime.now(_mb.BRIEF_TZ).isoformat()
+        })
+    except Exception as e:
+        print(f"[API] VIP Brief error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/setups/all")
+def api_get_all_setups():
+    """Get all available trading setups — VIP only."""
+    sess, denied = _role_guard("vip")
+    if denied:
+        return denied
+    try:
+        from setups_engine import get_all_setups, get_setup_stats
+        setups = get_all_setups()
+        stats = get_setup_stats()
+        return jsonify({
+            "setups": setups,
+            "stats": stats,
+            "timestamp": datetime.now().isoformat()
+        })
+    except Exception as e:
+        print(f"[API] Setups error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/setups/<int:setup_id>")
+def api_get_setup(setup_id):
+    """Get detailed setup with examples."""
+    sess, denied = _role_guard("vip")
+    if denied:
+        return denied
+    try:
+        from setups_engine import get_setup_by_id
+        setup_data = get_setup_by_id(setup_id)
+        if not setup_data:
+            return jsonify({"error": "Setup not found"}), 404
+        setup_data["timestamp"] = datetime.now().isoformat()
+        return jsonify(setup_data)
+    except Exception as e:
+        print(f"[API] Setup detail error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/setups/asset/<asset>")
+def api_setups_by_asset(asset):
+    """Get setups filtered by asset."""
+    sess, denied = _role_guard("vip")
+    if denied:
+        return denied
+    try:
+        from setups_engine import get_setups_by_asset
+        setups = get_setups_by_asset(asset.upper())
+        return jsonify({
+            "asset": asset.upper(),
+            "setups": setups,
+            "count": len(setups),
+            "timestamp": datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/setups/pattern/<pattern>")
+def api_setups_by_pattern(pattern):
+    """Get setups filtered by pattern type."""
+    sess, denied = _role_guard("vip")
+    if denied:
+        return denied
+    try:
+        from setups_engine import get_setups_by_pattern
+        setups = get_setups_by_pattern(pattern.lower())
+        return jsonify({
+            "pattern": pattern.lower(),
+            "setups": setups,
+            "count": len(setups)
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/setups/high-probability")
+def api_high_probability_setups():
+    """Get only high-probability setups (>60% win rate)."""
+    sess, denied = _role_guard("vip")
+    if denied:
+        return denied
+    try:
+        from setups_engine import get_high_probability_setups
+        min_wr = request.args.get('min_win_rate', 0.6, type=float)
+        setups = get_high_probability_setups(min_wr)
+        return jsonify({
+            "min_win_rate": min_wr,
+            "setups": setups,
+            "count": len(setups)
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 # ══════════════════════════════════════════════════════════════
 # PROXY COINGECKO (évite CORS depuis le browser)
 # ══════════════════════════════════════════════════════════════

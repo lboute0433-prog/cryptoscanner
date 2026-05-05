@@ -245,12 +245,46 @@ def init_db():
         updated  TEXT DEFAULT '',
         PRIMARY KEY (user_id, exchange)
     );
+    CREATE TABLE IF NOT EXISTS alert_settings (
+        alert_type TEXT PRIMARY KEY,
+        config_json TEXT DEFAULT '{}',
+        last_modified TEXT,
+        modified_by TEXT DEFAULT 'system'
+    );
     """)
     for sym in ["KAT"]:
         try: c.execute("INSERT OR IGNORE INTO blacklist (symbol,added) VALUES (?,?)", (sym, datetime.now().isoformat()))
         except: pass
     for _k, _v in [("exchange","coingecko"),("pump_pct","5"),("scan_interval","10"),("vol_mult","3")]:
         try: c.execute("INSERT OR IGNORE INTO settings (key,value) VALUES (?,?)", (_k, _v))
+        except: pass
+    # ── Initialiser configurations d'alertes par défaut ──────────
+    import json
+    _default_configs = {
+        "smart_signals": {
+            "score_min": 55,
+            "pump_pct": 4.0,
+            "dump_pct": -4.0,
+            "volume_mult": 5.0,
+            "criteria_min": 3,
+            "adr_pct": 25,
+            "cooldown_hours": 1,
+            "max_per_cycle": 3
+        },
+        "retrace_rsi": {
+            "rsi_overbought": 70,
+            "rsi_oversold": 30,
+            "cooldown_hours": 1
+        },
+        "macro_events": {
+            "impact_filter": "High",
+            "window_start": 7,
+            "window_end": 22
+        }
+    }
+    for alert_type, config in _default_configs.items():
+        try: c.execute("INSERT OR IGNORE INTO alert_settings (alert_type,config_json,last_modified,modified_by) VALUES (?,?,?,?)",
+            (alert_type, json.dumps(config), datetime.now().isoformat(), "system"))
         except: pass
     try: c.execute("ALTER TABLE users ADD COLUMN subscription_status TEXT DEFAULT 'inactive'")
     except: pass
@@ -301,6 +335,50 @@ class ScannerEngine:
 
     def get_exchange(self): return self._exchange
 
+    # ── Alert Settings ────────────────────────────────────────
+    def get_alert_config(self, alert_type):
+        """Récupère la configuration d'une alerte (smart_signals, retrace_rsi, macro_events)"""
+        import json
+        conn = get_connection()
+        row = conn.execute("SELECT config_json FROM alert_settings WHERE alert_type=?", (alert_type,)).fetchone()
+        conn.close()
+        if row:
+            try:
+                return json.loads(row[0])
+            except:
+                return {}
+        return {}
+
+    def set_alert_config(self, alert_type, config, modified_by="admin"):
+        """Sauvegarde la configuration d'une alerte"""
+        import json
+        conn = get_connection()
+        conn.execute(
+            "UPDATE alert_settings SET config_json=?, last_modified=?, modified_by=? WHERE alert_type=?",
+            (json.dumps(config), datetime.now().isoformat(), modified_by, alert_type)
+        )
+        conn.commit()
+        conn.close()
+        print(f"[AlertConfig] Mise à jour: {alert_type} par {modified_by}")
+
+    def get_all_alert_configs(self):
+        """Récupère toutes les configurations d'alertes"""
+        import json
+        conn = get_connection(); conn.row_factory = sqlite3.Row
+        rows = conn.execute("SELECT alert_type, config_json, last_modified, modified_by FROM alert_settings").fetchall()
+        conn.close()
+        result = {}
+        for row in rows:
+            try:
+                result[row["alert_type"]] = {
+                    "config": json.loads(row["config_json"]),
+                    "last_modified": row["last_modified"],
+                    "modified_by": row["modified_by"]
+                }
+            except:
+                pass
+        return result
+
     # ── Rate Limiting ─────────────────────────────────────────
     def check_rate_limit(self, ip, max_req=30):
         now = time.time()
@@ -338,7 +416,7 @@ class ScannerEngine:
         if not token: return None
         conn = get_connection(); conn.row_factory = sqlite3.Row
         row = conn.execute(
-            "SELECT s.user_id, s.expires, u.username, u.role, u.subscription_status, u.tfa_enabled "
+            "SELECT s.user_id, s.expires, u.username, u.role, u.subscription_status, u.subscription_tier, u.tfa_enabled "
             "FROM sessions s JOIN users u ON s.user_id=u.id WHERE s.token=?", (token,)
         ).fetchone()
         conn.close()
@@ -750,10 +828,16 @@ class ScannerEngine:
                 else:
                     info["fear_greed"] = None
 
-        # Global Market Info (Dominance) avec retry
-        for attempt in range(2):
+        # Global Market Info (Dominance) avec retry et gestion 429
+        for attempt in range(4):
             try:
                 r = requests.get(GLOBAL_MARKET, timeout=12, headers=headers_robust)
+                if r.status_code == 429:
+                    delay = 5 * (attempt + 1)  # 5s, 10s, 15s, 20s
+                    if attempt < 3:
+                        time.sleep(delay)
+                        continue
+                    raise Exception(f"Rate limited after {delay}s")
                 r.raise_for_status()
                 d    = r.json().get("data", {})
                 pcts = d.get("market_cap_percentage", {})
@@ -768,8 +852,8 @@ class ScannerEngine:
                     raise Exception("Empty data")
                 break
             except Exception as e:
-                if attempt == 0:
-                    time.sleep(1)
+                if attempt < 3:
+                    time.sleep(2)
                     continue
                 else:
                     info["dominance"] = None
@@ -1416,4 +1500,14 @@ class ScannerEngine:
                     api_secret TEXT DEFAULT '', api_key_enc TEXT DEFAULT '',
                     api_secret_enc TEXT DEFAULT '', migrated INTEGER DEFAULT 0,
                     updated TEXT DEFAULT '', PRIMARY KEY (user_id, exchange))""")
-                except: 
+                except: pass
+                conn.commit()
+                row = conn.execute("SELECT api_key, api_secret, api_key_enc, api_secret_enc, migrated FROM user_exchange_keys WHERE user_id=? AND exchange=?", (user_id, exchange)).fetchone()
+                conn.close()
+                if row:
+                    if row["migrated"] and row["api_key_enc"]:
+                        from security import vault
+                        return {"api_key": vault.decrypt(row["api_key_enc"]), "api_secret": vault.decrypt(row["api_secret_enc"])}
+                    return {"api_key": row["api_key"], "api_secret": row["api_secret"]}
+            except: pass
+            return None
