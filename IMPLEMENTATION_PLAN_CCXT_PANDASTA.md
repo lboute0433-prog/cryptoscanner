@@ -12,7 +12,8 @@
 - **Phase 3 (Smart Signals v2)** : 2-3 jours
 - **Phase 3.5 (TradingView MCP)** : 2-3 jours ⭐ *Nouveau*
 - **Phase 4 (Features Avancées)** : 3-4 jours
-- **Total** : ~13-18 jours de développement
+- **Phase 5 (ML & Regime Detection)** : 3-4 jours ⭐ *Nouveau*
+- **Total** : ~18-22 jours de développement complet
 
 ---
 
@@ -490,6 +491,131 @@ Score augmente si historique prouve rentabilité
 
 ---
 
+### PHASE 5: ML & MARKET REGIME DETECTION (Semaine 7+)
+
+#### 🎯 Objectif
+Intégrer **Market Regime Markov Model** + **TradeCat insights** pour améliorer l'adaptation stratégique et enrichir les indicateurs
+
+#### 📊 Market Regime Detection (Markov Model)
+
+**Concept:**
+- Détecter automatiquement phase de marché : **BULL** | **BEAR** | **RANGE**
+- Adapter Smart Signals v2 selon le régime (ex: setups différents en bear vs bull)
+- Afficher confidence score (ex: "85% Bull regime")
+
+**Bénéfices:**
+```
+AVANT:
+- Smart Signals donne alertes même en bear market brutal
+- Faux positifs: -15% signal quality
+
+APRÈS:
+- Smart Signals adapté au régime : même alert, mais filtrée si bear
+- +25% precision par adaptation de seuils par régime
+- Example: score_min = 70 en bull, 85 en bear
+```
+
+**Implémentation:**
+- [ ] Installer `market-regime-markov-model` (Streamlit + scikit-learn)
+- [ ] Créer `regime_detection_engine.py`
+- [ ] Fonction: `detect_market_regime(symbol, timeframe)` → {state, confidence, probability}
+- [ ] Modifier Smart Signals pour ajuster seuils selon régime
+- [ ] Afficher regime badge dans interface + Telegram alerts
+- [ ] Tests: valider sur 5 ans de données BTC (phase changes)
+
+**Workflow:**
+```
+OHLCV → Markov Chain Analysis → Régime (BULL/BEAR/RANGE)
+    ↓
+Smart Signals Score = base_score * regime_multiplier
+    ↓
+score_bull = 70, score_bear = 85, score_range = 75
+```
+
+#### 🔗 TradeCat Integration (Multi-Exchange Analysis)
+
+**Concept:**
+- Réutiliser insights de TradeCat : 100+ exchanges, 38+ indicateurs, Wyckoff analysis
+- Enrichir Pandas TA avec patterns Wyckoff (détection accumulation/distribution)
+- Améliorer arbitrage detection via data TradeCat
+
+**Bénéfices:**
+```
+AVANT (Pandas TA seul):
+- 150+ indicateurs techniques
+- Patterns: 20+ (head & shoulders, etc.)
+
+APRÈS (+ TradeCat):
+- 150+ TA + 38 TradeCat = 188 indicateurs
+- Patterns: 20 TA + 15 Wyckoff = 35 patterns
+- Multi-exchange arbitrage plus robuste
+```
+
+**Implémentation:**
+- [ ] Analyser TradeCat repo (38 indicateurs + Wyckoff logic)
+- [ ] Extraire Wyckoff Pattern Recognition module
+- [ ] Intégrer à `indicators_engine.py::calculate_all_indicators()`
+- [ ] Créer `wyckoff_engine.py` pour patterns accumulation/distribution
+- [ ] Tests: détection accumulation vs distribution sur 1000+ candles historiques
+
+**Wyckoff Patterns à ajouter:**
+- Accumulation (Spring → Markup)
+- Distribution (Rally → Decline)
+- Schematic detection (buying climax, selling climax)
+
+#### 🧠 FinRL Integration (Future - Phase 5+)
+
+**Long-term (6+ months):**
+- Reinforcement Learning pour setups adaptatifs
+- Modèles qui apprennent patterns gagnants/perdants
+- Auto-adjustment de paramètres Smart Signals
+- Note: Dépend de suffisantes backtest data
+
+#### 📋 Tâches
+
+- [ ] **Setup Market Regime Detection**
+  - [ ] Installer dépendances (scikit-learn, numpy)
+  - [ ] Créer `regime_detection_engine.py` (Markov model)
+  - [ ] Implémenter détection BULL/BEAR/RANGE
+  - [ ] Tester sur 5 ans BTC (80%+ accuracy vs manuel)
+
+- [ ] **Intégration Smart Signals + Régime**
+  - [ ] Modifier `scanner_engine.py::scan()`
+  - [ ] Charger régime à chaque scan
+  - [ ] Appliquer multipliers : score_adjusted = score × regime_factor
+  - [ ] Exemples: bull_factor=1.0, bear_factor=1.2, range_factor=0.95
+  - [ ] Tests: vérifier que bear diminue false positives
+
+- [ ] **Wyckoff Pattern Recognition**
+  - [ ] Créer `wyckoff_engine.py`
+  - [ ] Implémenter détection accumulation (Spring + Markup)
+  - [ ] Implémenter détection distribution (Rally + Decline)
+  - [ ] Ajouter à Smart Signals scoring (+10 points si détecté)
+  - [ ] Tests: 100+ historiques validation
+
+- [ ] **Frontend Updates**
+  - [ ] Ajouter badge régime de marché (interface + Telegram)
+  - [ ] Afficher confidence % du régime
+  - [ ] Afficher Wyckoff patterns détectés
+  - [ ] Graphique : superposer phase accumulation/distribution sur candles
+
+#### 📊 SUCCESS METRICS
+
+- ✅ Market Regime detection 85%+ accurate vs manual
+- ✅ Smart Signals false positives -20% en intégrant régimes
+- ✅ Wyckoff patterns détectés sur 90%+ des cas
+- ✅ Win rate +8% avec regime-aware signals
+- ✅ Backtesting: stratégies différentes par régime (bull vs bear)
+
+#### 📚 Ressources
+
+- **Market Regime Markov** : https://github.com/alvarofpp/market-regime-markov-model
+- **TradeCat** : https://github.com/tradecat/tradecat (38 indicateurs + Wyckoff)
+- **FinRL** : https://github.com/AI4Finance-Foundation/FinRL (future ML)
+- **Wyckoff Analysis** : https://school.stockcharts.com/doku.php (2h modules)
+
+---
+
 ### MAINTENANCE & MONITORING (Continu)
 
 - [ ] **Monitoring Production**
@@ -558,6 +684,13 @@ Score augmente si historique prouve rentabilité
 - ✅ Whale tracking on 5+ exchanges
 - ✅ 500+ setups validés en DB
 
+### Phase 5 Complete =
+- ✅ Market Regime Detection (Bull/Bear/Range) 85%+ accuracy
+- ✅ Smart Signals adapted per regime (-20% false positives)
+- ✅ Wyckoff patterns detection (accumulation/distribution)
+- ✅ Win rate +8% avec regime-aware signals
+- ✅ 188+ indicateurs (150 TA + 38 TradeCat)
+
 ---
 
 ## 🎯 ORDRE DE PRIORITÉ
@@ -569,14 +702,16 @@ Score augmente si historique prouve rentabilité
 
 **SHOULD HAVE (Nice to have) — HIGH PRIORITY**
 1. **TradingView MCP Integration** ⭐ *Recommended next*
-2. Pattern recognition (visual + technical)
-3. Multi-timeframe advisor
-4. Arbitrage detection
+2. **Market Regime + Wyckoff (Phase 5)** ⭐ *Critical for accuracy*
+3. Pattern recognition (visual + technical)
+4. Multi-timeframe advisor
+5. Arbitrage detection
 
 **COULD HAVE (Nice but not needed)**
 1. Whale tracking
 2. Setups community
 3. Leaderboards
+4. FinRL (future ML iterations)
 
 ---
 
