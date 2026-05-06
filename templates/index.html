@@ -213,7 +213,7 @@ tbody tr { transition:background .15s ease; }
                 font-size:.7rem; }
 .interval-btn.active { border-color:var(--accent); color:var(--accent); }
 
-/* ── PORTFOLIO ───────────────────────────────── */
+/* ── PORTEFEUILLE ───────────────────────────────── */
 .portfolio-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
                   gap:12px; margin-bottom:20px; }
 .pos-card { background:var(--card); border:1px solid var(--border); border-radius:8px;
@@ -1440,7 +1440,7 @@ window.hideKpiSkeleton = function() {
 
 <!-- NAV -->
 <nav>
-  <button class="nav-btn active" onclick="showTab('dashboard')">🏠 DASHBOARD</button>
+  <button class="nav-btn active" onclick="showTab('dashboard')">🏠 TABLEAU DE BORD</button>
   <button class="nav-btn" onclick="showTab('nav_analyse')">📊 ANALYSE</button>
   <button class="nav-btn" onclick="showTab('nav_data')">🌐 DATA</button>
   <button class="nav-btn" onclick="showTab('nav_marches')">🌍 MARCHÉS</button>
@@ -1461,14 +1461,14 @@ window.hideKpiSkeleton = function() {
     <div style="font-size:.72rem;color:var(--muted);margin-bottom:28px">Sélectionne un outil</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;max-width:900px">
       <button class="nav-page-btn" onclick="showTab('cot')" style="position:relative"><div style="font-size:1.8rem;margin-bottom:8px">📊</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">COT INSTITUTIONNEL</div><div style="font-size:.68rem;color:var(--muted)">CFTC · Hedge Funds</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(0,229,255,.12);color:var(--accent);border:1px solid rgba(0,229,255,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">💎 PAID</span></button>
-      <button class="nav-page-btn" onclick="showTab('market')"><div style="font-size:1.8rem;margin-bottom:8px">📈</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">MARCHÉ</div><div style="font-size:.68rem;color:var(--muted)">Spot · Perp · CoinGecko</div></button>
-      <button class="nav-page-btn" onclick="showTab('signals')"><div style="font-size:1.8rem;margin-bottom:8px">⚡</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">SIGNAUX</div><div style="font-size:.68rem;color:var(--muted)">PUMP · DUMP · Volume</div></button>
-      <button class="nav-page-btn" onclick="showTab('cvd')" style="position:relative"><div style="font-size:1.8rem;margin-bottom:8px">📉</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">CVD FLOW</div><div style="font-size:.68rem;color:var(--muted)">Delta volume · divergences</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(0,229,255,.12);color:var(--accent);border:1px solid rgba(0,229,255,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">💎 PAID</span></button>
+      <button class="nav-page-btn" onclick="showTab('market')"><div style="font-size:1.8rem;margin-bottom:8px">📈</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">MARCHÉ</div><div style="font-size:.68rem;color:var(--muted)">Au comptant · Perpétuels · CoinGecko</div></button>
+      <button class="nav-page-btn" onclick="showTab('signals')"><div style="font-size:1.8rem;margin-bottom:8px">⚡</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">SIGNAUX</div><div style="font-size:.68rem;color:var(--muted)">Pompage · Chute · Volume</div></button>
+      <button class="nav-page-btn" onclick="showTab('cvd')" style="position:relative"><div style="font-size:1.8rem;margin-bottom:8px">📉</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">CVD FLOW</div><div style="font-size:.68rem;color:var(--muted)">Delta volume · Divergences</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(0,229,255,.12);color:var(--accent);border:1px solid rgba(0,229,255,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">💎 PAID</span></button>
       <button class="nav-page-btn" onclick="showTab('heatmap')"><div style="font-size:1.8rem;margin-bottom:8px">🌡️</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">HEATMAP</div><div style="font-size:.68rem;color:var(--muted)">Vue thermique</div></button>
-      <button class="nav-page-btn" onclick="showTab('correlations')"><div style="font-size:1.8rem;margin-bottom:8px">🔗</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">CORRELATIONS</div><div style="font-size:.68rem;color:var(--muted)">Mouvements couples · Clusters</div></button>
       <button class="nav-page-btn" onclick="showTab('brief_vip')" style="border-color:rgba(201,168,76,.3);position:relative"><div style="font-size:1.8rem;margin-bottom:8px">🌍</div><div style="font-family:var(--title);font-size:.8rem;color:var(--gold);margin-bottom:4px">BRIEF VIP</div><div style="font-size:.68rem;color:var(--muted)">Analyse géo. · Macro exclusive</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(201,168,76,.12);color:var(--gold);border:1px solid rgba(201,168,76,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">👑 VIP</span></button>
-      <button class="nav-page-btn" onclick="showTab('smart')" style="position:relative"><div style="font-size:1.8rem;margin-bottom:8px">🧠</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">SMART SIGNALS</div><div style="font-size:.68rem;color:var(--muted)">Patterns · Breakouts</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(0,229,255,.12);color:var(--accent);border:1px solid rgba(0,229,255,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">💎 PAID</span></button>
-      <button class="nav-page-btn" onclick="showTab('setups')" style="border-color:rgba(201,168,76,.3);position:relative"><div style="font-size:1.8rem;margin-bottom:8px">📚</div><div style="font-family:var(--title);font-size:.8rem;color:var(--gold);margin-bottom:4px">SETUPS</div><div style="font-size:.68rem;color:var(--muted)">Patterns validés · Statistiques</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(201,168,76,.12);color:var(--gold);border:1px solid rgba(201,168,76,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">👑 VIP</span></button>
+      <button class="nav-page-btn" onclick="showTab('smart')" style="position:relative"><div style="font-size:1.8rem;margin-bottom:8px">🧠</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">SMART SIGNALS</div><div style="font-size:.68rem;color:var(--muted)">Configurations · Cassures</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(0,229,255,.12);color:var(--accent);border:1px solid rgba(0,229,255,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">💎 PAID</span></button>
+      <button class="nav-page-btn" onclick="showTab('setups')" style="border-color:rgba(201,168,76,.3);position:relative"><div style="font-size:1.8rem;margin-bottom:8px">📚</div><div style="font-family:var(--title);font-size:.8rem;color:var(--gold);margin-bottom:4px">SETUPS</div><div style="font-size:.68rem;color:var(--muted)">Stratégies validées · Statistiques</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(201,168,76,.12);color:var(--gold);border:1px solid rgba(201,168,76,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">👑 VIP</span></button>
+      <button class="nav-page-btn" onclick="showTab('investor')" style="position:relative"><div style="font-size:1.8rem;margin-bottom:8px">🔬</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">ANALYSE INVESTISSEUR</div><div style="font-size:.68rem;color:var(--muted)">Tokenomics · TVL · Fondamentaux</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(0,229,255,.12);color:var(--accent);border:1px solid rgba(0,229,255,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">💎 PAID</span></button>
     </div>
   </div>
 </div>
@@ -1479,8 +1479,9 @@ window.hideKpiSkeleton = function() {
     <div style="font-family:var(--title);font-size:1.1rem;color:var(--accent);letter-spacing:3px;margin-bottom:6px">🌐 DATA</div>
     <div style="font-size:.72rem;color:var(--muted);margin-bottom:28px">Données macro et informations</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;max-width:900px">
-      <button class="nav-page-btn" onclick="showTab('macro')"><div style="font-size:1.8rem;margin-bottom:8px">🌐</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">MACRO</div><div style="font-size:.68rem;color:var(--muted)">DXY · Inflation · Calendrier</div></button>
-      <button class="nav-page-btn" onclick="showTab('mood')"><div style="font-size:1.8rem;margin-bottom:8px">🧭</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">MARKET MOOD</div><div style="font-size:.68rem;color:var(--muted)">Sentiment macro global · Crowded</div></button>
+      <button class="nav-page-btn" onclick="showTab('macro')"><div style="font-size:1.8rem;margin-bottom:8px">🌐</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">MACRO</div><div style="font-size:.68rem;color:var(--muted)">Indice Dollar · Inflation · Calendrier</div></button>
+      <button class="nav-page-btn" onclick="showTab('mood')"><div style="font-size:1.8rem;margin-bottom:8px">🧭</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">MARKET MOOD</div><div style="font-size:.68rem;color:var(--muted)">Sentiment macro · Positions encombrées</div></button>
+      <button class="nav-page-btn" onclick="showTab('risk-monitor')"><div style="font-size:1.8rem;margin-bottom:8px">📊</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">RISK MONITOR</div><div style="font-size:.68rem;color:var(--muted)">Corrélations · Risque par asset</div></button>
       <button class="nav-page-btn" onclick="showTab('news')"><div style="font-size:1.8rem;margin-bottom:8px">📰</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">NEWS</div><div style="font-size:.68rem;color:var(--muted)">Sources FR · Catégories</div></button>
       <button class="nav-page-btn" onclick="showTab('whales')"><div style="font-size:1.8rem;margin-bottom:8px">🐳</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">WHALES</div><div style="font-size:.68rem;color:var(--muted)">Gros transferts</div></button>
       <button class="nav-page-btn" onclick="showTab('watchlist')"><div style="font-size:1.8rem;margin-bottom:8px">👀</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">WATCHLIST</div><div style="font-size:.68rem;color:var(--muted)">Tes coins favoris</div></button>
@@ -1494,11 +1495,11 @@ window.hideKpiSkeleton = function() {
     <div style="font-family:var(--title);font-size:1.1rem;color:var(--accent);letter-spacing:3px;margin-bottom:6px">💼 TRADING</div>
     <div style="font-size:.72rem;color:var(--muted);margin-bottom:28px">Gestion de tes positions</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;max-width:900px">
-      <button class="nav-page-btn" onclick="showTab('portfolio')"><div style="font-size:1.8rem;margin-bottom:8px">💼</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">PORTFOLIO</div><div style="font-size:.68rem;color:var(--muted)">Positions · PNL · Kraken</div></button>
+      <button class="nav-page-btn" onclick="showTab('portfolio')"><div style="font-size:1.8rem;margin-bottom:8px">💼</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">PORTEFEUILLE</div><div style="font-size:.68rem;color:var(--muted)">Positions · PNL · Kraken</div></button>
       <button class="nav-page-btn" onclick="showTab('journal')"><div style="font-size:1.8rem;margin-bottom:8px">📓</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">JOURNAL</div><div style="font-size:.68rem;color:var(--muted)">Historique trades</div></button>
       <button class="nav-page-btn" onclick="showTab('alertes')"><div style="font-size:1.8rem;margin-bottom:8px">🔔</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">ALERTES</div><div style="font-size:.68rem;color:var(--muted)">Alertes prix</div></button>
       <button class="nav-page-btn" onclick="showTab('blacklist')"><div style="font-size:1.8rem;margin-bottom:8px">⚫</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">BLACKLIST</div><div style="font-size:.68rem;color:var(--muted)">Coins exclus</div></button>
-      <button class="nav-page-btn" onclick="showTab('institutional_flows')" style="position:relative"><div style="font-size:1.8rem;margin-bottom:8px">🏛️</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">INSTITUTIONAL</div><div style="font-size:.68rem;color:var(--muted)">Liquidations · Funding rates</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(16,185,129,.12);color:var(--green);border:1px solid rgba(16,185,129,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">🔒 MEMBRE</span></button>
+      <button class="nav-page-btn" onclick="showTab('institutional_flows')" style="position:relative"><div style="font-size:1.8rem;margin-bottom:8px">🏛️</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">INSTITUTIONAL</div><div style="font-size:.68rem;color:var(--muted)">Liquidations · Taux de financement</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(16,185,129,.12);color:var(--green);border:1px solid rgba(16,185,129,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">🔒 MEMBRE</span></button>
     </div>
   </div>
 </div>
@@ -1509,12 +1510,12 @@ window.hideKpiSkeleton = function() {
     <div style="font-family:var(--title);font-size:1.1rem;color:var(--accent);letter-spacing:3px;margin-bottom:6px">⚙️ OUTILS</div>
     <div style="font-size:.72rem;color:var(--muted);margin-bottom:28px">Outils et configuration</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;max-width:900px">
-      <button class="nav-page-btn" onclick="showTab('calculator')"><div style="font-size:1.8rem;margin-bottom:8px">🎯</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">CALCULATEUR</div><div style="font-size:.68rem;color:var(--muted)">TP/SL · Sizing</div></button>
+      <button class="nav-page-btn" onclick="showTab('calculator')"><div style="font-size:1.8rem;margin-bottom:8px">🎯</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">CALCULATEUR</div><div style="font-size:.68rem;color:var(--muted)">Prix/Perte · Dimensionnement</div></button>
       <button class="nav-page-btn" onclick="showTab('settings')"><div style="font-size:1.8rem;margin-bottom:8px">⚙️</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">CONFIG</div><div style="font-size:.68rem;color:var(--muted)">Telegram · Compte</div></button>
       <button class="nav-page-btn" onclick="showTab('lexique')"><div style="font-size:1.8rem;margin-bottom:8px">📚</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">LEXIQUE</div><div style="font-size:.68rem;color:var(--muted)">25+ termes</div></button>
-      <button class="nav-page-btn" onclick="showTab('exchange_connect')"><div style="font-size:1.8rem;margin-bottom:8px">🔗</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">EXCHANGE</div><div style="font-size:.68rem;color:var(--muted)">Connexion portefeuille</div></button>
+      <button class="nav-page-btn" onclick="showTab('exchange_connect')"><div style="font-size:1.8rem;margin-bottom:8px">🔗</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">ÉCHANGE</div><div style="font-size:.68rem;color:var(--muted)">Connexion portefeuille</div></button>
       <button class="nav-page-btn" onclick="showTab('ai')" style="border-color:rgba(124,58,237,.4);position:relative"><div style="font-size:1.8rem;margin-bottom:8px">🤖</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent2);margin-bottom:4px">IA ANALYSTE</div><div style="font-size:.68rem;color:var(--muted)">Groq / Anthropic / OpenAI</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(0,229,255,.12);color:var(--accent);border:1px solid rgba(0,229,255,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">💎 PAID</span></button>
-      <button class="nav-page-btn" onclick="showTab('backtest')" style="border-color:rgba(255,193,7,.3);position:relative"><div style="font-size:1.8rem;margin-bottom:8px">📈</div><div style="font-family:var(--title);font-size:.8rem;color:var(--yellow);margin-bottom:4px">BACKTESTING</div><div style="font-size:.68rem;color:var(--muted)">Grid · DCA · RSI Reversal</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(0,229,255,.12);color:var(--accent);border:1px solid rgba(0,229,255,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">💎 PAID</span></button>
+      <button class="nav-page-btn" onclick="showTab('backtest')" style="border-color:rgba(255,193,7,.3);position:relative"><div style="font-size:1.8rem;margin-bottom:8px">📈</div><div style="font-family:var(--title);font-size:.8rem;color:var(--yellow);margin-bottom:4px">RÉTRO-TEST</div><div style="font-size:.68rem;color:var(--muted)">Grille · Accumulation Progressive · Inversion RSI</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(0,229,255,.12);color:var(--accent);border:1px solid rgba(0,229,255,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">💎 PAID</span></button>
     </div>
   </div>
 </div>
@@ -1527,9 +1528,7 @@ window.hideKpiSkeleton = function() {
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;max-width:900px">
       <button class="nav-page-btn" onclick="showTab('forex')"><div style="font-size:1.8rem;margin-bottom:8px">💱</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">FOREX</div><div style="font-size:.68rem;color:var(--muted)">EUR/USD · GBP · JPY · Sessions</div></button>
       <button class="nav-page-btn" onclick="showTab('indices')"><div style="font-size:1.8rem;margin-bottom:8px">📊</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">INDICES & MATIÈRES</div><div style="font-size:.68rem;color:var(--muted)">SP500 · VIX · CAC40 · Or · Pétrole</div></button>
-      <button class="nav-page-btn" onclick="showTab('multiex')" style="position:relative"><div style="font-size:1.8rem;margin-bottom:8px">🔀</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">MULTI-EXCHANGE</div><div style="font-size:.68rem;color:var(--muted)">Bybit · OKX · Arbitrage</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(0,229,255,.12);color:var(--accent);border:1px solid rgba(0,229,255,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">💎 PAID</span></button>
-      <button class="nav-page-btn" onclick="showTab('mood')" style="position:relative"><div style="font-size:1.8rem;margin-bottom:8px">🧭</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">MARKET MOOD</div><div style="font-size:.68rem;color:var(--muted)">Score de risque global 0-100</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(16,185,129,.12);color:var(--green);border:1px solid rgba(16,185,129,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">🔒 MEMBRE</span></button>
-      <button class="nav-page-btn" onclick="showTab('investor')" style="border-color:rgba(0,255,136,.3);position:relative"><div style="font-size:1.8rem;margin-bottom:8px">🔬</div><div style="font-family:var(--title);font-size:.8rem;color:var(--green);margin-bottom:4px">ANALYSE INVESTISSEUR</div><div style="font-size:.68rem;color:var(--muted)">TVL · Tokenomics · Fondamentaux</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(0,229,255,.12);color:var(--accent);border:1px solid rgba(0,229,255,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">💎 PAID</span></button>
+      <button class="nav-page-btn" onclick="showTab('multiex')" style="position:relative"><div style="font-size:1.8rem;margin-bottom:8px">🔀</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">MULTI-ÉCHANGE</div><div style="font-size:.68rem;color:var(--muted)">Bybit · OKX · Arbitrage croisé</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(0,229,255,.12);color:var(--accent);border:1px solid rgba(0,229,255,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">💎 PAID</span></button>
     </div>
   </div>
 </div>
@@ -1658,7 +1657,6 @@ window.hideKpiSkeleton = function() {
     </div>
     <div style="padding:12px 12px;border-left:1px solid var(--border);display:flex;flex-direction:column;justify-content:space-between">
       <div id="dash-mood-detail" style="font-size:.6rem;color:var(--muted);line-height:1.7"></div>
-      <button onclick="showTab('mood')" style="background:none;border:1px solid var(--accent);color:var(--accent);padding:3px 8px;border-radius:4px;cursor:pointer;font-size:.6rem;font-family:var(--font)">Voir détails →</button>
     </div>
   </div>
 
@@ -1773,7 +1771,7 @@ window.hideKpiSkeleton = function() {
           <option value="buy">🟢 Achat</option>
           <option value="sell">🔴 Vente</option>
         </select>
-        <input id="hist-filter-sym" class="form-input" placeholder="SYMBOL..." style="width:100px;font-size:.72rem;padding:4px 8px" oninput="loadSignalHistory()">
+        <input id="hist-filter-sym" class="form-input" placeholder="SYMBOLE..." style="width:100px;font-size:.72rem;padding:4px 8px" oninput="loadSignalHistory()">
         <button class="btn btn-primary" onclick="loadSignalHistory()" style="padding:4px 12px;font-size:.72rem">🔄</button>
       </div>
     </div>
@@ -1845,9 +1843,9 @@ window.hideKpiSkeleton = function() {
   </div>
 </div>
 
-<!-- ═══ TAB: EXCHANGE CONNECT ═══ -->
+<!-- ═══ TAB: ÉCHANGE CONNECT ═══ -->
 <div class="tab" id="tab-exchange_connect">
-  <div style="font-family:var(--title);font-size:1rem;color:var(--accent);letter-spacing:2px;margin-bottom:6px">🔗 CONNEXION EXCHANGE</div>
+  <div style="font-family:var(--title);font-size:1rem;color:var(--accent);letter-spacing:2px;margin-bottom:6px">🔗 CONNEXION ÉCHANGE</div>
   <div style="font-size:.72rem;color:var(--muted);margin-bottom:20px">Connecte ton exchange en lecture seule pour voir ton vrai solde dans le portfolio</div>
 
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px">
@@ -1859,11 +1857,11 @@ window.hideKpiSkeleton = function() {
       </div>
       <div class="form-group" style="margin-bottom:10px">
         <label>CLÉ API</label>
-        <input class="form-input" id="kraken-key" placeholder="Kraken API Key" style="width:100%">
+        <input class="form-input" id="kraken-key" placeholder="Clé API Kraken" style="width:100%">
       </div>
       <div class="form-group" style="margin-bottom:14px">
         <label>CLÉ SECRÈTE</label>
-        <input class="form-input" id="kraken-secret" type="password" placeholder="Kraken Private Key" style="width:100%">
+        <input class="form-input" id="kraken-secret" type="password" placeholder="Clé privée Kraken" style="width:100%">
       </div>
       <button class="btn btn-primary" onclick="testExchange('kraken')">🔍 Tester la connexion</button>
       <div id="kraken-status" style="font-size:.72rem;margin-top:10px"></div>
@@ -1878,11 +1876,11 @@ window.hideKpiSkeleton = function() {
       </div>
       <div class="form-group" style="margin-bottom:10px">
         <label>CLÉ API</label>
-        <input class="form-input" id="binance-key" placeholder="Binance API Key" style="width:100%">
+        <input class="form-input" id="binance-key" placeholder="Clé API Binance" style="width:100%">
       </div>
       <div class="form-group" style="margin-bottom:14px">
         <label>CLÉ SECRÈTE</label>
-        <input class="form-input" id="binance-secret" type="password" placeholder="Binance Secret Key" style="width:100%">
+        <input class="form-input" id="binance-secret" type="password" placeholder="Clé secrète Binance" style="width:100%">
       </div>
       <button class="btn btn-primary" onclick="testExchange('binance')">🔍 Tester la connexion</button>
       <div id="binance-status" style="font-size:.72rem;margin-top:10px"></div>
@@ -2308,6 +2306,42 @@ window.hideKpiSkeleton = function() {
   </div>
 </div>
 
+<!-- ── SECTION: FEAR & GREED + MACRO GLOBAL ──────────────────── -->
+<!-- TEST_MARKER_2026_MAY_06 -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">
+  <!-- Fear & Greed Gauge (LEFT) -->
+  <div class="table-wrap" style="padding:20px;background:linear-gradient(135deg,rgba(255,193,7,.08),rgba(255,51,102,.05))">
+    <div style="font-family:var(--title);font-size:.9rem;color:var(--yellow);letter-spacing:2px;margin-bottom:16px">😨 SENTIMENT CRYPTO</div>
+
+    <!-- Large Gauge SVG -->
+    <div style="text-align:center;margin-bottom:20px">
+      <svg id="fg-gauge-svg" viewBox="0 0 300 150" style="max-width:100%;height:180px"></svg>
+      <div style="font-size:2.4rem;font-weight:700;color:var(--yellow);margin-top:8px" id="fg-val">—</div>
+      <div style="font-size:.75rem;color:var(--muted);margin-top:4px" id="fg-label">Chargement...</div>
+    </div>
+
+    <!-- Historical Values -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;font-size:.75rem">
+      <div style="background:rgba(0,0,0,.2);padding:10px;border-radius:8px;text-align:center">
+        <div style="color:var(--muted);font-size:.65rem;margin-bottom:4px">Courant</div>
+        <div id="fg-current-val" style="font-weight:700;color:var(--yellow)">—</div>
+      </div>
+      <div style="background:rgba(0,0,0,.2);padding:10px;border-radius:8px;text-align:center">
+        <div style="color:var(--muted);font-size:.65rem;margin-bottom:4px">Hier</div>
+        <div id="fg-yesterday" style="font-weight:700;color:var(--yellow)">—</div>
+      </div>
+      <div style="background:rgba(0,0,0,.2);padding:10px;border-radius:8px;text-align:center">
+        <div style="color:var(--muted);font-size:.65rem;margin-bottom:4px">Semaine</div>
+        <div id="fg-week" style="font-weight:700;color:var(--yellow)">—</div>
+      </div>
+      <div style="background:rgba(0,0,0,.2);padding:10px;border-radius:8px;text-align:center">
+        <div style="color:var(--muted);font-size:.65rem;margin-bottom:4px">Mois</div>
+        <div id="fg-month" style="font-weight:700;color:var(--yellow)">—</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ── CADRE MACROÉCONOMIQUE ───────────────────────────────── -->
 <div class="macro-frame" id="cot-macro-frame">
   <div class="macro-frame-title">
@@ -2538,28 +2572,66 @@ window.hideKpiSkeleton = function() {
   </div>
   <div class="history-nav" id="cot-history-nav" style="margin-bottom:12px"></div>
 
-  <!-- ── GRAPHIQUE TENDANCE INSTITUTIONNELLE ─────────────────── -->
+  <!-- ── GUIDE INTERPRÉTATION COT ────────── -->
   <div id="cot-trend-wrap" style="display:none;margin-bottom:16px">
-    <div class="cot-trend-card">
-      <div class="cot-trend-header">
+    <div class="table-wrap" style="padding:16px;background:linear-gradient(135deg,rgba(255,193,7,.08),rgba(255,51,102,.05))">
+      <div style="font-family:var(--title);font-size:.85rem;color:var(--yellow);letter-spacing:2px;margin-bottom:12px">📚 COMPRENDRE LE COT</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px">
+        <div style="background:linear-gradient(135deg,rgba(255,51,102,.15),rgba(255,51,102,.05));border-left:3px solid var(--red);padding:10px;border-radius:6px">
+          <div style="font-weight:700;color:var(--red);font-size:.75rem">🔴 LF NET</div>
+          <div style="font-size:.65rem;color:var(--muted);margin-top:4px">Leveraged Funds = traders spéculatifs avec shorts extrêmes</div>
+          <div style="font-size:.6rem;color:var(--text);margin-top:4px;padding-top:4px;border-top:1px solid rgba(255,51,102,.3)">⚠️ Élevé = risque de squeeze liquidations</div>
+        </div>
+        <div style="background:linear-gradient(135deg,rgba(0,255,136,.15),rgba(0,255,136,.05));border-left:3px solid var(--green);padding:10px;border-radius:6px">
+          <div style="font-weight:700;color:var(--green);font-size:.75rem">🟢 AM NET</div>
+          <div style="font-size:.65rem;color:var(--muted);margin-top:4px">Asset Managers = smart money, institutions accumulant</div>
+          <div style="font-size:.6rem;color:var(--text);margin-top:4px;padding-top:4px;border-top:1px solid rgba(0,255,136,.3)">✅ Longs croissants = signal haussier</div>
+        </div>
+        <div style="background:linear-gradient(135deg,rgba(0,229,255,.15),rgba(0,229,255,.05));border-left:3px solid var(--accent);padding:10px;border-radius:6px">
+          <div style="font-weight:700;color:var(--accent);font-size:.75rem">🔵 OI</div>
+          <div style="font-size:.65rem;color:var(--muted);margin-top:4px">Open Interest = nouveau capital qui entre sur le marché</div>
+          <div style="font-size:.6rem;color:var(--text);margin-top:4px;padding-top:4px;border-top:1px solid rgba(0,229,255,.3)">📈 Croissant = intérêt en augmentation</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── GRAPHIQUE TENDANCE INSTITUTIONNELLE (AMÉLIORÉ) ────────── -->
+  <div id="cot-trend-wrap" style="display:none;margin-bottom:16px">
+    <div class="table-wrap" style="padding:16px;background:linear-gradient(135deg,rgba(0,229,255,.05),rgba(212,175,55,.04))">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px">
         <div>
-          <span class="cot-trend-title">📈 TENDANCE INSTITUTIONNELLE — 8 SEMAINES</span>
-          <span class="cot-trend-sub" id="cot-trend-asset-label">Évolution des positions nettes · LF · AM · OI</span>
+          <div style="font-family:var(--title);font-size:.9rem;color:var(--text);letter-spacing:2px">📈 TENDANCE 8 SEMAINES</div>
+          <div style="font-size:.65rem;color:var(--muted);margin-top:2px" id="cot-trend-asset-label">Positions nettes hebdomadaires (8 dernières semaines)</div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <div class="cot-trend-tabs">
-            <button class="cot-trend-tab active" onclick="setCOTChartMode('all',this)">Tout</button>
-            <button class="cot-trend-tab" onclick="setCOTChartMode('lf',this)">LF Net</button>
-            <button class="cot-trend-tab" onclick="setCOTChartMode('am',this)">AM Net</button>
-            <button class="cot-trend-tab" onclick="setCOTChartMode('oi',this)">OI</button>
-          </div>
-          <button class="cot-info-btn" onclick="showCOTInfoModal()" title="Comprendre ce graphique">?</button>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn" onclick="setCOTChartMode('all',this)" style="padding:4px 8px;font-size:.65rem;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.3);color:var(--accent);font-weight:700">📊 Tout</button>
+          <button class="btn" onclick="setCOTChartMode('lf',this)" style="padding:4px 8px;font-size:.65rem;border:1px solid rgba(255,51,102,.3);color:var(--red)">LF Net</button>
+          <button class="btn" onclick="setCOTChartMode('am',this)" style="padding:4px 8px;font-size:.65rem;border:1px solid rgba(0,255,136,.3);color:var(--green)">AM Net</button>
+          <button class="btn" onclick="setCOTChartMode('oi',this)" style="padding:4px 8px;font-size:.65rem;border:1px solid rgba(0,229,255,.3);color:var(--accent)">OI</button>
         </div>
       </div>
-      <div style="position:relative;height:200px;margin-top:12px">
-        <canvas id="cot-trend-chart"></canvas>
+
+      <!-- Canvas -->
+      <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;overflow-x:auto;margin-bottom:10px">
+        <canvas id="cot-trend-chart" style="min-height:320px"></canvas>
       </div>
-      <div id="cot-trend-legend" class="cot-trend-legend"></div>
+
+      <!-- Légende explicative -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:.7rem">
+        <div style="display:flex;align-items:center;gap:6px;padding:8px;background:rgba(0,0,0,.2);border-radius:6px">
+          <div style="width:3px;height:12px;background:var(--red);border-radius:2px"></div>
+          <span><span style="color:var(--muted)">LF Net</span> Leveraged Funds (shorts extremes)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:8px;background:rgba(0,0,0,.2);border-radius:6px">
+          <div style="width:3px;height:12px;background:var(--green);border-radius:2px"></div>
+          <span><span style="color:var(--muted)">AM Net</span> Asset Managers (directionnels)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:8px;background:rgba(0,0,0,.2);border-radius:6px">
+          <div style="width:3px;height:12px;background:var(--accent);border-radius:2px"></div>
+          <span><span style="color:var(--muted)">OI</span> Open Interest (nouveaux capitaux)</span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2578,6 +2650,44 @@ window.hideKpiSkeleton = function() {
     </div>
   </div>
 
+  <!-- ── ETF FLOWS TRACKER ──────────────────────────────────────── -->
+  <div id="etf-flows-wrap" style="display:none;margin-bottom:16px">
+    <div class="table-wrap" style="padding:16px;background:linear-gradient(180deg,rgba(34,197,94,.04),transparent)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+        <div>
+          <div style="font-family:var(--title);font-size:.9rem;color:var(--green);letter-spacing:2px">💰 ETF FLOWS TRACKER</div>
+          <div style="font-size:.65rem;color:var(--muted);margin-top:2px">Flux net institutionnel</div>
+        </div>
+        <button class="btn btn-primary" onclick="loadETFFlows()" style="padding:4px 8px;font-size:.7rem">🔄 Actualiser</button>
+      </div>
+
+      <!-- Flux Net Total -->
+      <div style="background:rgba(34,197,94,.1);padding:16px;border-radius:8px;margin-bottom:12px;text-align:center;border:1px solid rgba(34,197,94,.2)">
+        <div style="font-size:.7rem;color:var(--muted);letter-spacing:1px;margin-bottom:6px">FLUX NET TOTAL</div>
+        <div id="etf-total-flow" style="font-size:2rem;font-weight:700;color:var(--green)">—</div>
+        <div style="font-size:.65rem;color:var(--muted);margin-top:4px" id="etf-total-note">Chargement...</div>
+      </div>
+
+      <!-- BTC vs ETH Détail -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div style="background:rgba(247,144,9,.1);padding:12px;border-radius:8px;border:1px solid rgba(247,144,9,.2)">
+          <div style="font-size:.7rem;color:var(--muted);margin-bottom:6px">Bitcoin ETF</div>
+          <div id="etf-btc-flow" style="font-size:1.4rem;font-weight:700;color:#f79009">—</div>
+          <div style="font-size:.65rem;color:var(--muted);margin-top:2px" id="etf-btc-aum">AUM: —</div>
+        </div>
+        <div style="background:rgba(139,92,246,.1);padding:12px;border-radius:8px;border:1px solid rgba(139,92,246,.2)">
+          <div style="font-size:.7rem;color:var(--muted);margin-bottom:6px">Ethereum ETF</div>
+          <div id="etf-eth-flow" style="font-size:1.4rem;font-weight:700;color:#8b5cf6">—</div>
+          <div style="font-size:.65rem;color:var(--muted);margin-top:2px" id="etf-eth-aum">AUM: —</div>
+        </div>
+      </div>
+
+      <!-- Graph Placeholder -->
+      <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;height:240px">
+        <canvas id="etf-flows-chart" style="display:block;width:100%;height:100%"></canvas>
+      </div>
+    </div>
+  </div>
 
   <!-- ── MODAL INFO COT ──────────────────────────────────────── -->
   <div id="cot-info-modal" class="cot-info-overlay" style="display:none" onclick="if(event.target===this)hideCOTInfoModal()">
@@ -3158,6 +3268,88 @@ function renderCotConclusions(btcSig, ethSig, sp5Sig, goldSig) {
   </div>
 </div>
 
+<!-- ═══ TAB: RISK MONITOR ═══ -->
+<div class="tab" id="tab-risk-monitor">
+  <div style="padding:20px;max-width:1600px;margin:0 auto">
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap">
+      <div>
+        <h1 style="font-size:1.8rem;color:var(--accent);margin:0;font-family:var(--title)">📊 RISK MONITOR DYNAMIQUE</h1>
+        <div style="font-size:.8rem;color:var(--muted);margin-top:4px">Heatmap corrélations + Score de risque par asset</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="showRiskMonitorInfo()" style="padding:8px 12px;font-size:.9rem">ℹ️</button>
+        <button class="btn btn-primary" onclick="loadRiskMonitor()" style="padding:8px 16px;font-size:.8rem">🔄 Actualiser</button>
+      </div>
+    </div>
+
+    <!-- Smart Alerts Zone -->
+    <div id="risk-alerts-zone" style="margin-bottom:20px"></div>
+
+    <!-- Asset Clusters Section -->
+    <div style="margin-bottom:24px">
+      <div style="font-family:var(--title);font-size:.9rem;color:var(--accent);letter-spacing:2px;margin-bottom:12px">💎 ASSET CLUSTERS — Mouvements couplés</div>
+      <div id="risk-clusters-zone" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+        <!-- Clusters seront injectés ici -->
+      </div>
+      <div id="risk-ungrouped-zone" style="margin-top:10px;padding:10px;background:rgba(100,116,139,.1);border:1px solid rgba(100,116,139,.2);border-radius:6px;font-size:.75rem;color:var(--muted)">
+        <!-- Assets non groupés seront affichés ici -->
+      </div>
+    </div>
+
+    <!-- Main Grid: Heatmap + Scores -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+      <!-- LEFT: Correlation Heatmap -->
+      <div class="table-wrap" style="padding:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div style="font-family:var(--title);font-size:.9rem;color:var(--accent);letter-spacing:2px">🔗 HEATMAP CORRÉLATIONS</div>
+          <button onclick="showHeatmapInfo()" style="background:none;border:1px solid var(--border);color:var(--accent);cursor:pointer;width:24px;height:24px;border-radius:50%;font-size:.8rem;display:flex;align-items:center;justify-content:center">ℹ️</button>
+        </div>
+        <canvas id="risk-correlation-heatmap" style="max-width:100%;height:350px;display:none"></canvas>
+        <div id="risk-heatmap-table" style="overflow-x:auto;font-size:.7rem;line-height:1.2">
+          <table style="width:100%;border-collapse:collapse">
+            <tbody id="risk-heatmap-tbody"></tbody>
+          </table>
+        </div>
+        <div style="margin-top:8px;padding:8px;background:rgba(0,229,255,.05);border-radius:4px;font-size:.65rem;color:var(--muted)">
+          Vert = basse corrélation (safe) · Rouge = haute corrélation (risque systémique)
+        </div>
+      </div>
+
+      <!-- RIGHT: Risk Scores -->
+      <div class="table-wrap" style="padding:16px">
+        <div style="font-family:var(--title);font-size:.9rem;color:var(--accent);letter-spacing:2px;margin-bottom:12px">⚠️ SCORE DE RISQUE PAR ASSET</div>
+        <div id="risk-scores-table" style="display:grid;grid-template-columns:1fr;gap:6px;max-height:350px;overflow-y:auto">
+          <!-- Scores seront injectés ici -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Detailed Risk Components -->
+    <div class="table-wrap" style="padding:16px">
+      <div style="font-family:var(--title);font-size:.9rem;color:var(--accent);letter-spacing:2px;margin-bottom:12px">🔍 COMPOSANTES DÉTAILLÉES</div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;font-size:.75rem;border-collapse:collapse">
+          <thead>
+            <tr style="border-bottom:1px solid rgba(255,255,255,.1)">
+              <th style="padding:8px;text-align:left;color:var(--accent)">Asset</th>
+              <th style="padding:8px;text-align:center;color:var(--yellow)">Score</th>
+              <th style="padding:8px;text-align:center;color:var(--yellow)">Volatilité 24h</th>
+              <th style="padding:8px;text-align:center;color:var(--accent)">Liquidités</th>
+              <th style="padding:8px;text-align:center;color:var(--red)">Concentration</th>
+              <th style="padding:8px;text-align:center;color:var(--blue)">Corrélation Sys.</th>
+              <th style="padding:8px;text-align:center">Niveau</th>
+            </tr>
+          </thead>
+          <tbody id="risk-components-tbody">
+            <!-- Scores détaillés seront injectés ici -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ TAB: WHALES ═══ -->
 <div class="tab" id="tab-whales">
   <div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
@@ -3189,7 +3381,7 @@ function renderCotConclusions(btcSig, ethSig, sp5Sig, goldSig) {
   </div>
 </div>
 
-<!-- ═══ TAB: PORTFOLIO ═══ -->
+<!-- ═══ TAB: PORTEFEUILLE ═══ -->
 <div class="tab" id="tab-portfolio">
   <div class="form-panel">
     <div class="form-title">+ AJOUTER UNE POSITION</div>
@@ -3368,37 +3560,6 @@ function renderCotConclusions(btcSig, ethSig, sp5Sig, goldSig) {
   </div>
 </div>
 
-<!-- ═══ TAB: CORRELATIONS ═══ -->
-<div class="tab" id="tab-correlations">
-  <div style="padding:20px 24px">
-    <!-- Header -->
-    <div style="margin-bottom:24px">
-      <div style="font-family:var(--title);font-size:1.1rem;color:var(--accent);letter-spacing:3px;margin-bottom:6px">🔗 CORRELATIONS — Mouvements couples</div>
-      <div style="font-size:.72rem;color:var(--muted)">Matrice de corrélation · Asset clusters · Mouvements synchrones</div>
-    </div>
-
-    <!-- Asset Clusters -->
-    <div class="table-wrap" style="padding:14px;margin-bottom:14px;background:linear-gradient(180deg,rgba(0,229,255,.04),transparent)">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div style="font-family:var(--title);font-size:.85rem;color:var(--text);letter-spacing:2px">🎯 ASSET CLUSTERS</div>
-        <button class="btn btn-primary" onclick="loadCorrelations()" style="padding:4px 8px;font-size:.7rem">🔄 Rafraîchir</button>
-      </div>
-      <div id="clusters-container" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
-        <!-- Populated by JS -->
-      </div>
-    </div>
-
-    <!-- Correlation Matrix Heatmap -->
-    <div class="table-wrap" style="padding:14px;background:linear-gradient(135deg,rgba(212,175,55,.05),rgba(0,229,255,.05))">
-      <div style="font-family:var(--title);font-size:.85rem;color:var(--text);letter-spacing:2px;margin-bottom:12px">📊 MATRICE DE CORRELATION</div>
-      <div style="overflow-x:auto;padding:8px;background:rgba(0,0,0,.2);border-radius:8px">
-        <canvas id="correlation-heatmap" style="max-width:100%;height:400px"></canvas>
-      </div>
-      <div style="font-size:.65rem;color:var(--muted);margin-top:8px;text-align:center">Rouge: corrélation positive (0.7-1.0) · Bleu: faible/négative</div>
-    </div>
-  </div>
-</div>
-
 <!-- ═══ TAB: BRIEF VIP ═══ -->
 <div class="tab" id="tab-brief_vip">
   <div style="padding:20px 24px">
@@ -3480,7 +3641,7 @@ function renderCotConclusions(btcSig, ethSig, sp5Sig, goldSig) {
   <div style="padding:20px 24px">
     <!-- Header -->
     <div style="margin-bottom:24px">
-      <div style="font-family:var(--title);font-size:1.1rem;color:var(--gold);letter-spacing:3px;margin-bottom:6px">📚 SETUPS LIBRARY — Patterns Validés</div>
+      <div style="font-family:var(--title);font-size:1.1rem;color:var(--gold);letter-spacing:3px;margin-bottom:6px">📚 BIBLIOTHÈQUE DE STRATÉGIES — Stratégies Validées</div>
       <div style="font-size:.72rem;color:var(--muted)">Stratégies à haut taux de gain · Statistiques réelles · Exemples de trades</div>
     </div>
 
@@ -3520,7 +3681,7 @@ function renderCotConclusions(btcSig, ethSig, sp5Sig, goldSig) {
     <div id="setup-detail-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.8);z-index:1000;padding:20px;overflow-y:auto;backdrop-filter:blur(4px)">
       <div style="background:var(--card);border-radius:10px;max-width:700px;margin:20px auto;padding:20px;border:1px solid var(--border)">
         <button onclick="closeSetupDetail()" style="position:absolute;top:10px;right:10px;background:none;border:none;color:var(--muted);font-size:1.4rem;cursor:pointer">×</button>
-        <div id="setup-detail-content">Loading...</div>
+        <div id="setup-detail-content">Chargement...</div>
       </div>
     </div>
 
@@ -5241,6 +5402,7 @@ function showTab(name) {
     'investor':         () => loadInvestorPage(),
     'multiex':          () => loadMultiEx(),
     'institutional_flows': () => loadInstitutional(),
+    'risk-monitor':     () => loadRiskMonitor(),
   };
 
   if (loaders[name]) loaders[name]();
@@ -5467,7 +5629,7 @@ async function loadChart(sym, interval) {
   });
 }
 
-// ── PORTFOLIO ─────────────────────────────────────────────────
+// ── PORTEFEUILLE ─────────────────────────────────────────────────
 async function loadPortfolio() {
   const res  = await fetch('/api/portfolio');
   const data = await res.json();
@@ -6881,6 +7043,243 @@ function updateMacroUI(info) {
     '<div style="color:var(--muted);font-size:.75rem">Données indisponibles</div>';
 }
 
+// ── COT PAGE VISUALIZATIONS ──────────────────────────────────
+function renderFearGreedGauge(value, min = 0, max = 100) {
+  const svgEl = document.getElementById('fg-gauge-svg');
+  if (!svgEl) return;
+
+  const size = 180;
+  const radius = 70;
+  const cx = size / 2, cy = size / 2;
+
+  // Determine color based on value
+  let color = '#00ff88';
+  if (value <= 30) color = '#ff3366';
+  else if (value <= 45) color = '#ffa500';
+  else if (value <= 55) color = '#ffff00';
+  else if (value <= 75) color = '#7dff00';
+
+  // Calculate needle angle (180° range: -90° to 90°)
+  const percent = (value - min) / (max - min);
+  const angle = -90 + (percent * 180);
+
+  // SVG content
+  svgEl.innerHTML = `
+    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="gauge-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#ff3366;stop-opacity:1" />
+          <stop offset="25%" style="stop-color:#ffa500;stop-opacity:1" />
+          <stop offset="50%" style="stop-color:#ffff00;stop-opacity:1" />
+          <stop offset="75%" style="stop-color:#7dff00;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#00ff88;stop-opacity:1" />
+        </linearGradient>
+      </defs>
+      <!-- Background arc (180°) -->
+      <path d="M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}"
+            stroke="rgba(255,255,255,.1)" stroke-width="16" fill="none" stroke-linecap="round"/>
+      <!-- Gradient arc (180°) -->
+      <path d="M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}"
+            stroke="url(#gauge-grad)" stroke-width="16" fill="none" stroke-linecap="round"/>
+      <!-- Needle -->
+      <g transform="translate(${cx} ${cy}) rotate(${angle})">
+        <line x1="0" y1="0" x2="0" y2="-${radius - 10}" stroke="${color}" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="0" cy="0" r="6" fill="${color}"/>
+      </g>
+      <!-- Center dot -->
+      <circle cx="${cx}" cy="${cy}" r="8" fill="rgba(255,255,255,.1)"/>
+      <!-- Labels -->
+      <text x="20" y="${cy + 25}" font-size="11" fill="rgba(255,255,255,.4)" text-anchor="start">PEUR</text>
+      <text x="${size - 20}" y="${cy + 25}" font-size="11" fill="rgba(255,255,255,.4)" text-anchor="end">GREED</text>
+    </svg>
+  `;
+}
+
+function updateFearGreedDisplay(current, yesterday, week, month) {
+  // Update display values
+  const currEl = document.getElementById('fg-current-val');
+  if(currEl) currEl.textContent = current + '/100';
+
+  const yestEl = document.getElementById('fg-yesterday');
+  if(yestEl) yestEl.textContent = yesterday || '—';
+
+  const weekEl = document.getElementById('fg-week');
+  if(weekEl) weekEl.textContent = week || '—';
+
+  const monthEl = document.getElementById('fg-month');
+  if(monthEl) monthEl.textContent = month || '—';
+
+  // Render gauge
+  renderFearGreedGauge(current, 0, 100);
+}
+
+function enhanceCOTChart(history, asset) {
+  const canvas = document.getElementById('cot-trend-chart');
+  if (!canvas) return;
+
+  // Destroy existing chart if any
+  if (window.cotChartInstance) {
+    window.cotChartInstance.destroy();
+  }
+
+  // Prepare data
+  const labels = history.map(h => h.date || '');
+  const lfNet = history.map(h => h.lf_net || 0);
+  const amNet = history.map(h => h.am_net || 0);
+  const oi = history.map(h => h.oi || 0);
+
+  // Create chart
+  window.cotChartInstance = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'LF Net',
+          data: lfNet,
+          borderColor: '#ff3366',
+          backgroundColor: 'rgba(255, 51, 102, 0.05)',
+          borderWidth: 2,
+          tension: 0.4,
+          yAxisID: 'y',
+          fill: true,
+          pointRadius: 3,
+          pointBackgroundColor: '#ff3366'
+        },
+        {
+          label: 'AM Net',
+          data: amNet,
+          borderColor: '#00ff88',
+          backgroundColor: 'rgba(0, 255, 136, 0.05)',
+          borderWidth: 2,
+          tension: 0.4,
+          yAxisID: 'y',
+          fill: true,
+          pointRadius: 3,
+          pointBackgroundColor: '#00ff88'
+        },
+        {
+          label: 'Open Interest',
+          data: oi,
+          borderColor: '#00d4ff',
+          borderDash: [5, 5],
+          borderWidth: 2,
+          tension: 0.4,
+          yAxisID: 'y1',
+          pointRadius: 3,
+          pointBackgroundColor: '#00d4ff'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: {
+            color: 'rgba(255, 255, 255, 0.7)',
+            font: { size: 11 },
+            usePointStyle: true,
+            padding: 12
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleColor: 'white',
+          bodyColor: 'rgba(255, 255, 255, 0.9)',
+          borderColor: 'rgba(255, 255, 255, 0.2)',
+          borderWidth: 1,
+          padding: 8,
+          displayColors: true
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
+          ticks: { color: 'rgba(255, 255, 255, 0.5)', font: { size: 10 } }
+        },
+        y: {
+          type: 'linear',
+          display: true,
+          position: 'left',
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
+          ticks: { color: 'rgba(255, 255, 255, 0.5)', font: { size: 10 } },
+          title: { display: true, text: 'LF/AM Net', color: 'rgba(255, 255, 255, 0.7)' }
+        },
+        y1: {
+          type: 'linear',
+          display: true,
+          position: 'right',
+          grid: { drawOnChartArea: false },
+          ticks: { color: 'rgba(0, 212, 255, 0.7)', font: { size: 10 } },
+          title: { display: true, text: 'Open Interest', color: 'rgba(0, 212, 255, 0.7)' }
+        }
+      }
+    }
+  });
+}
+
+function renderETFFlowsChart(etfData) {
+  const canvas = document.getElementById('etf-flows-chart');
+  if (!canvas) return;
+
+  // Destroy existing chart if any
+  if (window.etfFlowsChartInstance) {
+    window.etfFlowsChartInstance.destroy();
+  }
+
+  const btcEtfs = (etfData.etfs || []).filter(e => !e.asset || e.asset === 'BTC').slice(0, 5);
+  const labels = btcEtfs.map(e => e.ticker || e.name || '');
+  const flows = btcEtfs.map(e => e.flow_1d || 0);
+  const colors = flows.map(f => f >= 0 ? '#00ff88' : '#ff3366');
+
+  window.etfFlowsChartInstance = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Flux 24h (M$)',
+        data: flows,
+        backgroundColor: colors,
+        borderRadius: 4,
+        borderWidth: 0
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleColor: 'white',
+          bodyColor: 'rgba(255, 255, 255, 0.9)',
+          padding: 8
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
+          ticks: { color: 'rgba(255, 255, 255, 0.5)' }
+        },
+        y: {
+          grid: { display: false },
+          ticks: { color: 'rgba(255, 255, 255, 0.7)' }
+        }
+      }
+    }
+  });
+}
+
+// Update COT macro KPIs (SP500, Nasdaq, VIX, DXY, Gold, Oil)
+
 async function loadMacro() {
   try {
     // Charger les 2 sources en parallèle : macro + market_info (fear&greed, dominance)
@@ -6896,6 +7295,11 @@ async function loadMacro() {
     if(infoRes.funding)     data.funding    = infoRes.funding;
     macroData = data;
     updateMacroUI(data);
+    // Render Fear & Greed gauge for COT page
+    if(infoRes.fear_greed && infoRes.fear_greed.value) {
+      const fg = infoRes.fear_greed;
+      updateFearGreedDisplay(fg.value, fg.yesterday || '—', fg.week || '—', fg.month || '—');
+    }
     if (!document.getElementById('econ-calendar-list')?.innerHTML?.includes('événement')) {
       loadCalendar();
     }
@@ -7776,7 +8180,7 @@ async function searchLexique() {
   } catch(e) {}
 }
 
-// ── EXCHANGE CONNECT V10 ──────────────────────────────────────
+// ── ÉCHANGE CONNECT V10 ──────────────────────────────────────
 async function testExchange(exchange) {
   const key    = document.getElementById(`${exchange}-key`)?.value?.trim();
   const secret = document.getElementById(`${exchange}-secret`)?.value?.trim();
@@ -7835,6 +8239,8 @@ async function loadCOT(asset, btn) {
     renderCOT(cotHistory[0]);
     renderCOTChart(cotHistory, cotAsset);
     renderCOTNetBarChart(cotHistory, cotAsset);
+    // Render enhanced COT trend chart (8 weeks)
+    enhanceCOTChart(cotHistory, cotAsset);
   } catch(e) {
     document.getElementById('cot-main-grid').innerHTML =
       `<div class="cot-empty-note" style="color:var(--red)">Erreur: ${e.message}</div>`;
@@ -8347,6 +8753,9 @@ async function loadETFFlows() {
         elEth.innerHTML = '<div style="color:var(--muted);font-size:.68rem;padding:8px 0;opacity:.6">ETF ETH — données en attente</div>';
       }
     }
+
+    // Render ETF flows chart
+    renderETFFlowsChart(data);
 
   } catch(e) { console.log('ETF error:', e); }
 }
@@ -8978,7 +9387,7 @@ function updateAdminPill(role) {
   if (pill && role==='admin') pill.style.display = 'inline';
 }
 
-// ── BACKTESTING ──────────────────────────────────────────────
+// ── RÉTRO-TEST ──────────────────────────────────────────────
 function updateBtParams() {
   var stratEl = document.getElementById('bt-strategy');
   var container = document.getElementById('bt-params');
@@ -9275,7 +9684,7 @@ window.addEventListener('load',function(){
   fetch('/api/exchange_connect/get_keys?exchange=kraken')
     .then(function(r){return r.json();}).then(function(d){
       var s=document.getElementById('kraken-sync-status');
-      if(s){s.textContent=d.has_keys?'✅ Clés configurées — prêt à synchroniser':'Va dans EXCHANGE pour configurer tes clés';
+      if(s){s.textContent=d.has_keys?'✅ Clés configurées — prêt à synchroniser':'Va dans ÉCHANGE pour configurer tes clés';
             s.style.color=d.has_keys?'var(--green)':'var(--muted)';}
     }).catch(function(){});
 });
@@ -9833,11 +10242,11 @@ setInterval(loadDashMood, 300000);
 </div>
 </div>
 
-<!-- ═══ TAB: MULTI-EXCHANGE ═══ -->
+<!-- ═══ TAB: MULTI-ÉCHANGE ═══ -->
 <div class="tab" id="tab-multiex">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
     <div>
-      <div style="font-family:var(--title);font-size:1rem;color:var(--accent);letter-spacing:2px">🔀 MULTI-EXCHANGE</div>
+      <div style="font-family:var(--title);font-size:1rem;color:var(--accent);letter-spacing:2px">🔀 MULTI-ÉCHANGE</div>
       <div style="font-size:.7rem;color:var(--muted);margin-top:4px">Lecture simplifiee par type de marche: Spot, Perp ou Arbitrage</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
@@ -10156,7 +10565,7 @@ async function loadMood() {
 }
 
 // ══════════════════════════════════════════════════════════════
-// V11 — MULTI-EXCHANGE
+// V11 — MULTI-ÉCHANGE
 // ══════════════════════════════════════════════════════════════
 var _bybitData=[]; var _okxData=[]; var _arbData=[];
 var _bybitSpotData=[]; var _bybitPerpData=[]; var _okxSpotData=[]; var _okxPerpData=[];
@@ -12518,74 +12927,6 @@ function renderClusters(data) {
   }
 }
 
-function renderCorrelationHeatmap(data) {
-  const canvas = document.getElementById('correlation-heatmap');
-  if (!canvas || !data.correlation_matrix) return;
-
-  const matrix = data.correlation_matrix;
-  const symbols = data.symbols;
-  const n = symbols.length;
-
-  // Simple heatmap: draw rectangles colored by correlation strength
-  const ctx = canvas.getContext('2d');
-  const cellSize = Math.max(30, canvas.width / n);
-
-  canvas.width = cellSize * n;
-  canvas.height = cellSize * n;
-
-  // Draw heatmap cells
-  for (let i = 0; i < n; i++) {
-    for (let j = 0; j < n; j++) {
-      const corr = matrix[i][j];
-      const x = j * cellSize;
-      const y = i * cellSize;
-
-      // Color from red (1.0) to white (0.0) to blue (-1.0)
-      let color;
-      if (corr > 0) {
-        // Red gradient: white -> red
-        const intensity = corr;
-        color = `rgb(255, ${Math.round(255 * (1 - intensity))}, ${Math.round(255 * (1 - intensity))})`;
-      } else {
-        // Blue gradient: white -> blue
-        const intensity = Math.abs(corr);
-        color = `rgb(${Math.round(255 * (1 - intensity))}, ${Math.round(255 * (1 - intensity))}, 255)`;
-      }
-
-      ctx.fillStyle = color;
-      ctx.fillRect(x, y, cellSize, cellSize);
-
-      // Draw border
-      ctx.strokeStyle = 'rgba(255,255,255,.1)';
-      ctx.lineWidth = 0.5;
-      ctx.strokeRect(x, y, cellSize, cellSize);
-
-      // Draw correlation value
-      if (Math.abs(corr) > 0.05) {
-        ctx.fillStyle = 'rgba(0,0,0,.7)';
-        ctx.font = '10px var(--font)';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(corr.toFixed(2), x + cellSize / 2, y + cellSize / 2);
-      }
-    }
-  }
-
-  // Draw symbol labels on left
-  ctx.fillStyle = 'var(--muted)';
-  ctx.font = '11px var(--font)';
-  ctx.textAlign = 'right';
-  for (let i = 0; i < n; i++) {
-    ctx.fillText(symbols[i], -5, i * cellSize + cellSize / 2);
-  }
-
-  // Draw symbol labels on top
-  ctx.textAlign = 'center';
-  for (let j = 0; j < n; j++) {
-    ctx.fillText(symbols[j], j * cellSize + cellSize / 2, -5);
-  }
-}
-
 // VIP BRIEF — Geopolitical & Macro Analysis for VIP users
 // ══════════════════════════════════════════════════════════════
 
@@ -12961,12 +13302,314 @@ setInterval(() => {
   }
 }, 30000);
 
+// ── RISK MONITOR ────────────────────────────────────────────────────
+
+async function loadRiskMonitor() {
+  try {
+    const res = await fetch('/api/risk-monitor/data');
+    const data = await res.json();
+
+    // Afficher les alerts
+    renderRiskAlerts(data.alerts || []);
+
+    // Charger les clusters
+    loadAssetClusters();
+
+    // Afficher la heatmap
+    renderCorrelationHeatmap(data.matrix || {});
+
+    // Afficher les scores
+    renderRiskScores(data.scores || []);
+  } catch(e) {
+    console.error('[Risk Monitor]', e);
+  }
+}
+
+function renderRiskAlerts(alerts) {
+  const zone = document.getElementById('risk-alerts-zone');
+  if (!zone) return;
+
+  if (!alerts || alerts.length === 0) {
+    zone.innerHTML = '';
+    return;
+  }
+
+  zone.innerHTML = alerts.map(a => {
+    const bgColor = a.severity === 'critical' ? 'rgba(255,51,102,.15)' :
+                    a.severity === 'high' ? 'rgba(255,193,7,.15)' :
+                    a.severity === 'positive' ? 'rgba(0,255,136,.15)' : 'rgba(100,116,139,.15)';
+    const borderColor = a.severity === 'critical' ? 'var(--red)' :
+                       a.severity === 'high' ? 'var(--yellow)' :
+                       a.severity === 'positive' ? 'var(--green)' : 'var(--muted)';
+
+    return `
+      <div style="background:${bgColor};border-left:3px solid ${borderColor};padding:10px;border-radius:6px;margin-bottom:8px;font-size:.8rem">
+        ${a.message}
+      </div>
+    `;
+  }).join('');
+}
+
+function renderCorrelationHeatmap(matrix) {
+  const tbody = document.getElementById('risk-heatmap-tbody');
+  if (!tbody) return;
+
+  const corrMatrix = matrix.correlation_matrix;
+  const symbols = matrix.symbols;
+
+  if (!corrMatrix || !symbols || symbols.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="10" style="padding:10px;text-align:center;color:var(--muted)">Pas de données de corrélation</td></tr>';
+    return;
+  }
+
+  let html = '<tr style="border-bottom:1px solid rgba(255,255,255,.1)"><td style="padding:4px;font-weight:700"></td>';
+
+  symbols.forEach(s => {
+    html += `<td style="padding:4px;text-align:center;font-weight:700;font-size:.65rem">${s}</td>`;
+  });
+  html += '</tr>';
+
+  symbols.forEach((s1, i1) => {
+    html += `<tr><td style="padding:4px;font-weight:700;font-size:.65rem">${s1}</td>`;
+
+    symbols.forEach((s2, i2) => {
+      const numVal = corrMatrix[i1][i2] || 0;
+      const hue = numVal > 0 ? 0 : 180;
+      const sat = Math.abs(numVal) * 100;
+      const light = 50 - Math.abs(numVal) * 20;
+      const bgColor = `hsl(${hue}, ${sat}%, ${light}%)`;
+      const textColor = Math.abs(numVal) > 0.5 ? 'white' : 'var(--text)';
+
+      html += `<td style="padding:4px;text-align:center;background:${bgColor};color:${textColor};font-size:.65rem;border-radius:2px">${numVal.toFixed(2)}</td>`;
+    });
+
+    html += '</tr>';
+  });
+
+  tbody.innerHTML = html;
+}
+
+function renderRiskScores(scores) {
+  const container = document.getElementById('risk-scores-table');
+  if (!container) return;
+
+  if (!scores || scores.length === 0) {
+    container.innerHTML = '<div style="color:var(--muted);padding:10px">Chargement...</div>';
+    return;
+  }
+
+  container.innerHTML = scores.map(s => {
+    const scoreColor = s.score >= 8 ? 'var(--red)' : s.score >= 6 ? 'var(--yellow)' : 'var(--green)';
+
+    return `
+      <div style="background:rgba(0,0,0,.2);padding:10px;border-radius:6px;border-left:3px solid ${scoreColor}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <strong style="font-size:.8rem">${s.symbol}</strong>
+          <span style="font-size:.9rem;font-weight:700;color:${scoreColor}">${s.score}/10</span>
+        </div>
+        <div style="font-size:.65rem;color:var(--muted);margin-bottom:4px">${s.risk_level}</div>
+        <div style="font-size:.65rem;display:grid;grid-template-columns:1fr 1fr;gap:4px;color:var(--muted)">
+          <div>📊 Vol: ${s.volatility}</div>
+          <div>💧 Liq: ${s.liquidity}</div>
+          <div>🐋 Conc: ${s.concentration}</div>
+          <div>🔗 Corr: ${s.correlation}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Aussi remplir la table détaillée
+  const detailTbody = document.getElementById('risk-components-tbody');
+  if (detailTbody) {
+    detailTbody.innerHTML = scores.map(s => {
+      const scoreColor = s.score >= 8 ? 'var(--red)' : s.score >= 6 ? 'var(--yellow)' : 'var(--green)';
+      return `
+        <tr style="border-bottom:1px solid rgba(255,255,255,.05)">
+          <td style="padding:8px;color:var(--accent);font-weight:700">${s.symbol}</td>
+          <td style="padding:8px;text-align:center;color:${scoreColor};font-weight:700">${s.score}</td>
+          <td style="padding:8px;text-align:center;color:var(--yellow)">${s.volatility}%</td>
+          <td style="padding:8px;text-align:center;color:var(--accent)">${s.liquidity}</td>
+          <td style="padding:8px;text-align:center;color:var(--red)">${s.concentration}</td>
+          <td style="padding:8px;text-align:center;color:var(--blue)">${s.correlation}</td>
+          <td style="padding:8px;text-align:center">${s.risk_level}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+}
+
+async function loadAssetClusters() {
+  try {
+    const res = await fetch('/api/correlations/clusters');
+    const data = await res.json();
+    renderAssetClusters(data.clusters || []);
+    renderUngroupedAssets(data.ungrouped || []);
+  } catch(e) {
+    console.error('[Asset Clusters]', e);
+  }
+}
+
+function renderAssetClusters(clusters) {
+  const container = document.getElementById('risk-clusters-zone');
+  if (!container) return;
+
+  if (!clusters || clusters.length === 0) {
+    container.innerHTML = '<div style="color:var(--muted);padding:10px">Aucun cluster détecté</div>';
+    return;
+  }
+
+  container.innerHTML = clusters.map(c => {
+    const strength = (c.strength * 100).toFixed(0);
+    const members = c.members.join(' + ');
+    const badgeColor = c.type === 'positive' ? 'var(--green)' : 'var(--red)';
+
+    return `
+      <div style="background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:12px">
+        <div style="font-size:.7rem;color:var(--muted);margin-bottom:4px">Leader: <strong style="color:var(--accent)">${c.leader}</strong></div>
+        <div style="font-size:.65rem;color:var(--muted);margin-bottom:8px">${members}</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="flex:1;height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden">
+            <div style="height:100%;background:${badgeColor};width:${strength}%;border-radius:3px"></div>
+          </div>
+          <span style="font-size:.7rem;font-weight:700;color:${badgeColor}">${strength}%</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderUngroupedAssets(ungrouped) {
+  const container = document.getElementById('risk-ungrouped-zone');
+  if (!container || !ungrouped || ungrouped.length === 0) return;
+
+  container.innerHTML = `<strong style="color:var(--accent)">Non groupés:</strong> ${ungrouped.join(' · ')}`;
+}
+
+function showRiskMonitorInfo() {
+  const modal = document.getElementById('risk-monitor-info-modal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeRiskMonitorInfo() {
+  const modal = document.getElementById('risk-monitor-info-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+function showHeatmapInfo() {
+  const modal = document.getElementById('heatmap-info-modal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeHeatmapInfo() {
+  const modal = document.getElementById('heatmap-info-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+// Load Risk Monitor when tab is shown
+document.addEventListener('tabChanged', (e) => {
+  if (e.detail?.tabId === 'risk-monitor') {
+    loadRiskMonitor();
+  }
+});
+
 </script>
 
 <!-- Ticker script -->
 <script src="/static/ticker.js"></script>
 
+<!-- UNIQUE_TEST_MARKER_12345 -->
 </div>
+
+<!-- Heatmap Info Modal -->
+<div id="heatmap-info-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:9999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;max-width:500px;max-height:80vh;overflow-y:auto;padding:20px;font-size:.85rem;line-height:1.6">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h2 style="margin:0;font-size:1.2rem;color:var(--accent);font-family:var(--title)">🔗 Heatmap Corrélations</h2>
+      <button onclick="closeHeatmapInfo()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--muted)">✕</button>
+    </div>
+
+    <div style="color:var(--text)">
+      <p><strong>Une heatmap corrélation montre comment les cryptos se déplacent ensemble</strong> (0 à 1).</p>
+
+      <div style="background:rgba(0,229,255,.08);border-left:3px solid var(--accent);padding:10px;border-radius:6px;margin-bottom:12px">
+        <strong>🟢 Vert (0.0 - 0.3)</strong><br/>Pas correlées = bouger indépendamment = SAFE pour diversifier
+      </div>
+
+      <div style="background:rgba(0,229,255,.08);border-left:3px solid var(--accent);padding:10px;border-radius:6px;margin-bottom:12px">
+        <strong>🟡 Jaune (0.3 - 0.6)</strong><br/>Partiellement corrélées = bouger ensemble parfois
+      </div>
+
+      <div style="background:rgba(0,229,255,.08);border-left:3px solid var(--accent);padding:10px;border-radius:6px;margin-bottom:12px">
+        <strong>🔴 Rouge (0.6 - 1.0)</strong><br/>Fortement corrélées = bouger presque ensemble = RISQUE si l'une crash
+      </div>
+
+      <hr style="border:none;border-top:1px solid var(--border);margin:12px 0">
+
+      <p><strong>Exemple :</strong></p>
+      <ul style="margin:8px 0;padding-left:20px;font-size:.8rem">
+        <li><strong>BTC ↔ ETH = 0.78 (🔴)</strong> → Si BTC baisse 10%, ETH baisse ~8%</li>
+        <li><strong>BTC ↔ DOGE = 0.16 (🟢)</strong> → DOGE peut baisser 5% quand BTC baisse 10%</li>
+      </ul>
+
+      <p style="margin-top:12px;font-size:.8rem;color:var(--muted)"><strong>💡 Conseil :</strong> Pour diversifier, choose des cryptos avec corrélations basses (vertes)</p>
+    </div>
+
+    <button onclick="closeHeatmapInfo()" class="btn btn-primary" style="width:100%;padding:8px;margin-top:12px">Compris</button>
+  </div>
+</div>
+
+<!-- Risk Monitor Info Modal -->
+<div id="risk-monitor-info-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:9999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;max-width:600px;max-height:80vh;overflow-y:auto;padding:24px;font-size:.85rem;line-height:1.6">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h2 style="margin:0;font-size:1.3rem;color:var(--accent);font-family:var(--title)">📊 À Quoi Sert le Risk Monitor ?</h2>
+      <button onclick="closeRiskMonitorInfo()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--muted)">✕</button>
+    </div>
+
+    <div style="color:var(--text);margin-bottom:16px">
+      <p style="margin-top:0">Le <strong>Risk Monitor</strong> analyse le risque de 9 cryptocurrencies majeures en combinant <strong>4 indicateurs clés</strong> :</p>
+
+      <div style="background:rgba(0,229,255,.08);border-left:3px solid var(--accent);padding:12px;border-radius:6px;margin-bottom:12px">
+        <strong>📊 Volatilité 24h</strong><br/>
+        Mesure les fluctuations de prix sur les 24 dernières heures. Plus élevée = prix bouge beaucoup = risqué
+      </div>
+
+      <div style="background:rgba(0,229,255,.08);border-left:3px solid var(--accent);padding:12px;border-radius:6px;margin-bottom:12px">
+        <strong>💧 Liquidités</strong><br/>
+        Capacité à acheter/vendre sans impacter le prix. Basse liquidité = difficile à sortir = risqué
+      </div>
+
+      <div style="background:rgba(0,229,255,.08);border-left:3px solid var(--accent);padding:12px;border-radius:6px;margin-bottom:12px">
+        <strong>🐋 Concentration</strong><br/>
+        % du volume détenu par les gros holders. Concentration élevée = whale peut dump = risqué
+      </div>
+
+      <div style="background:rgba(0,229,255,.08);border-left:3px solid var(--accent);padding:12px;border-radius:6px;margin-bottom:12px">
+        <strong>🔗 Corrélation Système</strong><br/>
+        Comment l'asset se déplace avec les autres. Corrélation élevée = risque systémique si BTC crash
+      </div>
+
+      <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
+
+      <p><strong>Les 9 Cryptos Analysées :</strong><br/>BTC, ETH, SOL, BNB, XRP, DOGE, ADA, AVAX, MATIC</p>
+
+      <p><strong>Score Final (1-10) :</strong></p>
+      <ul style="margin:8px 0;padding-left:20px">
+        <li><span style="color:var(--green)">🟢 1-3 : BAS RISQUE</span> — Safe, peu volatilité</li>
+        <li><span style="color:var(--yellow)">🟡 4-5 : MODÉRÉ</span> — Normal, à surveiller</li>
+        <li><span style="color:var(--orange)">🟠 6-7 : ÉLEVÉ</span> — Attention, risqué</li>
+        <li><span style="color:var(--red)">🔴 8-10 : CRITIQUE</span> — Très risqué, avoid</li>
+      </ul>
+
+      <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
+
+      <p><strong>💡 Conseil :</strong> Use le Risk Monitor pour <strong>identifier les assets risqués</strong> et <strong>ajuster ton portefeuille</strong>. Les clusters te montrent quels assets <strong>bougent ensemble</strong> pour mieux diversifier.</p>
+    </div>
+
+    <button onclick="closeRiskMonitorInfo()" class="btn btn-primary" style="width:100%;padding:10px;margin-top:16px">Compris !</button>
+  </div>
+</div>
+
 </body>
 </html>
                                                         

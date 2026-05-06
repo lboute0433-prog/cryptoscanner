@@ -1,0 +1,50 @@
+═══════════════════════════════════════════════════════════════════
+FICHIERS À UPLOADER VIA FILEZILLA VERS HETZNER (/root/cryptoscanner/)
+═══════════════════════════════════════════════════════════════════
+
+✅ FICHIERS MODIFIÉS À UPLOADER:
+1. app.py          ← Corrections: Flask hook + routes alert_settings
+2. smart_signals.py ← Signatures de fonction corrigées (déjà fait ?)
+
+═══════════════════════════════════════════════════════════════════
+
+APRÈS UPLOAD, EXÉCUTE CES COMMANDES SUR LE SERVEUR:
+
+ssh root@46.225.234.71
+
+# 1. Arrête le service
+pm2 stop all
+pm2 delete all
+
+# 2. Redémarre CORRECTEMENT
+cd /root/cryptoscanner
+pm2 start --name cryptoscanner --interpreter python3 app.py
+
+# 3. Attends 5 secondes et vérifie les logs
+sleep 5
+pm2 logs cryptoscanner --lines 100
+
+═══════════════════════════════════════════════════════════════════
+
+CHERCHE DANS LES LOGS:
+✓ [Init] Background services lancés ✓
+✓ [Startup] Hetzner - lancement des taches de fond
+✓ [Macro] ...
+✓ [scan_loop] ...
+✓ [Admin] Bootstrap admin mis a jour: loloprim
+
+PROBLÈMES CORRIGÉS:
+✅ Page DATA macro — données affichées (macro_loop() s'exécute)
+✅ Alertes Telegram — actives (smart_signal_loop() s'exécute)
+✅ Routes API alert_settings — fonctionnelles (SMART SIGNALS, RETRACE RSI, MACRO EVENTS)
+✅ Authentification admin — fonctionnelle
+
+═══════════════════════════════════════════════════════════════════
+
+TESTE DANS LE NAVIGATEUR:
+• https://46.225.234.71 → Page DATA macro remplie
+• Admin login → Connexion possible avec loloprim
+• Panel alertes → Boutons SAUVEGARDER funcionent (plus de 404)
+
+═══════════════════════════════════════════════════════════════════
+Statut: Prêt pour déploiement

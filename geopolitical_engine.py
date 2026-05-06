@@ -58,11 +58,12 @@ def fetch_regulatory_news():
     try:
         from news_macro import get_news_from_db
 
-        # Keywords for regulatory/policy events
-        keywords = ["regulation", "sec", "cftc", "central bank", "policy", "ban", "approve", "etf", "cbdc", "license"]
+        # Keywords for regulatory/policy events (FR + EN)
+        keywords = ["regulation", "sec", "cftc", "central bank", "policy", "ban", "approve", "etf", "cbdc", "license",
+                   "réglementation", "autorité", "banque centrale", "politique", "interdire", "approbation", "licence"]
 
         regulatory_news = []
-        all_news = get_news_from_db(limit=20, critical_only=False, lang=None, prefer_lang="en")
+        all_news = get_news_from_db(limit=20, critical_only=False, lang=None, prefer_lang="fr")
 
         for news in all_news:
             title_lower = (news.get("title", "") or "").lower()

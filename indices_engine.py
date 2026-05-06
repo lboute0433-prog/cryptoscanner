@@ -103,109 +103,141 @@ def fetch_single_index(key: str) -> Optional[dict]:
 
     symbol = cfg["symbol"]
 
-    # Tentative 1 : Yahoo Finance v7 quote
+    # Tentative 1 : Yahoo Finance v7 quote (avec retry)
     for attempt_url in [YAHOO_QUOTE_URL, "https://query2.finance.yahoo.com/v7/finance/quote"]:
+        for retry in range(2):
+            try:
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                    "Accept": "application/json",
+                }
+                r = requests.get(
+                    attempt_url,
+                    params={"symbols": symbol, "fields": "regularMarketPrice,regularMarketChangePercent,regularMarketPreviousClose,regularMarketDayHigh,regularMarketDayLow,fiftyTwoWeekHigh,fiftyTwoWeekLow"},
+                    headers=headers,
+                    timeout=3
+                )
+                data = r.json()
+                results = data.get("quoteResponse", {}).get("result", [])
+                if not results:
+                    continue
+
+                q     = results[0]
+                price = float(q.get("regularMarketPrice", 0) or 0)
+                chg   = float(q.get("regularMarketChangePercent", 0) or 0)
+                prev  = float(q.get("regularMarketPreviousClose", 0) or 0)
+
+                if price <= 0:
+                    continue
+
+                result = {
+                    "key":         key,
+                    "symbol":      symbol,
+                    "name":        cfg["name"],
+                    "emoji":       cfg["emoji"],
+                    "type":        cfg["type"],
+                    "region":      cfg["region"],
+                    "price":       round(price, 2),
+                    "change_pct":  round(chg, 2),
+                    "change_abs":  round(price - prev, 2) if prev else 0,
+                    "prev_close":  round(prev, 2),
+                    "day_high":    round(float(q.get("regularMarketDayHigh", 0) or 0), 2),
+                    "day_low":     round(float(q.get("regularMarketDayLow",  0) or 0), 2),
+                    "week52_high": round(float(q.get("fiftyTwoWeekHigh",     0) or 0), 2),
+                    "week52_low":  round(float(q.get("fiftyTwoWeekLow",      0) or 0), 2),
+                    "signal":      _interpret_index_signal(key, price, chg),
+                    "ts":          datetime.now().strftime("%H:%M:%S"),
+                    "demo":        False,
+                }
+                _cache_set(cache_key, result, 60)
+                return result
+            except Exception as e:
+                print(f"[Indices] {key} tentative {attempt_url[-10:]} retry {retry+1}/2 error: {e}")
+                if retry == 0:
+                    time.sleep(1)
+                continue
+
+    # Tentative 2 : Yahoo Finance v8 chart (autre endpoint, avec retry)
+    for retry in range(2):
         try:
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
                 "Accept": "application/json",
             }
             r = requests.get(
-                attempt_url,
-                params={"symbols": symbol, "fields": "regularMarketPrice,regularMarketChangePercent,regularMarketPreviousClose,regularMarketDayHigh,regularMarketDayLow,fiftyTwoWeekHigh,fiftyTwoWeekLow"},
+                f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}",
+                params={"interval": "1d", "range": "2d"},
                 headers=headers,
-                timeout=8
+                timeout=3
             )
             data = r.json()
-            results = data.get("quoteResponse", {}).get("result", [])
-            if not results:
-                continue
+            meta = data.get("chart", {}).get("result", [{}])[0].get("meta", {})
+            price = float(meta.get("regularMarketPrice", 0) or 0)
+            prev  = float(meta.get("previousClose", 0) or meta.get("chartPreviousClose", 0) or 0)
+            chg   = ((price - prev) / prev * 100) if prev else 0
 
-            q     = results[0]
-            price = float(q.get("regularMarketPrice", 0) or 0)
-            chg   = float(q.get("regularMarketChangePercent", 0) or 0)
-            prev  = float(q.get("regularMarketPreviousClose", 0) or 0)
-
-            if price <= 0:
-                continue
-
-            result = {
-                "key":         key,
-                "symbol":      symbol,
-                "name":        cfg["name"],
-                "emoji":       cfg["emoji"],
-                "type":        cfg["type"],
-                "region":      cfg["region"],
-                "price":       round(price, 2),
-                "change_pct":  round(chg, 2),
-                "change_abs":  round(price - prev, 2) if prev else 0,
-                "prev_close":  round(prev, 2),
-                "day_high":    round(float(q.get("regularMarketDayHigh", 0) or 0), 2),
-                "day_low":     round(float(q.get("regularMarketDayLow",  0) or 0), 2),
-                "week52_high": round(float(q.get("fiftyTwoWeekHigh",     0) or 0), 2),
-                "week52_low":  round(float(q.get("fiftyTwoWeekLow",      0) or 0), 2),
-                "signal":      _interpret_index_signal(key, price, chg),
-                "ts":          datetime.now().strftime("%H:%M:%S"),
-                "demo":        False,
-            }
-            _cache_set(cache_key, result, 60)
-            return result
+            if price > 0:
+                result = {
+                    "key": key, "symbol": symbol, "name": cfg["name"],
+                    "emoji": cfg["emoji"], "type": cfg["type"], "region": cfg["region"],
+                    "price": round(price, 2), "change_pct": round(chg, 2),
+                    "change_abs": round(price - prev, 2),
+                    "prev_close": round(prev, 2),
+                    "day_high": round(float(meta.get("regularMarketDayHigh", price) or price), 2),
+                    "day_low":  round(float(meta.get("regularMarketDayLow",  price) or price), 2),
+                    "week52_high": 0, "week52_low": 0,
+                    "signal": _interpret_index_signal(key, price, chg),
+                    "ts": datetime.now().strftime("%H:%M:%S"),
+                    "demo": False,
+                }
+                _cache_set(cache_key, result, 60)
+                return result
         except Exception as e:
-            print(f"[Indices] {key} tentative {attempt_url[-10:]} error: {e}")
-            continue
-
-    # Tentative 2 : Yahoo Finance v8 chart (autre endpoint)
-    try:
-        headers = {"User-Agent": "Mozilla/5.0"}
-        r = requests.get(
-            f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}",
-            params={"interval": "1d", "range": "2d"},
-            headers=headers,
-            timeout=8
-        )
-        data = r.json()
-        meta = data.get("chart", {}).get("result", [{}])[0].get("meta", {})
-        price = float(meta.get("regularMarketPrice", 0) or 0)
-        prev  = float(meta.get("previousClose", 0) or meta.get("chartPreviousClose", 0) or 0)
-        chg   = ((price - prev) / prev * 100) if prev else 0
-
-        if price > 0:
-            result = {
-                "key": key, "symbol": symbol, "name": cfg["name"],
-                "emoji": cfg["emoji"], "type": cfg["type"], "region": cfg["region"],
-                "price": round(price, 2), "change_pct": round(chg, 2),
-                "change_abs": round(price - prev, 2),
-                "prev_close": round(prev, 2),
-                "day_high": round(float(meta.get("regularMarketDayHigh", price) or price), 2),
-                "day_low":  round(float(meta.get("regularMarketDayLow",  price) or price), 2),
-                "week52_high": 0, "week52_low": 0,
-                "signal": _interpret_index_signal(key, price, chg),
-                "ts": datetime.now().strftime("%H:%M:%S"),
-                "demo": False,
-            }
-            _cache_set(cache_key, result, 60)
-            return result
-    except Exception as e:
-        print(f"[Indices] {key} v8 chart error: {e}")
+            print(f"[Indices] {key} v8 chart retry {retry+1}/2 error: {e}")
+            if retry == 0:
+                time.sleep(1)
 
     # Fallback démo — clairement marqué
     print(f"[Indices] {key} → données de démonstration (Yahoo Finance indisponible)")
     return _get_demo_index(key, cfg)
 
 
-def fetch_all_indices(keys: list = None) -> dict:
-    """Récupère tous les indices (ou ceux spécifiés)."""
+def fetch_all_indices(keys: list = None, timeout_sec: int = 5) -> dict:
+    """Récupère tous les indices (ou ceux spécifiés) avec timeout.
+    Si le fetch prend trop longtemps, retourne des données démo.
+    """
     if keys is None:
         keys = list(INDICES_CONFIG.keys())
 
-    results  = {}
-    errors   = []
+    results = {}
+    errors = []
+    start_time = time.time()
+
     for key in keys:
-        data = fetch_single_index(key)
-        if data:
-            results[key] = data
-        else:
-            errors.append(key)
+        # Check if we've exceeded timeout - if so, use demo data for remaining
+        elapsed = time.time() - start_time
+        if elapsed > timeout_sec:
+            cfg = INDICES_CONFIG.get(key)
+            if cfg:
+                results[key] = _get_demo_index(key, cfg)
+            else:
+                errors.append(key)
+            continue
+
+        # Try to fetch with remaining time budget
+        remaining = timeout_sec - elapsed
+        try:
+            data = fetch_single_index(key)
+            if data:
+                results[key] = data
+            else:
+                errors.append(key)
+        except:
+            cfg = INDICES_CONFIG.get(key)
+            if cfg:
+                results[key] = _get_demo_index(key, cfg)
+            else:
+                errors.append(key)
 
     return {
         "indices": results,
@@ -976,4 +1008,52 @@ def init_indices_db():
     """)
     conn.commit(); conn.close()
     print("[Indices] Tables initialisees")
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+
+# ══════════════════════════════════════════════════════════════
+# CRYPTO INDICES (Total 3 & Others)
+# ══════════════════════════════════════════════════════════════
+
+
+def calc_crypto_total3():
+    """Total market cap excluant BTC et ETH."""
+    try:
+        url = "https://api.coingecko.com/api/v3/coins/markets"
+        params = {
+            "vs_currency": "usd",
+            "order": "market_cap_desc",
+            "per_page": 250,
+            "page": 1,
+            "sparkline": False,
+            "locale": "en"
+        }
+        resp = requests.get(url, params=params, timeout=10)
+        if resp.status_code == 200:
+            coins = resp.json()
+            total3 = sum(c.get("market_cap", 0) or 0 for c in coins[2:] if c.get("market_cap"))
+            return {"total3": total3}
+        return None
+    except Exception as e:
+        print(f"[calc_crypto_total3] Erreur: {e}")
+        return None
+
+def calc_crypto_others():
+    """Total market cap excluant top 10 coins."""
+    try:
+        url = "https://api.coingecko.com/api/v3/coins/markets"
+        params = {
+            "vs_currency": "usd",
+            "order": "market_cap_desc",
+            "per_page": 250,
+            "page": 1,
+            "sparkline": False,
+            "locale": "en"
+        }
+        resp = requests.get(url, params=params, timeout=10)
+        if resp.status_code == 200:
+            coins = resp.json()
+            others = sum(c.get("market_cap", 0) or 0 for c in coins[10:] if c.get("market_cap"))
+            return {"others": others}
+        return None
+    except Exception as e:
+        print(f"[calc_crypto_others] Erreur: {e}")
+        return None

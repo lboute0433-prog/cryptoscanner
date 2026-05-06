@@ -1,154 +1,116 @@
 # CryptoScanner Pro
 
-Notice de référence rapide du projet.
+Application de scanning crypto avec orchestration API Mix et système de mémoire français.
 
-## Vue d'ensemble
+---
 
-CryptoScanner Pro est une application Flask de suivi et d'analyse de marche orientee crypto, macro et trading. Le projet combine:
+## 🚀 Lancer en Local
 
-- dashboard web,
-- espace membre,
-- administration,
-- signaux et outils de trading,
-- COT / ETF / open interest / liquidations,
-- news et calendrier macro,
-- Morning Brief,
-- rapports Telegram,
-- analyses IA.
+### Prérequis
+- Python 3.11+
+- pip ou uv
+- `.venv` configuré
 
-## Stack
-
-- Backend: Python 3.11, Flask, Flask-SocketIO
-- Frontend: HTML, CSS, JavaScript
-- Base locale: SQLite
-- Deploiement actuel: Railway
-
-## Fichiers principaux
-
-- [app.py](C:/Users/loyan/Documents/CryptoScanner%20Codex%20Projet/cryptoscanner-main-cryptoScanner-Codex/app.py)
-- [scanner_engine.py](C:/Users/loyan/Documents/CryptoScanner%20Codex%20Projet/cryptoscanner-main-cryptoScanner-Codex/scanner_engine.py)
-- [cot_engine.py](C:/Users/loyan/Documents/CryptoScanner%20Codex%20Projet/cryptoscanner-main-cryptoScanner-Codex/cot_engine.py)
-- [news_macro.py](C:/Users/loyan/Documents/CryptoScanner%20Codex%20Projet/cryptoscanner-main-cryptoScanner-Codex/news_macro.py)
-- [morning_brief.py](C:/Users/loyan/Documents/CryptoScanner%20Codex%20Projet/cryptoscanner-main-cryptoScanner-Codex/morning_brief.py)
-- [daily_report.py](C:/Users/loyan/Documents/CryptoScanner%20Codex%20Projet/cryptoscanner-main-cryptoScanner-Codex/daily_report.py)
-- [ai_provider.py](C:/Users/loyan/Documents/CryptoScanner%20Codex%20Projet/cryptoscanner-main-cryptoScanner-Codex/ai_provider.py)
-- [templates/index.html](C:/Users/loyan/Documents/CryptoScanner%20Codex%20Projet/cryptoscanner-main-cryptoScanner-Codex/templates/index.html)
-- [templates/admin.html](C:/Users/loyan/Documents/CryptoScanner%20Codex%20Projet/cryptoscanner-main-cryptoScanner-Codex/templates/admin.html)
-
-## Acces et roles
-
-Le projet utilise maintenant une logique de roles et d'abonnement plus claire.
-
-Roles supportes:
-
-- `visitor`
-- `member`
-- `paid`
-- `vip`
-- `admin`
-- `banned`
-
-Statuts d'abonnement:
-
-- `inactive`
-- `trial`
-- `active`
-- `overdue`
-- `canceled`
-
-Principes:
-
-- `member+` pour les outils personnels comme portefeuille, journal, alertes et watchlist
-- `paid+` pour les modules premium comme COT, ETF, IA et backtests
-- `admin` pour la gestion globale
-
-## Sources de donnees
-
-La logique retenue n'est pas "une seule source pour tout", mais une source maitresse par usage.
-
-- `CoinGecko`: couverture large, discovery, investor
-- `Binance` ou `Kraken`: scanner spot principal
-- `Bybit` et `OKX`: multi-exchange et perps
-- `CFTC`: rapports COT
-- `Yahoo Finance` et sources de secours: certaines donnees ETF ou macro quand necessaire
-- `RSS FR + EN`: news crypto et macro
-
-## IA
-
-L'IA passe maintenant par une couche commune:
-
-- provider principal vise: `Groq`
-- fallback compatible: `Anthropic`
-
-Le module commun est:
-
-- [ai_provider.py](C:/Users/loyan/Documents/CryptoScanner%20Codex%20Projet/cryptoscanner-main-cryptoScanner-Codex/ai_provider.py)
-
-Usages deja relies a cette couche:
-
-- Morning Brief
-- analyse investisseur
-- futures analyses premium
-
-## Email
-
-Le projet dispose d'un meilleur diagnostic SMTP, mais l'envoi email de production n'est pas encore finalise.
-
-Etat actuel:
-
-- diagnostic SMTP visible dans l'admin,
-- test d'envoi admin disponible,
-- compatibilite `SMTP_LOGIN` et `SMTP_FROM_EMAIL`,
-- Gmail SMTP teste mais peu fiable sur l'hebergement actuel,
-- migration future recommandee vers un provider transactionnel avec domaine verifie.
-
-## Installation locale
-
-1. Installer Python 3.11
-2. Installer les dependances:
-
+### Démarrage rapide
 ```bash
+# Activer venv
+python -m venv .venv
+source .venv/bin/activate  # Linux/Mac
+# ou
+.venv\Scripts\Activate.ps1  # Windows
+
+# Installer dépendances
 pip install -r requirements.txt
-```
 
-3. Lancer l'application:
-
-```bash
+# Lancer app
 python app.py
 ```
 
-4. Ouvrir:
+Puis accéder à `http://localhost:5000`
 
-- `http://localhost:5000`
-- admin: `http://localhost:5000/admin`
+---
 
-## Variables utiles
+## 📁 Structure
 
-Exemples de variables importantes:
+```
+racine/
+├── CLAUDE.md              ← Instructions système (lire en premier!)
+├── agent.md               ← Guide agents ICA
+│
+├── app.py                 ← Application principale
+├── config.py              ← Configuration
+├── wsgi.py                ← WSGI server
+├── *.py                   ← Moteurs (scanner, analysis, IA, etc.)
+├── requirements.txt       ← Dépendances Python
+│
+├── docs/                  ← 📚 Documentation complète
+│   ├── GUIDE-OBSIDIAN.md
+│   ├── CONVENTION-FRANCAIS.md
+│   ├── PROTOCOLE-SESSION.md
+│   ├── README-COMPLET.md
+│   └── ...
+│
+├── scripts_dev/           ← 🔧 Scripts développement/debug
+│   ├── check_schema.py
+│   ├── debloquer_admin.py
+│   └── ...
+│
+├── memory/                ← 💾 Mémoire partagée (archives, contexte)
+├── references/            ← 📝 Fiches utilisateur (articles, données, idées)
+├── directives/            ← 📋 SOPs opérationnelles
+├── templates/             ← 🎨 Frontend (HTML/CSS/JS)
+├── .claude/               ← 🤖 Agents, rules, commands
+│
+└── [autres dossiers applicatifs]
+```
 
-- `SECRET_KEY`
-- `RUN_BACKGROUND_JOBS`
-- `DATABASE_PATH`
-- `TG_TOKEN`
-- `TG_CHAT`
-- `AI_PROVIDER`
-- `GROQ_API_KEY`
-- `ANTHROPIC_API_KEY`
-- `SMTP_SERVER`
-- `SMTP_PORT`
-- `SMTP_LOGIN`
-- `SMTP_PASSWORD`
-- `SMTP_FROM_EMAIL`
-- `ADMIN_NOTIFY_EMAIL`
+---
 
-## Documents utiles
+## 📚 Documentation
 
-- recap produit et technique: [PLAN_EMAIL_ACCES_IA.md](C:/Users/loyan/Documents/CryptoScanner%20Codex%20Projet/cryptoscanner-main-cryptoScanner-Codex/PLAN_EMAIL_ACCES_IA.md)
-- documentation plus large: [CRYPTOSCANNER_DOC.md](C:/Users/loyan/Documents/CryptoScanner%20Codex%20Projet/cryptoscanner-main-cryptoScanner-Codex/CRYPTOSCANNER_DOC.md)
+**Commencer par** : 
+- `CLAUDE.md` — Instructions orchestrateur (système complet)
+- `docs/GUIDE-OBSIDIAN.md` — Configuration Obsidian + mémoire
+- `docs/CONVENTION-FRANCAIS.md` — Règles français
 
-## Priorites de suite
+**Navigation** : `docs/INDEX-MEMOIRE.md`
 
-- finaliser les ajustements UI et wording restants
-- consolider le portfolio multi-exchange
-- poursuivre l'uniformisation IA
-- reprendre l'email plus tard avec domaine et provider adaptes
+---
+
+## ⚙️ Stack
+
+| Composant | Tech |
+|-----------|------|
+| Backend | Python 3.11, Flask, SocketIO |
+| Frontend | HTML/CSS/JS |
+| DB | SQLite |
+| APIs | CoinGecko, Binance (gratuites) |
+| IA | Groq (principal) + Anthropic (fallback) |
+
+---
+
+## 📦 Scripts principaux
+
+| Script | Rôle |
+|--------|------|
+| `app.py` | Application Flask + routes |
+| `scanner_engine.py` | Scanner multi-exchange |
+| `ai_provider.py` | Couche IA unifiée |
+| `indices_engine.py` | Indices macro + fallback |
+| `smart_signals.py` | Signaux de trading |
+| `morning_brief.py` | Morning Brief quotidien |
+| `security.py` | Auth + rôles |
+
+---
+
+## 🚢 Production (Hetzner)
+
+- **Serveur**: `46.225.234.71`
+- **Manager**: PM2 + Gunicorn eventlet
+- **API Mix**: Phase 3 opérationnel ✅
+- **Coût**: $0 (APIs gratuites)
+
+---
+
+**Créé** : 2026-04-24
+**Dernière mise à jour** : 2026-04-24 (nettoyage structure)

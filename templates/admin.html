@@ -234,6 +234,7 @@ textarea.form-input{resize:vertical;min-height:80px}
   <div class="admin-tabs">
     <button class="admin-tab active" onclick="showAdminTab('users')">👥 UTILISATEURS</button>
     <button class="admin-tab" onclick="showAdminTab('logs')">📋 LOGS</button>
+    <button class="admin-tab" onclick="showAdminTab('alerts')">🔔 ALERTES</button>
     <button class="admin-tab" onclick="showAdminTab('settings')">⚙️ PARAMÈTRES</button>
     <button class="admin-tab" onclick="showAdminTab('broadcast')">📢 BROADCAST</button>
     <button class="admin-tab" onclick="showAdminTab('brief')">📊 MORNING BRIEF</button>
@@ -297,6 +298,101 @@ textarea.form-input{resize:vertical;min-height:80px}
     <div class="panel">
       <div class="panel-title">📋 LOGS D'ACTIVITÉ</div>
       <div id="logs-list"></div>
+    </div>
+  </div>
+
+  <!-- ALERTS CONFIGURATION -->
+  <div class="admin-content" id="tab-alerts">
+    <div class="panel">
+      <div class="panel-title">🔔 CONFIGURATION DES ALERTES</div>
+      <p style="font-size:.72rem;color:var(--muted);margin-bottom:20px">Contrôlez les paramètres de chaque type d'alerte en temps réel. Les modifications s'appliquent immédiatement.</p>
+
+      <!-- Smart Signals Config -->
+      <div style="margin-bottom:24px;padding:16px;background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.15);border-radius:4px">
+        <div style="font-family:var(--title);font-size:.75rem;color:var(--accent);margin-bottom:14px;text-transform:uppercase">📈 Smart Signals</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
+          <div class="form-group">
+            <label>Score minimum</label>
+            <input class="form-input" id="alert-smart-score-min" type="number" value="55" step="5" min="0" max="100">
+          </div>
+          <div class="form-group">
+            <label>Variation PUMP (%)</label>
+            <input class="form-input" id="alert-smart-pump-pct" type="number" value="4.0" step="0.5">
+          </div>
+          <div class="form-group">
+            <label>Variation DUMP (%)</label>
+            <input class="form-input" id="alert-smart-dump-pct" type="number" value="-4.0" step="0.5">
+          </div>
+          <div class="form-group">
+            <label>Multiplicateur volume min</label>
+            <input class="form-input" id="alert-smart-volume-mult" type="number" value="5.0" step="0.5">
+          </div>
+          <div class="form-group">
+            <label>Critères minimum</label>
+            <input class="form-input" id="alert-smart-criteria-min" type="number" value="3" step="1" min="1" max="10">
+          </div>
+          <div class="form-group">
+            <label>ADR % minimum</label>
+            <input class="form-input" id="alert-smart-adr-pct" type="number" value="25" step="1">
+          </div>
+          <div class="form-group">
+            <label>Cooldown (heures)</label>
+            <input class="form-input" id="alert-smart-cooldown" type="number" value="1" step="0.5" min="0.5">
+          </div>
+          <div class="form-group">
+            <label>Max par cycle</label>
+            <input class="form-input" id="alert-smart-max-cycle" type="number" value="3" step="1" min="1">
+          </div>
+        </div>
+        <button class="btn-sm btn-blue" onclick="saveAlertConfig('smart_signals')" style="margin-top:12px">SAUVEGARDER</button>
+        <span id="smart-signals-status" style="font-size:.72rem;margin-left:8px;color:var(--muted)"></span>
+      </div>
+
+      <!-- Retrace RSI Config -->
+      <div style="margin-bottom:24px;padding:16px;background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.15);border-radius:4px">
+        <div style="font-family:var(--title);font-size:.75rem;color:var(--green);margin-bottom:14px;text-transform:uppercase">🔁 Retrace RSI</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
+          <div class="form-group">
+            <label>RSI surachat (limite)</label>
+            <input class="form-input" id="alert-retrace-rsi-overbought" type="number" value="70" step="1" min="50" max="100">
+          </div>
+          <div class="form-group">
+            <label>RSI survente (limite)</label>
+            <input class="form-input" id="alert-retrace-rsi-oversold" type="number" value="30" step="1" min="0" max="50">
+          </div>
+          <div class="form-group">
+            <label>Cooldown (heures)</label>
+            <input class="form-input" id="alert-retrace-cooldown" type="number" value="1" step="0.5" min="0.5">
+          </div>
+        </div>
+        <button class="btn-sm btn-blue" onclick="saveAlertConfig('retrace_rsi')" style="margin-top:12px">SAUVEGARDER</button>
+        <span id="retrace-rsi-status" style="font-size:.72rem;margin-left:8px;color:var(--muted)"></span>
+      </div>
+
+      <!-- Macro Events Config -->
+      <div style="padding:16px;background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.15);border-radius:4px">
+        <div style="font-family:var(--title);font-size:.75rem;color:var(--red);margin-bottom:14px;text-transform:uppercase">📊 Macro Events</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
+          <div class="form-group">
+            <label>Filtre impact</label>
+            <select class="form-input" id="alert-macro-impact">
+              <option value="Low">Low (tous)</option>
+              <option value="Medium">Medium et plus</option>
+              <option value="High">High seulement</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Fenêtre début (heure UTC)</label>
+            <input class="form-input" id="alert-macro-window-start" type="number" value="7" step="1" min="0" max="23">
+          </div>
+          <div class="form-group">
+            <label>Fenêtre fin (heure UTC)</label>
+            <input class="form-input" id="alert-macro-window-end" type="number" value="22" step="1" min="0" max="23">
+          </div>
+        </div>
+        <button class="btn-sm btn-blue" onclick="saveAlertConfig('macro_events')" style="margin-top:12px">SAUVEGARDER</button>
+        <span id="macro-events-status" style="font-size:.72rem;margin-left:8px;color:var(--muted)"></span>
+      </div>
     </div>
   </div>
 
@@ -860,6 +956,104 @@ async function triggerBrief(source) {
     });
   }
 }
+
+// ── Alert Config Management ─────────────────────────────────────────
+async function loadAlertConfigs() {
+  try {
+    const r = await fetch('/api/admin/alerts/config', {credentials:'same-origin'});
+    if(!r.ok) return console.error('Erreur chargement configs');
+    const data = await r.json();
+
+    // Smart Signals
+    if(data.smart_signals) {
+      const cfg = data.smart_signals.config;
+      document.getElementById('alert-smart-score-min').value = cfg.score_min || 55;
+      document.getElementById('alert-smart-pump-pct').value = cfg.pump_pct || 4.0;
+      document.getElementById('alert-smart-dump-pct').value = cfg.dump_pct || -4.0;
+      document.getElementById('alert-smart-volume-mult').value = cfg.volume_mult || 5.0;
+      document.getElementById('alert-smart-criteria-min').value = cfg.criteria_min || 3;
+      document.getElementById('alert-smart-adr-pct').value = cfg.adr_pct || 25;
+      document.getElementById('alert-smart-cooldown').value = cfg.cooldown_hours || 1;
+      document.getElementById('alert-smart-max-cycle').value = cfg.max_per_cycle || 3;
+    }
+
+    // Retrace RSI
+    if(data.retrace_rsi) {
+      const cfg = data.retrace_rsi.config;
+      document.getElementById('alert-retrace-rsi-overbought').value = cfg.rsi_overbought || 70;
+      document.getElementById('alert-retrace-rsi-oversold').value = cfg.rsi_oversold || 30;
+      document.getElementById('alert-retrace-cooldown').value = cfg.cooldown_hours || 1;
+    }
+
+    // Macro Events
+    if(data.macro_events) {
+      const cfg = data.macro_events.config;
+      document.getElementById('alert-macro-impact').value = cfg.impact_filter || 'High';
+      document.getElementById('alert-macro-window-start').value = cfg.window_start || 7;
+      document.getElementById('alert-macro-window-end').value = cfg.window_end || 22;
+    }
+  } catch(e) {
+    console.error('Erreur chargement alertes:', e);
+  }
+}
+
+async function saveAlertConfig(alertType) {
+  const statusElem = document.getElementById(alertType.replace('_', '-') + '-status');
+  const payload = {};
+
+  try {
+    if(alertType === 'smart_signals') {
+      payload.score_min = parseInt(document.getElementById('alert-smart-score-min').value);
+      payload.pump_pct = parseFloat(document.getElementById('alert-smart-pump-pct').value);
+      payload.dump_pct = parseFloat(document.getElementById('alert-smart-dump-pct').value);
+      payload.volume_mult = parseFloat(document.getElementById('alert-smart-volume-mult').value);
+      payload.criteria_min = parseInt(document.getElementById('alert-smart-criteria-min').value);
+      payload.adr_pct = parseInt(document.getElementById('alert-smart-adr-pct').value);
+      payload.cooldown_hours = parseFloat(document.getElementById('alert-smart-cooldown').value);
+      payload.max_per_cycle = parseInt(document.getElementById('alert-smart-max-cycle').value);
+    } else if(alertType === 'retrace_rsi') {
+      payload.rsi_overbought = parseInt(document.getElementById('alert-retrace-rsi-overbought').value);
+      payload.rsi_oversold = parseInt(document.getElementById('alert-retrace-rsi-oversold').value);
+      payload.cooldown_hours = parseFloat(document.getElementById('alert-retrace-cooldown').value);
+    } else if(alertType === 'macro_events') {
+      payload.impact_filter = document.getElementById('alert-macro-impact').value;
+      payload.window_start = parseInt(document.getElementById('alert-macro-window-start').value);
+      payload.window_end = parseInt(document.getElementById('alert-macro-window-end').value);
+    }
+
+    if(statusElem) statusElem.textContent = '⏳ Sauvegarde...';
+
+    const r = await fetch(`/api/admin/alerts/config/${alertType}`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+
+    const d = await r.json();
+    if(d.ok) {
+      if(statusElem) {
+        statusElem.textContent = '✅ Sauvegardé';
+        statusElem.style.color = 'var(--green)';
+        setTimeout(() => statusElem.textContent = '', 3000);
+      }
+    } else {
+      if(statusElem) {
+        statusElem.textContent = '❌ ' + (d.error || 'Erreur');
+        statusElem.style.color = 'var(--red)';
+      }
+    }
+  } catch(e) {
+    if(statusElem) {
+      statusElem.textContent = '❌ ' + e.message;
+      statusElem.style.color = 'var(--red)';
+    }
+    console.error('Erreur sauvegarde config:', e);
+  }
+}
+
+// Charger les configs d'alertes au démarrage
+document.addEventListener('DOMContentLoaded', loadAlertConfigs);
 
 // Vérifier si déjà connecté
 fetch('/api/auth/me', {credentials:'same-origin'}).then(r=>r.json()).then(d => {

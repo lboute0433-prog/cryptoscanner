@@ -1,0 +1,19 @@
+# Knowledge base state files
+state.json
+last-flush.json
+last-compile.json
+
+# Reports directory
+reports/
+
+# Compiled daily logs (keep source dailies)
+*.compiled
+
+# Temporary files
+*.tmp
+.DS_Store
+__pycache__/
+*.pyc
+
+# Index snapshots (generated)
+index.backup.md

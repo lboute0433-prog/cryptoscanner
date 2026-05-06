@@ -1,0 +1,145 @@
+═════════════════════════════════════════════════════════════════
+TASK 11: DEPLOY MORNING BRIEF REDESIGN TO PRODUCTION
+═════════════════════════════════════════════════════════════════
+
+STATUS: ✅ READY FOR DEPLOYMENT
+
+QUICK START (3 STEPS):
+
+1. OPEN THIS FOLDER:
+   C:\Users\loyan\Documents\Antigravity\cryptoscanner
+
+2. RUN THIS SCRIPT:
+   TASK_11_DEPLOY.bat    (Windows)
+   OR
+   bash TASK_11_DEPLOY.sh (Mac/Linux)
+
+3. VERIFY PRODUCTION (after 3 minutes):
+   https://46.225.234.71/brief
+
+═════════════════════════════════════════════════════════════════
+
+WHAT'S BEEN DONE:
+- ✅ Morning brief redesigned (CSS + HTML + JS)
+- ✅ Changes committed to git (commit 4fab849)
+- ✅ Ready to push to GitHub
+- ✅ Railway will auto-deploy when it detects the push
+
+WHAT YOU NEED TO DO:
+1. Run the deployment script (see above)
+2. Wait 2-3 minutes for Railway to deploy
+3. Visit the production URL and verify the design looks good
+4. Check the verification checklist in TASK_11_STATUS.md
+
+═════════════════════════════════════════════════════════════════
+
+GIT COMMIT DETAILS:
+
+Commit: 4fab849c5e3ee696c445eec9f475b03a10a96db2
+Message: refactor: morning brief redesign — CSS + HTML refactoring (Tasks 1-9)
+
+Changes in morning_brief.py:
+- 80 insertions
+- 77 deletions
+- All CSS inlined for Telegram compatibility
+- Gradient background (blue → violet)
+- Expandable sections with toggle
+- Medal rankings (🥇🥈🥉)
+- Responsive mobile design
+
+═════════════════════════════════════════════════════════════════
+
+IMPORTANT: Push must be from local machine (not Cowork)
+
+The deployment script will:
+1. Check git status
+2. Verify the commit exists
+3. Push to GitHub (https://github.com/lboute0433-prog/cryptoscanner)
+4. Show you the verification checklist
+
+Railway will then automatically:
+1. Detect the push
+2. Build the app
+3. Deploy to production
+4. Make it live at https://46.225.234.71/brief
+
+═════════════════════════════════════════════════════════════════
+
+DETAILED GUIDES:
+
+For full instructions, see:
+  → TASK_11_STATUS.md      (Complete verification checklist)
+  → TASK_11_READY.md       (Detailed deployment guide)
+  → TASK_11_DEPLOY.bat     (Automated deployment script)
+
+═════════════════════════════════════════════════════════════════
+
+VERIFICATION CHECKLIST (After Deployment):
+
+Visual Design:
+  [ ] Page loads (HTTP 200)
+  [ ] Gradient background visible
+  [ ] Header shows date in French
+  [ ] Score card with progress bar
+
+Interactive:
+  [ ] Sections expand/collapse on click
+  [ ] Medals visible on altcoin winners
+  [ ] Tables render properly
+  [ ] Colors look correct
+
+Mobile:
+  [ ] Responsive design on mobile
+  [ ] No horizontal scroll
+  [ ] Proper padding/margins
+
+Console:
+  [ ] No JavaScript errors (F12)
+  [ ] No 404 errors (F12 Network tab)
+
+═════════════════════════════════════════════════════════════════
+
+TROUBLESHOOTING:
+
+Page doesn't load?
+  → Check Railway logs: railway logs
+  → Verify environment variables in Railway dashboard
+
+Styling looks old?
+  → Hard refresh: Ctrl+Shift+Del then Ctrl+F5
+  → Wait 2-3 minutes and try again
+
+Sections don't expand?
+  → Check console for JS errors (F12)
+  → Look for class="section-header" in page source
+
+Push failed?
+  → Verify git config: git config --global user.name
+  → Try again: git push origin master
+
+═════════════════════════════════════════════════════════════════
+
+NEXT STEPS:
+
+After successful production verification:
+  1. Monitor production for 24 hours
+  2. Task 12: Final code review
+  3. Document any issues or improvements
+  4. Share results with team
+
+═════════════════════════════════════════════════════════════════
+
+PRODUCTION URL:
+https://46.225.234.71/brief
+
+GITHUB REPO:
+https://github.com/lboute0433-prog/cryptoscanner
+
+RAILWAY DASHBOARD:
+https://railway.app/project/[YOUR_PROJECT_ID]
+
+═════════════════════════════════════════════════════════════════
+
+Ready? Execute TASK_11_DEPLOY.bat now!
+
+═════════════════════════════════════════════════════════════════

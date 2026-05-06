@@ -368,3 +368,53 @@ def migrate_add_subscription_tier():
         pass
     finally:
         conn.close()
+
+
+def migrate_add_platform_settings():
+    """Create platform_settings table for storing admin configuration parameters."""
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS platform_settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        conn.commit()
+        print("[DB] Migration: Created platform_settings table")
+    except Exception as e:
+        print(f"[DB] Error creating platform_settings table: {e}")
+    finally:
+        conn.close()
+
+
+def get_setting(key: str, default: str = "") -> str:
+    """Get a platform setting from the database."""
+    conn = get_connection()
+    try:
+        cur = conn.execute("SELECT value FROM platform_settings WHERE key = ?", (key,))
+        row = cur.fetchone()
+        return row[0] if row else default
+    except Exception:
+        return default
+    finally:
+        conn.close()
+
+
+def set_setting(key: str, value: str) -> bool:
+    """Set a platform setting in the database."""
+    conn = get_connection()
+    try:
+        conn.execute(
+            "INSERT OR REPLACE INTO platform_settings (key, value, updated_at) VALUES (?, ?, datetime('now'))",
+            (key, str(value))
+        )
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"[DB] Error setting platform_settings: {e}")
+        return False
+    finally:
+        conn.close()

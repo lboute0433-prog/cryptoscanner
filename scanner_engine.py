@@ -12,7 +12,7 @@ CryptoScanner Pro V11 — Scanner Engine (CORRIGÉ)
 import requests, sqlite3, os, hashlib, secrets, time, threading
 from datetime import datetime, timedelta
 from config import DATABASE_PATH as DB_PATH, TELEGRAM_CHAT, TELEGRAM_TOKEN, TELEGRAM_CHAT_FREE, SITE_URL
-from db import get_connection
+from db import get_connection, get_setting, set_setting
 
 BINANCE_TICKER   = "https://api.binance.com/api/v3/ticker/24hr"
 BINANCE_KLINES   = "https://api.binance.com/api/v3/klines"
@@ -334,6 +334,21 @@ class ScannerEngine:
         self._prev_vols = {}
 
     def get_exchange(self): return self._exchange
+
+    # ── Platform Settings (from admin panel) ──────────────────
+    def _load_platform_settings(self):
+        """Load platform parameters from database (set by admin panel)."""
+        return {
+            "pump_pct": float(get_setting("pump_pct", "5")),
+            "vol_mult": float(get_setting("vol_mult", "3")),
+            "score_min": float(get_setting("score_min", "70")),
+            "scan_interval": int(get_setting("scan_interval", "10")),
+            "adx_min": float(get_setting("adx_min", "20")),
+            "adr_min": float(get_setting("adr_min", "3")),
+            "ema_filter": int(get_setting("ema_filter", "0")),
+            "vol_min": float(get_setting("vol_min", "10")),
+            "fng_max": float(get_setting("fng_max", "85")),
+        }
 
     # ── Alert Settings ────────────────────────────────────────
     def get_alert_config(self, alert_type):
@@ -1158,6 +1173,13 @@ class ScannerEngine:
 
     def scan(self):
         scanner_source = "coingecko"
+
+        # Load platform settings from database (set by admin panel)
+        settings = self._load_platform_settings()
+        pump_pct = settings["pump_pct"]
+        vol_mult = settings["vol_mult"]
+        score_min = settings["score_min"]
+
         coins = self._fetch_coingecko_scan()
         if not coins:
             print("[Scanner] CoinGecko indisponible - fallback Binance")
@@ -1176,11 +1198,11 @@ class ScannerEngine:
             sym = c["symbol"]; chg = c["change_pct"]; vol = c["volume_usdt"]
             vol_ratio = vol/self._prev_vols[sym] if sym in self._prev_vols and self._prev_vols[sym]>0 else None
             tags = []
-            if chg >= PRICE_ALERT_PCT:    tags.append({"label":"🚀 PUMP","type":"green"})
-            elif chg <= -PRICE_ALERT_PCT: tags.append({"label":"💥 DUMP","type":"red"})
+            if chg >= pump_pct:    tags.append({"label":"🚀 PUMP","type":"green"})
+            elif chg <= -pump_pct: tags.append({"label":"💥 DUMP","type":"red"})
             elif chg >= 2:                tags.append({"label":"📈 HAUSSIER","type":"green"})
             elif chg <= -2:               tags.append({"label":"📉 BAISSIER","type":"red"})
-            if vol_ratio and vol_ratio >= VOLUME_SPIKE_MULT:
+            if vol_ratio and vol_ratio >= vol_mult:
                 tags.append({"label":f"⚡ VOL x{vol_ratio:.1f}","type":"yellow"})
             rng = c["high"]-c["low"]
             rsi_a = ((c["price"]-c["low"])/rng*100) if rng>0 else 50
@@ -1206,7 +1228,7 @@ class ScannerEngine:
                 "blacklist":list(blacklist),
             }
         self._check_price_alerts(coins)
-        self._send_telegram_alerts(signals, blacklist)
+        self._send_telegram_alerts(signals, blacklist, score_min)
         return self._last_data
 
     def _get_conn(self):
@@ -1313,9 +1335,9 @@ class ScannerEngine:
         try: requests.post(f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage", json={"chat_id":chat_id,"text":msg,"parse_mode":"HTML"},timeout=5)
         except: pass
 
-    def _send_telegram_alerts(self, signals, blacklist):
+    def _send_telegram_alerts(self, signals, blacklist, score_min=70):
         for label, type_ in [("🚀 PUMP","pump"),("💥 DUMP","dump")]:
-            filtered = [s for s in signals if any(t["label"]==label for t in s["tags"]) and s["symbol"] not in blacklist and s["symbol"] in TOP_50_SYMBOLS and s["volume_usdt"] >= 10_000_000]
+            filtered = [s for s in signals if any(t["label"]==label for t in s["tags"]) and s["symbol"] not in blacklist and s["symbol"] in TOP_50_SYMBOLS and s["volume_usdt"] >= 10_000_000 and s.get("score", 0) >= score_min]
             for s in filtered[:3]:
                 key = f"{type_}_{s['symbol']}_{int(s['change_pct'])}"
                 with _alert_lock:

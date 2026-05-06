@@ -35,4 +35,5 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Git workt
+# Git worktrees
+.worktrees/

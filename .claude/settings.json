@@ -1,0 +1,29 @@
+{
+  "hooks": {
+    "SessionStart": {
+      "script": "hooks/session-start.py",
+      "description": "Capture session metadata and initialize daily log"
+    },
+    "SessionEnd": {
+      "script": "hooks/session-end.py",
+      "description": "Finalize daily log and trigger compilation"
+    },
+    "PreCompact": {
+      "script": "hooks/pre-compact.py",
+      "description": "Lint and validate knowledge base before compaction"
+    }
+  },
+  "compiler": {
+    "daily_dir": "daily/",
+    "knowledge_dir": "knowledge/",
+    "auto_compile": true,
+    "compile_schedule": "daily",
+    "log_file": "knowledge/log.md",
+    "index_file": "knowledge/index.md"
+  },
+  "knowledge_structure": {
+    "concepts_dir": "knowledge/concepts/",
+    "connections_dir": "knowledge/connections/",
+    "qa_dir": "knowledge/qa/"
+  }
+}

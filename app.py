@@ -12,7 +12,7 @@ CryptoScanner Pro V11 — App Principale (CORRIGÉ)
 from flask import Flask, render_template, jsonify, request, make_response, redirect
 from flask_socketio import SocketIO
 import threading, time, os, sys, sqlite3
-from db import get_connection, migrate_add_subscription_tier
+from db import get_connection, migrate_add_subscription_tier, migrate_add_platform_settings, get_setting, set_setting
 import requests as req
 import smtplib
 from email.mime.text import MIMEText
@@ -149,6 +149,7 @@ init_forex_db()
 init_backtest_db()
 init_indices_db()
 migrate_add_subscription_tier()
+migrate_add_platform_settings()
 
 try:
     scheduler = DailyReportScheduler(engine, fetch_etf_flows, fetch_economic_calendar)
@@ -1168,17 +1169,21 @@ def api_admin_settings():
         "pump_pct": "5",
         "scan_interval": "10",
         "vol_mult": "3",
-        "exchange": engine.get_exchange(),
+        "exchange": "binance",
+        "adx_min": "20",
+        "adr_min": "3",
+        "ema_filter": "0",
+        "vol_min": "10",
+        "score_min": "70",
+        "fng_max": "85",
     }
     if request.method == "GET":
-        return jsonify({k: engine._get_setting(k, default) for k, default in keys.items()})
+        return jsonify({k: get_setting(k, default) for k, default in keys.items()})
 
     data = _json_body()
     for key in keys:
         if key in data:
-            engine._set_setting(key, str(data.get(key, "")))
-    if "exchange" in data and data.get("exchange") in {"coingecko"}:
-        engine.set_exchange(data["exchange"])
+            set_setting(key, str(data.get(key, "")))
     engine.log_action(sess["user_id"], sess["username"], "ADMIN_SETTINGS", "settings_updated", get_ip())
     return jsonify({"ok": True})
 
@@ -2536,6 +2541,43 @@ def api_correlations_clusters():
         return jsonify(result)
     except Exception as e:
         print(f"[/api/correlations/clusters] Error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# ══════════════════════════════════════════════════════════════
+# RISK MONITOR ENDPOINTS
+# ══════════════════════════════════════════════════════════════
+
+@app.route('/api/risk-monitor/data', methods=['GET'])
+def api_risk_monitor_data():
+    """Get complete risk monitor data (matrix + scores + alerts)."""
+    try:
+        from risk_monitor_engine import get_risk_monitor_data
+        result = get_risk_monitor_data()
+        return jsonify(result)
+    except Exception as e:
+        print(f"[/api/risk-monitor/data] Error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/risk-monitor/scores', methods=['GET'])
+def api_risk_monitor_scores():
+    """Get risk scores for all assets."""
+    try:
+        from risk_monitor_engine import get_risk_monitor_data
+        result = get_risk_monitor_data()
+        return jsonify({'scores': result.get('scores', []), 'timestamp': result.get('timestamp')})
+    except Exception as e:
+        print(f"[/api/risk-monitor/scores] Error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/risk-monitor/alerts', methods=['GET'])
+def api_risk_monitor_alerts():
+    """Get risk monitor alerts."""
+    try:
+        from risk_monitor_engine import get_risk_monitor_data
+        result = get_risk_monitor_data()
+        return jsonify({'alerts': result.get('alerts', []), 'timestamp': result.get('timestamp')})
+    except Exception as e:
+        print(f"[/api/risk-monitor/alerts] Error: {e}")
         return jsonify({'error': str(e)}), 500
 
 # ══════════════════════════════════════════════════════════════

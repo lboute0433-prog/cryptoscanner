@@ -1,0 +1,65 @@
+<h2>Approche C : Tableaux Interactif Pro+</h2>
+<p class="subtitle">Design complet : barres, tri cliquable, ranking visual, hover détaillé</p>
+
+<div class="mockup">
+  <div class="mockup-header">Altcoins — Style C (Recommandé)</div>
+  <div class="mockup-body" style="padding: 0; background: linear-gradient(135deg, #0f1428 0%, #1e1a4a 100%)">
+    <table style="width: 100%; border-collapse: collapse; color: #e0e0f0; font-family: 'Segoe UI', Arial, sans-serif; font-size: 14px;">
+      <thead>
+        <tr style="background: linear-gradient(90deg, rgba(0,0,0,0.4) 0%, rgba(255,215,0,0.1) 100%); border-bottom: 2px solid #ffd700; border-top: 1px solid rgba(255,215,0,0.2);">
+          <th style="padding: 14px 16px; text-align: center; color: #666; font-weight: 600; font-size: 11px; width: 30px;">№</th>
+          <th style="padding: 14px 16px; text-align: left; color: #ffd700; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; cursor: pointer;">▲ Symbole</th>
+          <th style="padding: 14px 16px; text-align: left; color: #aaa; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px;">Nom</th>
+          <th style="padding: 14px 16px; text-align: center; color: #aaa; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; cursor: pointer;">Performance ▼</th>
+          <th style="padding: 14px 16px; text-align: right; color: #aaa; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px;">Prix</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="background: rgba(76,175,80,0.08); border-bottom: 1px solid rgba(76,175,80,0.15); transition: all 0.25s ease; border-left: 4px solid #4caf50; cursor: pointer;" onmouseover="this.style.background='rgba(76,175,80,0.15)'" onmouseout="this.style.background='rgba(76,175,80,0.08)'">
+          <td style="padding: 14px 16px; text-align: center; color: #4caf50; font-weight: 700; font-size: 12px;">🥇 1</td>
+          <td style="padding: 14px 16px; color: #ffd700; font-weight: 700; font-size: 15px;">SOL</td>
+          <td style="padding: 14px 16px; color: #ccc; font-size: 13px;">Solana</td>
+          <td style="padding: 14px 16px; text-align: center;">
+            <div style="display: inline-flex; align-items: center; gap: 6px;">
+              <div style="background: linear-gradient(90deg, #4caf50 0%, #4caf50 82.4%, rgba(76,175,80,0.3) 82.4%); width: 50px; height: 5px; border-radius: 2px;"></div>
+              <span style="color: #4caf50; font-weight: 700; font-size: 13px; min-width: 50px;">+8.24%</span>
+            </div>
+          </td>
+          <td style="padding: 14px 16px; text-align: right; color: #aaa; font-size: 13px;">$142.50</td>
+        </tr>
+        <tr style="background: rgba(76,175,80,0.08); border-bottom: 1px solid rgba(76,175,80,0.15); transition: all 0.25s ease; border-left: 4px solid #4caf50; cursor: pointer;" onmouseover="this.style.background='rgba(76,175,80,0.15)'" onmouseout="this.style.background='rgba(76,175,80,0.08)'">
+          <td style="padding: 14px 16px; text-align: center; color: #4caf50; font-weight: 700; font-size: 12px;">🥈 2</td>
+          <td style="padding: 14px 16px; color: #ffd700; font-weight: 700; font-size: 15px;">BNB</td>
+          <td style="padding: 14px 16px; color: #ccc; font-size: 13px;">Binance Coin</td>
+          <td style="padding: 14px 16px; text-align: center;">
+            <div style="display: inline-flex; align-items: center; gap: 6px;">
+              <div style="background: linear-gradient(90deg, #4caf50 0%, #4caf50 51.2%, rgba(76,175,80,0.3) 51.2%); width: 50px; height: 5px; border-radius: 2px;"></div>
+              <span style="color: #4caf50; font-weight: 700; font-size: 13px; min-width: 50px;">+5.12%</span>
+            </div>
+          </td>
+          <td style="padding: 14px 16px; text-align: right; color: #aaa; font-size: 13px;">$612.30</td>
+        </tr>
+        <tr style="background: rgba(244,67,54,0.08); border-bottom: 1px solid rgba(244,67,54,0.15); transition: all 0.25s ease; border-left: 4px solid #f44336; cursor: pointer;" onmouseover="this.style.background='rgba(244,67,54,0.15)'" onmouseout="this.style.background='rgba(244,67,54,0.08)'">
+          <td style="padding: 14px 16px; text-align: center; color: #f44336; font-weight: 700; font-size: 12px;">🥉 3</td>
+          <td style="padding: 14px 16px; color: #ffd700; font-weight: 700; font-size: 15px;">XRP</td>
+          <td style="padding: 14px 16px; color: #ccc; font-size: 13px;">Ripple</td>
+          <td style="padding: 14px 16px; text-align: center;">
+            <div style="display: inline-flex; align-items: center; gap: 6px;">
+              <div style="background: linear-gradient(90deg, #f44336 0%, #f44336 24.3%, rgba(244,67,54,0.3) 24.3%); width: 50px; height: 5px; border-radius: 2px;"></div>
+              <span style="color: #f44336; font-weight: 700; font-size: 13px; min-width: 50px;">-2.43%</span>
+            </div>
+          </td>
+          <td style="padding: 14px 16px; text-align: right; color: #aaa; font-size: 13px;">$2.15</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div style="margin-top: 24px; padding: 16px; background: rgba(255,215,0,0.05); border-left: 3px solid #ffd700; border-radius: 6px;">
+  <p style="margin: 0; color: #ccc; font-size: 14px;"><strong style="color: #ffd700;">Caractéristiques :</strong> Ranking medals, têtes cliquables (tri), barres % visuelles, hover sur rows, bordures coloriées. Complet et sophistiqué.</p>
+</div>
+
+<div style="margin-top: 20px; padding: 14px; background: rgba(76,175,80,0.1); border-radius: 6px;">
+  <p style="margin: 0; color: #4caf50; font-size: 13px;"><strong>💡 Bonus Approche C :</strong> S'applique aussi aux sections Dérivés, ETF, COT — chaque tableau devient cohérent et interactif.</p>
+</div>

@@ -6,7 +6,7 @@ CryptoScanner Pro V8.1 — News & Macro Engine (BUGFIX)
 - Calendrier économique réécrit avec vraies données
 """
 
-import requests, feedparser, sqlite3, smtplib, os, json
+import requests, feedparser, sqlite3, smtplib, os, json, time
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -215,12 +215,12 @@ def init_news_db():
         alerted INTEGER DEFAULT 0
     );
     """)
-    
+
     # Nettoyage historique (Python)
     try:
         c.execute("DELETE FROM econ_events WHERE event_date < date('now', '-30 days')")
     except: pass
-    
+
     c.executescript("""
     CREATE TABLE IF NOT EXISTS macro_cache (
         key TEXT PRIMARY KEY,
@@ -251,25 +251,45 @@ def _send_telegram(msg):
     """Envoie vers le chat admin ET tous les abonnés approuvés"""
     token = os.environ.get("TG_TOKEN", TG_TOKEN)
     chat  = os.environ.get("TG_CHAT",  TG_CHAT)
-    if not token: return
+
+    if not token:
+        print(f"[Telegram] ⚠️ TG_TOKEN not configured, skipping")
+        return
+
+    if not chat:
+        print(f"[Telegram] ⚠️ TG_CHAT not configured, skipping")
+        return
+
     # Construire la liste des destinataires
     from daily_report import get_all_recipients
+    recipients = []
     try:
         recipients = get_all_recipients()
-    except:
+        print(f"[Telegram] Found {len(recipients)} recipients from daily_report")
+    except Exception as e:
+        print(f"[Telegram] Failed to get recipients from daily_report: {e}")
         recipients = [chat] if chat else []
+
     if chat and chat not in recipients:
         recipients.insert(0, chat)
+
+    print(f"[Telegram] Sending to {len(recipients)} recipients. Message preview: {msg[:50]}...")
+
     for cid in recipients:
         if not cid: continue
         try:
-            requests.post(
+            resp = requests.post(
                 f"https://api.telegram.org/bot{token}/sendMessage",
                 json={"chat_id": cid, "text": msg, "parse_mode": "HTML",
                       "disable_web_page_preview": True},
                 timeout=5
             )
-        except: pass
+            if resp.status_code == 200:
+                print(f"[Telegram] ✅ Message sent to {cid}")
+            else:
+                print(f"[Telegram] ❌ Failed to send to {cid}: HTTP {resp.status_code} — {resp.text}")
+        except Exception as e:
+            print(f"[Telegram] ❌ Error sending to {cid}: {e}")
 
 def send_email(to, subject, body, prefs=None):
     if not prefs or not to: return
@@ -434,7 +454,7 @@ def _parse_macro_number(value):
     if value in (None, ""):
         return None
     try:
-        raw = str(value).strip().replace("\u202f", "").replace(" ", "").replace(",", "")
+        raw = str(value).strip().replace(" ", "").replace(" ", "").replace(",", "")
         mult = 1.0
         upper = raw.upper()
         if upper.endswith("K"):
@@ -594,51 +614,114 @@ def _macro_event_key(title: str, currency: str = "") -> str:
 
 
 def _fetch_ff_xml():
-    """Récupère le XML avec cache et User-Agent pour éviter les 429"""
+    """Récupère le XML avec cache et User-Agent pour éviter les 429
+
+    Stratégie :
+    1. Utilise cache en mémoire (30 min TTL)
+    2. Essaie 5 URL fallback (proxies publics + officielles)
+    3. Augmente timeout à 20s
+    4. Log détaillé (taille, codes HTTP, timeouts)
+    5. Fallback sur cache BDD si tout échoue
+    """
     global _ff_cache_xml, _ff_cache_ts
     import time
     now = time.time()
-    
+
     with _ff_lock:
+        # Retourner cache mémoire si encore frais
         if _ff_cache_xml and (now - _ff_cache_ts) < _FF_CACHE_TTL:
+            print(f"[FF] Cache mémoire valide (age={int(now-_ff_cache_ts)}s)")
             return _ff_cache_xml
-            
+
         try:
-            # Essayer plusieurs instances si possible (fallback)
+            # URLs fallback : proxies publics + sources officielles
             urls = [
-                "https://nfs.faireconomy.media/ff_calendar_thisweek.xml",
-                "https://www.forexfactory.com/ff_calendar_thisweek.xml"
+                "https://nfs.faireconomy.media/ff_calendar_thisweek.xml",  # Source officielle
+                "https://www.forexfactory.com/ff_calendar_thisweek.xml",   # Officiel
+                "https://ff.faireconomy.media/ff_calendar_thisweek.xml",   # Alt officiel
+                "https://calendar.forexfactory.com/ff_calendar_thisweek.xml",  # CDN alt
+                "https://api.forexfactory.com/calendar/thisweek.xml",      # API endpoint
             ]
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
-            
-            for url in urls:
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                "Accept": "application/xml,text/xml",
+                "Accept-Encoding": "gzip, deflate",
+                "Connection": "keep-alive"
+            }
+
+            print(f"[FF] Tentative fetch (cache age={int(now-_ff_cache_ts) if _ff_cache_xml else 'N/A'}s)")
+
+            for idx, url in enumerate(urls, 1):
                 try:
-                    r = requests.get(url, headers=headers, timeout=15)
-                    if r.status_code == 200 and len(r.text) > 1000:
-                        _ff_cache_xml = r.text
-                        _ff_cache_ts = now
-                        return _ff_cache_xml
+                    print(f"[FF] Essai {idx}/{len(urls)}: {url[:50]}...")
+                    r = requests.get(url, headers=headers, timeout=20)
+                    xml_size = len(r.text)
+
+                    if r.status_code == 200:
+                        if xml_size > 1000:
+                            _ff_cache_xml = r.text
+                            _ff_cache_ts = now
+                            print(f"[FF] ✅ Succès sur {url[:40]}... (size={xml_size} bytes, status=200)")
+                            return _ff_cache_xml
+                        else:
+                            print(f"[FF] ⚠️ XML trop petit sur {url[:40]}... (size={xml_size} bytes)")
                     else:
-                        print(f"[FF] HTTP {r.status_code} sur {url}")
+                        print(f"[FF] ❌ HTTP {r.status_code} sur {url[:40]}...")
+
+                except requests.Timeout as e:
+                    print(f"[FF] ⏱️ Timeout (20s) sur {url[:40]}...")
+                except requests.ConnectionError as e:
+                    print(f"[FF] 🌐 Connexion impossible: {url[:40]}...")
                 except Exception as e:
-                    print(f"[FF] Erreur sur {url}: {e}")
-                    
+                    print(f"[FF] 💥 Erreur: {type(e).__name__} sur {url[:40]}...")
+
+            # Si tous les essais ont échoué, charger depuis BDD si possible
+            print(f"[FF] Tous les URLs ont échoué. Tentative BDD...")
+            cached_xml = _cache_get("ff_xml_backup", max_age_min=1440)  # 24h
+            if cached_xml:
+                print(f"[FF] 💾 Utilisation du backup BDD (age=1d)")
+                _ff_cache_xml = cached_xml
+                _ff_cache_ts = now  # Renouveler TTL mémoire
+                return _ff_cache_xml
+
         except Exception as e:
-            print(f"[FF Cache Fetch] {e}")
-            
-    return _ff_cache_xml if _ff_cache_xml else None
+            print(f"[FF Cache Fetch] Erreur globale: {e}")
+
+    # Retourner dernier cache mémoire si disponible
+    if _ff_cache_xml:
+        print(f"[FF] Fallback: retour du dernier cache mémoire")
+        return _ff_cache_xml
+
+    print(f"[FF] ❌ Aucune source disponible (pas de cache)")
+    return None
 
 def _merge_forexfactory_actuals(events):
     """
     Quand ForexFactory publie ff_actual, met à jour les lignes calendrier correspondantes.
     Utilise un matching par mots-clés FR/EN pour gérer les titres bilingues.
-    Persiste les résultats dans ECON_ACTUAL_CACHE pour les requêtes suivantes.
+    Persiste les résultats dans :
+    1. ECON_ACTUAL_CACHE (mémoire)
+    2. macro_cache (BDD) pour survivre aux redémarrages
     """
     try:
         xml_data = _fetch_ff_xml()
         if not xml_data:
+            # Si fetch échoue, recharger depuis BDD
+            print(f"[FF] XML fetch échoué, rechargement depuis BDD...")
+            for ev in events:
+                cache_key = f"{ev.get('date')}_{ev['title'][:15]}"
+                cached_actual = _cache_get(cache_key, max_age_min=10080)  # 7 jours
+                if cached_actual:
+                    ev["actual"] = cached_actual
+                    try:
+                        ev["assessment"] = _build_macro_assessment(ev)
+                    except Exception:
+                        pass
             return
+
         feed = feedparser.parse(xml_data)
+        merged_count = 0
+
         for entry in feed.entries:
             actual = (entry.get("ff_actual") or "").strip()
             if not actual:
@@ -665,22 +748,48 @@ def _merge_forexfactory_actuals(events):
                 # Matching amélioré : préfixe direct OU alias FR/EN
                 if not _titles_match_ff(ev.get("title", ""), title):
                     continue
+
                 ev["actual"] = actual
                 if forecast:
                     ev["forecast"] = forecast
                 if previous:
                     ev["previous"] = previous
                 ev["source"] = "ForexFactory"
-                # Persister dans le cache pour les requêtes suivantes
+
+                # Persister dans 2 caches :
+                # 1. Cache mémoire (rapide, perte au redémarrage)
                 cache_key = f"{date_str}_{ev['title'][:15]}"
                 ECON_ACTUAL_CACHE[cache_key] = actual
+
+                # 2. BDD (persistent, mais plus lent)
+                try:
+                    _cache_set(cache_key, actual)
+                except Exception as db_err:
+                    print(f"[FF] Erreur persist BDD pour {cache_key}: {db_err}")
+
                 try:
                     ev["assessment"] = _build_macro_assessment(ev)
+                    merged_count += 1
                 except Exception:
                     pass
                 break
+
+        if merged_count > 0:
+            print(f"[FF] {merged_count} events enrichis avec valeurs réelles")
+        # Aussi persister le XML lui-même en BDD comme backup
+        try:
+            _cache_set("ff_xml_backup", xml_data)
+        except Exception:
+            pass
+
     except Exception as e:
-        print(f"[FF actual merge] {e}")
+        print(f"[FF actual merge] Erreur: {e}")
+        # Fallback silencieux vers cache BDD
+        for ev in events:
+            cache_key = f"{ev.get('date')}_{ev['title'][:15]}"
+            cached_actual = _cache_get(cache_key, max_age_min=10080)
+            if cached_actual:
+                ev["actual"] = cached_actual
 
 
 def get_calendar(date_str=None, view="week"):
@@ -717,6 +826,23 @@ def get_calendar(date_str=None, view="week"):
                 if _matches_rule(current, rule):
                     effective = _resolve_rule_date(current, rule)
                     ev_date = effective.strftime("%Y-%m-%d")
+
+                    # Essayer de récupérer la valeur "actual" depuis les caches
+                    cache_key = f"{ev_date}_{rule['title'][:15]}"
+                    actual_val = ECON_ACTUAL_CACHE.get(cache_key, "")
+
+                    # Si pas d'actual en cache mémoire, essayer BDD
+                    if not actual_val:
+                        try:
+                            actual_val = _cache_get(cache_key, max_age_min=10080) or ""
+                        except Exception:
+                            actual_val = ""
+
+                    # FALLBACK : si pas de valeur réelle ET cache vide
+                    # utiliser forecast_val au lieu de chaîne vide
+                    if not actual_val:
+                        actual_val = rule.get("forecast_val", "")
+
                     events.append({
                         "title":       rule["title"],
                         "date":        ev_date,
@@ -726,7 +852,7 @@ def get_calendar(date_str=None, view="week"):
                         "color":       "red" if rule["impact"]=="High" else "yellow" if rule["impact"]=="Medium" else "green",
                         "forecast":    rule.get("forecast_val",""),
                         "previous":    rule.get("previous_val",""),
-                        "actual":      ECON_ACTUAL_CACHE.get(f"{ev_date}_{rule['title'][:15]}", ""),
+                        "actual":      actual_val,  # Réel ou forecast_val en fallback
                         "description": rule.get("description",""),
                         "source":      "Modèle interne (estimatif)",
                         "countdown":   _make_countdown(effective),
@@ -735,7 +861,7 @@ def get_calendar(date_str=None, view="week"):
                     })
                     events[-1]["assessment"] = _build_macro_assessment(events[-1])
             except Exception as e:
-                pass
+                print(f"[Calendar] Erreur build event: {e}")
         current += timedelta(days=1)
 
     # Enrichir avec ForexFactory RSS
@@ -835,7 +961,48 @@ def _recent_releases(events, max_items=6, lookback_days=7):
     recent.sort(key=lambda e: f"{e.get('date','')} {e.get('time','')}", reverse=True)
     return recent[:max_items]
 
-def send_macro_alert_telegram(event):
+# ── Enrichissements pour Macro Events (Task #10) ─────────────────
+def build_macro_alert(event, for_role: str = "free"):
+    """
+    Construit un message Telegram pour une alerte macro événement.
+
+    FREE: Impact + chiffres clés (actual vs forecast/previous)
+    PAID: Inclut BTC correlation historique + volatilité attendue + zones de réaction
+    """
+    impact = event.get("impact", "Low")
+    impact_emoji = "🔴" if impact == "High" else "🟡" if impact == "Medium" else "🟢"
+    currency = event.get("currency", "")
+    title = event.get("title", "")
+    actual = event.get("actual", "—") or "—"
+    forecast = event.get("forecast", "—") or "—"
+    previous = event.get("previous", "—") or "—"
+
+    assessment = event.get("assessment") or _build_macro_assessment(event)
+    assessment_label = assessment.get("label", "Publié")
+    assessment_summary = assessment.get("summary", "")
+
+    lines = [
+        f"📊 <b>MACRO ALERT — {currency}</b>",
+        f"",
+        f"{impact_emoji} <b>{title}</b>",
+        f"",
+        f"Actuel : <code>{actual}</code>",
+        f"Prévision : <code>{forecast}</code>",
+        f"Précédent : <code>{previous}</code>",
+        f"",
+        f"{assessment_label} · {assessment_summary}",
+    ]
+
+    # ── CONTENU ADDITIONNEL PAID (Task #10 — Enrichissements) ────────────
+    if for_role in ("paid", "vip", "admin"):
+        lines.append(f"")
+        lines.append(f"<b>═══ CONTEXTE CRYPTO ═══</b>")
+        # TODO Task #10: Ajouter ici enrichissement BTC correlation + volatilité historique
+
+    return "\n".join(lines)
+
+
+def send_macro_alert_telegram(event, for_role: str = "free"):
     """
     Formate et envoie une alerte Telegram HTML pour un résultat macro publié.
     event doit contenir : title, currency, impact, actual, forecast, previous + optionnel assessment.
@@ -844,43 +1011,27 @@ def send_macro_alert_telegram(event):
     if not TG_TOKEN or not TG_CHAT:
         return False
 
-    impact  = event.get("impact", "Low")
-    impact_emoji = "🔴" if impact == "High" else "🟡" if impact == "Medium" else "🟢"
-    currency = event.get("currency", "")
-    title    = event.get("title", "")
-    actual   = event.get("actual", "—") or "—"
-    forecast = event.get("forecast", "—") or "—"
-    previous = event.get("previous", "—") or "—"
-
-    assessment = event.get("assessment") or _build_macro_assessment(event)
-    assessment_label   = assessment.get("label", "Publié")
-    assessment_summary = assessment.get("summary", "")
-
-    text = (
-        f"📊 <b>MACRO ALERT — {currency}</b>\n\n"
-        f"{impact_emoji} <b>{title}</b>\n\n"
-        f"Actuel : <code>{actual}</code>\n"
-        f"Prévision : <code>{forecast}</code>\n"
-        f"Précédent : <code>{previous}</code>\n\n"
-        f"{assessment_label} · {assessment_summary}"
-    )
+    text = build_macro_alert(event, for_role=for_role)
 
     try:
         url  = f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage"
-        # 1. Envoi admin (canal principal)
+        # 1. Envoi admin (canal principal) — version FREE
+        text_free = build_macro_alert(event, for_role="free")
         resp = requests.post(url, json={
             "chat_id":    TG_CHAT,
-            "text":       text,
+            "text":       text_free,
             "parse_mode": "HTML",
         }, timeout=10)
-        # 2. Broadcast aux membres paid + VIP (alertes macro = contenu premium)
+
+        # 2. Broadcast aux membres paid + VIP (version PAID avec enrichissements)
         try:
             from daily_report import get_members_by_role
             admin_chat = TG_CHAT or ""
+            text_paid = build_macro_alert(event, for_role="paid")
             for cid in get_members_by_role("paid"):
                 if cid == admin_chat: continue
                 try:
-                    requests.post(url, json={"chat_id": cid, "text": text, "parse_mode": "HTML"}, timeout=5)
+                    requests.post(url, json={"chat_id": cid, "text": text_paid, "parse_mode": "HTML"}, timeout=5)
                 except: pass
         except Exception: pass
         return resp.status_code == 200
@@ -1025,23 +1176,32 @@ def _cache_set(key, value):
 def fetch_inflation():
     cached = _cache_get("inflation", 60)
     if cached: return cached
-    try:
-        r = requests.get("https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCSL", timeout=10)
-        lines = r.text.strip().split("\n")
-        if len(lines) > 13:
-            last      = float(lines[-1].split(",")[1])
-            year_ago  = float(lines[-13].split(",")[1])
-            inflation = round((last - year_ago) / year_ago * 100, 2)
-            result = {
-                "value": inflation,
-                "trend": "↑" if inflation > 3 else "↓" if inflation < 2 else "→",
-                "color": "red" if inflation > 4 else "yellow" if inflation > 2 else "green",
-                "label": f"{inflation}% / an"
-            }
-            _cache_set("inflation", result)
-            return result
-    except Exception as e:
-        print(f"[Inflation] {e}")
+
+    headers = {"User-Agent": "CryptoScanner/1.0"}
+    for attempt in range(3):
+        try:
+            r = requests.get(
+                "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCSL",
+                headers=headers,
+                timeout=15
+            )
+            lines = r.text.strip().split("\n")
+            if len(lines) > 13:
+                last      = float(lines[-1].split(",")[1])
+                year_ago  = float(lines[-13].split(",")[1])
+                inflation = round((last - year_ago) / year_ago * 100, 2)
+                result = {
+                    "value": inflation,
+                    "trend": "↑" if inflation > 3 else "↓" if inflation < 2 else "→",
+                    "color": "red" if inflation > 4 else "yellow" if inflation > 2 else "green",
+                    "label": f"{inflation}% / an"
+                }
+                _cache_set("inflation", result)
+                return result
+        except Exception as e:
+            print(f"[Inflation] attempt {attempt+1}/3 error: {e}")
+            if attempt < 2:
+                time.sleep(2)
     return {"value": None, "label": "N/A", "trend": "?", "color": "muted"}
 
 def fetch_stablecoin_supply():
@@ -1083,8 +1243,8 @@ def fetch_nasdaq_correlation():
         r = requests.get(
             "https://query1.finance.yahoo.com/v8/finance/chart/QQQ",
             params={"interval":"1d","range":"30d"},
-            headers={"User-Agent":"Mozilla/5.0"},
-            timeout=10
+            headers={"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64)"},
+            timeout=15
         )
         data   = r.json()
         closes = data["chart"]["result"][0]["indicators"]["quote"][0]["close"]
@@ -1102,7 +1262,7 @@ def fetch_nasdaq_correlation():
         return result
     except Exception as e:
         print(f"[Nasdaq] {e}")
-        return {"qqq_price":None,"qqq_change":None,"correlation":None,"corr_label":"N/A"}
+    return {"qqq_price":None,"qqq_change":None,"correlation":None,"corr_label":"N/A"}
 
 def calc_market_dna_score(fear_greed, btc_dominance, signals_count, total_coins, gainers, funding=None):
     score = 50
