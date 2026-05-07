@@ -12,7 +12,11 @@ CryptoScanner Pro V11 — App Principale (CORRIGÉ)
 from flask import Flask, render_template, jsonify, request, make_response, redirect
 from flask_socketio import SocketIO
 import threading, time, os, sys, sqlite3
-from db import get_connection, migrate_add_subscription_tier, migrate_add_platform_settings, get_setting, set_setting
+from db import (
+    get_connection, migrate_add_subscription_tier, migrate_add_platform_settings,
+    get_setting, set_setting, toggle_user_exchange_setting, get_user_enabled_exchanges,
+    migrate_add_exchange_tables
+)
 import requests as req
 import smtplib
 from email.mime.text import MIMEText
@@ -87,6 +91,7 @@ from indices_engine import (
 )
 from cvd_engine import get_cvd_data, get_cvd_multi
 from security import require_tier, get_user_tier, TIER_LEVELS
+from ccxt_wrapper import MultiExchangeManager, ExchangeError
 
 # ── Initialisation Flask ─────────────────────────────────────
 app = Flask(__name__)
@@ -150,6 +155,7 @@ init_backtest_db()
 init_indices_db()
 migrate_add_subscription_tier()
 migrate_add_platform_settings()
+migrate_add_exchange_tables()
 
 try:
     scheduler = DailyReportScheduler(engine, fetch_etf_flows, fetch_economic_calendar)
@@ -2579,6 +2585,157 @@ def api_risk_monitor_alerts():
     except Exception as e:
         print(f"[/api/risk-monitor/alerts] Error: {e}")
         return jsonify({'error': str(e)}), 500
+
+# ══════════════════════════════════════════════════════════════
+# EXCHANGE MANAGEMENT ENDPOINTS (Phase 1 Task 3)
+# ══════════════════════════════════════════════════════════════
+
+@app.route('/api/exchanges/list', methods=['GET'])
+def api_exchanges_list() -> tuple:
+    """
+    Get list of all supported exchanges via CCXT.
+
+    Returns:
+        JSON response with list of exchange names and count
+        Example: {"exchanges": ["binance", "bybit", ...], "count": 555}
+
+    Errors:
+        500: If CCXT library is unavailable or initialization fails
+    """
+    try:
+        manager = MultiExchangeManager()
+        exchanges = manager.get_available_exchanges()
+        return jsonify({
+            'exchanges': exchanges,
+            'count': len(exchanges)
+        }), 200
+    except ExchangeError as e:
+        print(f"[/api/exchanges/list] ExchangeError: {e}")
+        return jsonify({'error': str(e)}), 500
+    except Exception as e:
+        print(f"[/api/exchanges/list] Unexpected error: {e}")
+        return jsonify({'error': 'Failed to retrieve exchange list'}), 500
+
+
+@app.route('/api/exchanges/status', methods=['GET'])
+def api_exchanges_status() -> tuple:
+    """
+    Get connectivity status for major exchanges.
+
+    Tests connections to key exchanges (binance, bybit, kraken, okx)
+    and returns online/offline status with last check timestamp.
+
+    Returns:
+        JSON response with exchange status
+        Example:
+        {
+            "exchanges": {
+                "binance": {"online": true, "last_checked": "2026-05-07T10:30:00Z"},
+                "bybit": {"online": true, "last_checked": "2026-05-07T10:30:00Z"},
+                "kraken": {"online": false, "error": "Connection timeout"}
+            }
+        }
+
+    Errors:
+        500: If initialization fails
+    """
+    try:
+        # Test major exchanges for connectivity
+        test_exchanges = ['binance', 'bybit', 'kraken', 'okx']
+        manager = MultiExchangeManager(exchanges=test_exchanges)
+
+        result = {}
+        timestamp = datetime.utcnow().isoformat() + 'Z'
+
+        for exchange_name in test_exchanges:
+            try:
+                is_online = manager.test_connection(exchange_name)
+                result[exchange_name] = {
+                    'online': is_online,
+                    'last_checked': timestamp
+                }
+            except Exception as e:
+                result[exchange_name] = {
+                    'online': False,
+                    'last_checked': timestamp,
+                    'error': str(e)[:100]  # Truncate error message
+                }
+
+        return jsonify({'exchanges': result}), 200
+
+    except ExchangeError as e:
+        print(f"[/api/exchanges/status] ExchangeError: {e}")
+        return jsonify({'error': str(e)}), 500
+    except Exception as e:
+        print(f"[/api/exchanges/status] Unexpected error: {e}")
+        return jsonify({'error': 'Failed to check exchange status'}), 500
+
+
+@app.route('/api/exchanges/toggle', methods=['POST'])
+def api_exchanges_toggle() -> tuple:
+    """
+    Enable/disable an exchange for the current user.
+
+    Stores user preferences in user_exchange_settings table.
+
+    Request JSON:
+        {
+            "exchange": "binance",  # required, exchange name
+            "enabled": true         # required, boolean
+        }
+
+    Returns:
+        JSON response with toggle result
+        Example: {"status": "ok", "exchange": "binance", "enabled": true}
+
+    Errors:
+        400: Missing or invalid request body
+        401: User not authenticated
+        422: Invalid exchange name
+        500: Database error
+    """
+    try:
+        # Get current user
+        user = get_session()
+        if not user:
+            return jsonify({'error': 'Not authenticated', 'status': 'error'}), 401
+
+        user_id = user.get('user_id')
+
+        # Parse request body
+        body = request.get_json(silent=True) or {}
+        exchange = body.get('exchange', '').lower().strip()
+        enabled = body.get('enabled')
+
+        # Validate request
+        if not exchange:
+            return jsonify({'error': 'Missing exchange name', 'status': 'error'}), 400
+
+        if enabled is None:
+            return jsonify({'error': 'Missing enabled flag', 'status': 'error'}), 400
+
+        # Validate exchange name
+        manager = MultiExchangeManager()
+        if exchange not in manager.get_available_exchanges():
+            return jsonify(
+                {'error': f'Unknown exchange: {exchange}', 'status': 'error'}
+            ), 422
+
+        # Update database
+        success = toggle_user_exchange_setting(user_id, exchange, enabled)
+
+        if not success:
+            return jsonify({'error': 'Database update failed', 'status': 'error'}), 500
+
+        return jsonify({
+            'status': 'ok',
+            'exchange': exchange,
+            'enabled': enabled
+        }), 200
+
+    except Exception as e:
+        print(f"[/api/exchanges/toggle] Unexpected error: {e}")
+        return jsonify({'error': 'Internal server error', 'status': 'error'}), 500
 
 # ══════════════════════════════════════════════════════════════
 # HEATMAP OI+VOLUME ENDPOINTS

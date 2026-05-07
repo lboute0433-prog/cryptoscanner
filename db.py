@@ -44,15 +44,16 @@ if USE_POSTGRES and not _PSYCOPG2_OK:
 # table_name (minuscule) → tuple de colonnes PRIMARY KEY / UNIQUE utilisé
 # pour générer ON CONFLICT (...) DO UPDATE SET ...
 _CONFLICT_COLS: dict[str, tuple[str, ...]] = {
-    "settings":           ("key",),
-    "tfa_codes":          ("user_id",),
-    "user_exchange_keys": ("user_id", "exchange"),
-    "blacklist":          ("symbol",),
-    "watchlist":          ("user_id", "symbol"),
-    "cot_reports":        ("asset", "report_date"),
-    "macro_cache":        ("key",),
-    "alert_prefs":        ("user_id",),
-    "tg_subscribers":     ("chat_id",),
+    "settings":                  ("key",),
+    "tfa_codes":                 ("user_id",),
+    "user_exchange_keys":        ("user_id", "exchange"),
+    "user_exchange_settings":    ("user_id", "exchange"),
+    "blacklist":                 ("symbol",),
+    "watchlist":                 ("user_id", "symbol"),
+    "cot_reports":               ("asset", "report_date"),
+    "macro_cache":               ("key",),
+    "alert_prefs":               ("user_id",),
+    "tg_subscribers":            ("chat_id",),
 }
 
 # ── Conversions SQL SQLite → PostgreSQL ───────────────────────
@@ -685,15 +686,130 @@ def get_exchange_metadata(exchange: str) -> Optional[dict]:
         conn.close()
 
 
-def migrate_add_exchange_tables() -> bool:
+def create_user_exchange_settings_table() -> bool:
     """
-    Create both exchange_data and exchange_metadata tables.
+    Create user_exchange_settings table to store per-user exchange preferences.
 
-    This is the main migration function for Phase 1 Task 2.
-    It ensures both tables exist and creates them if needed.
+    Table structure:
+    - id: Primary key with auto-increment
+    - user_id: Foreign key to users table
+    - exchange: Exchange name (e.g., 'binance', 'bybit')
+    - enabled: Boolean flag for whether exchange is enabled for this user
+    - created_at: Record creation timestamp
+    - updated_at: Last update timestamp
+
+    Constraints:
+    - UNIQUE(user_id, exchange) prevents duplicate preferences per user/exchange
 
     Returns:
-        bool: True if both tables created/exist, False if either failed
+        bool: True if successful, False otherwise
+    """
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS user_exchange_settings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                exchange TEXT NOT NULL,
+                enabled INTEGER DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, exchange),
+                FOREIGN KEY(user_id) REFERENCES users(id)
+            )
+        ''')
+
+        # Create index for fast queries by user
+        cur.execute('''
+            CREATE INDEX IF NOT EXISTS idx_user_exchange_settings_user_id
+            ON user_exchange_settings(user_id)
+        ''')
+
+        conn.commit()
+        print("[DB] user_exchange_settings table created successfully")
+        return True
+    except Exception as e:
+        print(f"[DB] Error creating user_exchange_settings table: {e}")
+        return False
+    finally:
+        conn.close()
+
+
+def toggle_user_exchange_setting(user_id: int, exchange: str, enabled: bool) -> bool:
+    """
+    Enable or disable an exchange for a specific user.
+
+    Args:
+        user_id: User ID
+        exchange: Exchange name (e.g., 'binance')
+        enabled: Whether to enable (True) or disable (False) the exchange
+
+    Returns:
+        bool: True if successful, False otherwise
+
+    Example:
+        >>> success = toggle_user_exchange_setting(user_id=1, exchange='binance', enabled=True)
+        >>> print(success)
+        True
+    """
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute('''
+            INSERT OR REPLACE INTO user_exchange_settings
+            (user_id, exchange, enabled, updated_at)
+            VALUES (?, ?, ?, datetime('now'))
+        ''', (user_id, exchange.lower(), 1 if enabled else 0))
+
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"[DB] Error toggling user exchange setting: {e}")
+        return False
+    finally:
+        conn.close()
+
+
+def get_user_enabled_exchanges(user_id: int) -> list[str]:
+    """
+    Get list of enabled exchanges for a user.
+
+    Args:
+        user_id: User ID
+
+    Returns:
+        List of enabled exchange names, or empty list if error
+
+    Example:
+        >>> exchanges = get_user_enabled_exchanges(user_id=1)
+        >>> print(exchanges)
+        ['binance', 'bybit', 'kraken']
+    """
+    conn = get_connection()
+    try:
+        cur = conn.execute(
+            "SELECT exchange FROM user_exchange_settings WHERE user_id = ? AND enabled = 1 ORDER BY exchange",
+            (user_id,)
+        )
+        rows = cur.fetchall()
+        return [row[0] for row in rows]
+    except Exception as e:
+        print(f"[DB] Error getting user enabled exchanges: {e}")
+        return []
+    finally:
+        conn.close()
+
+
+def migrate_add_exchange_tables() -> bool:
+    """
+    Create exchange_data, exchange_metadata, and user_exchange_settings tables.
+
+    This is the main migration function for Phase 1 Task 2.
+    It ensures all exchange-related tables exist and creates them if needed.
+
+    Returns:
+        bool: True if all tables created/exist, False if any failed
 
     Example:
         >>> success = migrate_add_exchange_tables()
@@ -706,6 +822,9 @@ def migrate_add_exchange_tables() -> bool:
         success = False
 
     if not create_exchange_metadata_table():
+        success = False
+
+    if not create_user_exchange_settings_table():
         success = False
 
     if success:
