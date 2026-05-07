@@ -2,15 +2,9 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "Flask Dev (python app.py)",
+      "name": "cryptoscanner-dev",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["app.py"],
-      "port": 5000
-    },
-    {
-      "name": "Gunicorn + Eventlet (production-like)",
-      "runtimeExecutable": "gunicorn",
-      "runtimeArgs": ["--worker-class", "eventlet", "-w", "1", "--bind", "0.0.0.0:5000", "wsgi:application"],
+      "runtimeArgs": [".worktrees/phase-2-pandas-ta/app.py"],
       "port": 5000
     }
   ]

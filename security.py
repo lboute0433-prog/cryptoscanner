@@ -377,7 +377,7 @@ def get_ip() -> str:
 
 SECURITY_HEADERS = {
     "X-Content-Type-Options":       "nosniff",
-    "X-Frame-Options":              "DENY",
+    "X-Frame-Options":              "SAMEORIGIN",
     "X-XSS-Protection":             "1; mode=block",
     "Referrer-Policy":              "strict-origin-when-cross-origin",
     "Permissions-Policy":           "geolocation=(), microphone=(), camera=()",
@@ -385,13 +385,14 @@ SECURITY_HEADERS = {
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' "
         "https://cdn.jsdelivr.net https://cdnjs.cloudflare.com "
-        "https://unpkg.com; "
+        "https://unpkg.com https://www.tradingview.com; "
         "style-src 'self' 'unsafe-inline' "
         "https://cdn.jsdelivr.net https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https:; "
-        "connect-src 'self' wss: ws:; "
-        "frame-ancestors 'none';"
+        "connect-src 'self' wss: ws: https://www.tradingview.com; "
+        "frame-src 'self' https://www.tradingview.com; "
+        "frame-ancestors 'self';"
     ),
 }
 
