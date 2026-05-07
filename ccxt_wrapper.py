@@ -172,8 +172,10 @@ class MultiExchangeManager:
 
         Args:
             exchanges: List of exchange names to use. Defaults to DEFAULT_EXCHANGES.
-            enable_async: Whether to use async/await for concurrent requests.
-            verbose: Enable verbose logging.
+            enable_async: (Extension) Whether to use async/await for concurrent requests.
+                         Not part of core spec but kept for backward compatibility.
+            verbose: (Extension) Enable verbose logging. Not part of core spec but kept
+                    for backward compatibility.
 
         Raises:
             ExchangeError: If CCXT library is not installed.
@@ -226,12 +228,26 @@ class MultiExchangeManager:
         # Convert RPM to milliseconds per request
         return max(1, int((60000 / rpm)))
 
-    def get_available_exchanges(self) -> dict[str, dict[str, Any]]:
+    def get_available_exchanges(self) -> list[str]:
         """
         Get list of all 100+ supported exchanges.
 
         Returns:
-            Dictionary mapping exchange names to their info:
+            List of exchange names supported by CCXT:
+            ['binance', 'kraken', 'bybit', 'okx', ...]
+        """
+        # Return all supported exchanges
+        return self.ALL_EXCHANGES
+
+    def get_exchange_info(self) -> dict[str, dict[str, Any]]:
+        """
+        Get detailed information about all supported exchanges (Extension).
+
+        This method provides capabilities and status for each exchange.
+        Not part of core spec but useful for advanced use cases.
+
+        Returns:
+            Dictionary mapping exchange names to their capabilities:
             {
                 'binance': {'active': True, 'has_ohlcv': True, ...},
                 'kraken': {'active': False, 'has_ohlcv': True, ...},
@@ -490,7 +506,16 @@ class MultiExchangeManager:
         return result
 
     def close(self) -> None:
-        """Close all exchange connections."""
+        """
+        Close all exchange connections (Extension).
+
+        This method is not part of the core spec but is provided as a convenience
+        for explicit resource cleanup. Connections are automatically closed on
+        object deletion via __del__.
+        """
+        if not hasattr(self, 'exchange_instances'):
+            return
+
         for exchange_name, exchange in self.exchange_instances.items():
             try:
                 if hasattr(exchange, 'close'):

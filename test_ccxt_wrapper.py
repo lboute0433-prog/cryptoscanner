@@ -154,14 +154,27 @@ class TestMultiExchangeManager(unittest.TestCase):
                 exchanges=['binance'],
                 enable_async=False
             )
-            manager.exchange_instances['binance'] = self.mock_binance
 
             exchanges = manager.get_available_exchanges()
 
-            self.assertIsInstance(exchanges, dict)
+            self.assertIsInstance(exchanges, list)
             self.assertIn('binance', exchanges)
-            self.assertTrue(exchanges['binance']['active'])
-            self.assertTrue(exchanges['binance']['has_ohlcv'])
+
+    def test_get_exchange_info(self):
+        """Test getting detailed exchange information (Extension)."""
+        with patch('ccxt_wrapper.CCXT_AVAILABLE', True):
+            manager = MultiExchangeManager(
+                exchanges=['binance'],
+                enable_async=False
+            )
+            manager.exchange_instances['binance'] = self.mock_binance
+
+            exchange_info = manager.get_exchange_info()
+
+            self.assertIsInstance(exchange_info, dict)
+            self.assertIn('binance', exchange_info)
+            self.assertTrue(exchange_info['binance']['active'])
+            self.assertTrue(exchange_info['binance']['has_ohlcv'])
 
     def test_get_ticker_multi_exchange(self):
         """Test fetching tickers from multiple exchanges."""
