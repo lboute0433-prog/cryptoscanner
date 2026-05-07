@@ -418,3 +418,297 @@ def set_setting(key: str, value: str) -> bool:
         return False
     finally:
         conn.close()
+
+
+# ── Exchange data tables (Phase 1) ────────────────────────────
+
+def create_exchange_data_table() -> bool:
+    """
+    Create exchange_data table to store OHLCV data from multiple exchanges.
+
+    Table structure:
+    - id: Primary key with auto-increment
+    - exchange: Exchange name (e.g., 'binance', 'bybit', 'kraken')
+    - symbol: Trading pair (e.g., 'BTC/USDT')
+    - timestamp: Unix timestamp of OHLCV candle
+    - open, high, low, close, volume: OHLCV data
+    - created_at: Record creation timestamp
+
+    Constraints:
+    - UNIQUE(exchange, symbol, timestamp) prevents duplicate data
+    - INDEX on (exchange, symbol) for fast queries
+
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS exchange_data (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                exchange TEXT NOT NULL,
+                symbol TEXT NOT NULL,
+                timestamp INTEGER NOT NULL,
+                open REAL NOT NULL,
+                high REAL NOT NULL,
+                low REAL NOT NULL,
+                close REAL NOT NULL,
+                volume REAL NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(exchange, symbol, timestamp)
+            )
+        ''')
+
+        # Create index for fast queries
+        cur.execute('''
+            CREATE INDEX IF NOT EXISTS idx_exchange_data_exchange_symbol
+            ON exchange_data(exchange, symbol)
+        ''')
+
+        conn.commit()
+        print("[DB] exchange_data table created successfully")
+        return True
+    except Exception as e:
+        print(f"[DB] Error creating exchange_data table: {e}")
+        return False
+    finally:
+        conn.close()
+
+
+def create_exchange_metadata_table() -> bool:
+    """
+    Create exchange_metadata table to store exchange capabilities and fees.
+
+    Table structure:
+    - id: Primary key with auto-increment
+    - exchange: Unique exchange identifier (e.g., 'binance')
+    - maker_fee: Maker fee percentage
+    - taker_fee: Taker fee percentage
+    - min_order_amount: Minimum order amount in quote currency
+    - supports_fetch_ticker: Boolean flag for ticker support
+    - supports_fetch_ohlcv: Boolean flag for OHLCV support
+    - rate_limit: API rate limit (requests per minute)
+    - updated_at: Last update timestamp
+
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS exchange_metadata (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                exchange TEXT NOT NULL UNIQUE,
+                maker_fee REAL,
+                taker_fee REAL,
+                min_order_amount REAL,
+                supports_fetch_ticker INTEGER DEFAULT 1,
+                supports_fetch_ohlcv INTEGER DEFAULT 1,
+                rate_limit INTEGER,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+
+        conn.commit()
+        print("[DB] exchange_metadata table created successfully")
+        return True
+    except Exception as e:
+        print(f"[DB] Error creating exchange_metadata table: {e}")
+        return False
+    finally:
+        conn.close()
+
+
+def insert_exchange_data(
+    exchange: str,
+    symbol: str,
+    timestamp: int,
+    open_price: float,
+    high: float,
+    low: float,
+    close: float,
+    volume: float
+) -> Optional[int]:
+    """
+    Insert OHLCV data for an exchange and symbol.
+
+    If the record already exists (same exchange, symbol, timestamp),
+    it will be ignored due to UNIQUE constraint.
+
+    Args:
+        exchange: Exchange name (e.g., 'binance')
+        symbol: Trading pair (e.g., 'BTC/USDT')
+        timestamp: Unix timestamp
+        open_price: Opening price
+        high: Highest price
+        low: Lowest price
+        close: Closing price
+        volume: Trading volume
+
+    Returns:
+        int: Last inserted row ID, or None if insert failed/ignored
+
+    Example:
+        >>> row_id = insert_exchange_data(
+        ...     'binance', 'BTC/USDT', 1694000000,
+        ...     45000, 45500, 44800, 45200, 1500.5
+        ... )
+        >>> print(row_id)
+        42
+    """
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute('''
+            INSERT OR IGNORE INTO exchange_data
+            (exchange, symbol, timestamp, open, high, low, close, volume)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (exchange, symbol, timestamp, open_price, high, low, close, volume))
+
+        conn.commit()
+
+        # Return lastrowid if insert happened, None if ignored
+        if cur.rowcount > 0:
+            return cur.lastrowid
+        return None
+    except Exception as e:
+        print(f"[DB] Error inserting exchange_data: {e}")
+        return None
+    finally:
+        conn.close()
+
+
+def insert_exchange_metadata(
+    exchange: str,
+    maker_fee: Optional[float] = None,
+    taker_fee: Optional[float] = None,
+    min_order_amount: Optional[float] = None,
+    supports_fetch_ticker: bool = True,
+    supports_fetch_ohlcv: bool = True,
+    rate_limit: Optional[int] = None
+) -> Optional[int]:
+    """
+    Insert or update metadata for an exchange.
+
+    Uses INSERT OR REPLACE to handle updates to existing exchanges.
+
+    Args:
+        exchange: Exchange name (e.g., 'binance')
+        maker_fee: Maker fee percentage (optional)
+        taker_fee: Taker fee percentage (optional)
+        min_order_amount: Minimum order amount (optional)
+        supports_fetch_ticker: Whether exchange supports ticker fetching
+        supports_fetch_ohlcv: Whether exchange supports OHLCV fetching
+        rate_limit: API rate limit in requests per minute (optional)
+
+    Returns:
+        int: Row ID of inserted/updated record, or None if failed
+
+    Example:
+        >>> metadata_id = insert_exchange_metadata(
+        ...     'binance',
+        ...     maker_fee=0.001,
+        ...     taker_fee=0.001,
+        ...     rate_limit=1200,
+        ...     supports_fetch_ohlcv=True
+        ... )
+        >>> print(metadata_id)
+        1
+    """
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute('''
+            INSERT OR REPLACE INTO exchange_metadata
+            (exchange, maker_fee, taker_fee, min_order_amount,
+             supports_fetch_ticker, supports_fetch_ohlcv, rate_limit, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        ''', (
+            exchange,
+            maker_fee,
+            taker_fee,
+            min_order_amount,
+            1 if supports_fetch_ticker else 0,
+            1 if supports_fetch_ohlcv else 0,
+            rate_limit
+        ))
+
+        conn.commit()
+        return cur.lastrowid
+    except Exception as e:
+        print(f"[DB] Error inserting exchange_metadata: {e}")
+        return None
+    finally:
+        conn.close()
+
+
+def get_exchange_metadata(exchange: str) -> Optional[dict]:
+    """
+    Retrieve metadata for a specific exchange.
+
+    Args:
+        exchange: Exchange name (e.g., 'binance')
+
+    Returns:
+        dict: Exchange metadata with keys (id, exchange, maker_fee, taker_fee, etc.)
+              or None if exchange not found
+
+    Example:
+        >>> metadata = get_exchange_metadata('binance')
+        >>> if metadata:
+        ...     print(metadata['maker_fee'])
+        0.001
+    """
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row if not USE_POSTGRES else None
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            'SELECT * FROM exchange_metadata WHERE exchange = ?',
+            (exchange,)
+        )
+        row = cur.fetchone()
+
+        if row:
+            # Convert sqlite3.Row or dict-like to regular dict
+            if isinstance(row, dict):
+                return dict(row)
+            else:
+                return dict(zip([desc[0] for desc in cur.description], row))
+        return None
+    except Exception as e:
+        print(f"[DB] Error retrieving exchange_metadata: {e}")
+        return None
+    finally:
+        conn.close()
+
+
+def migrate_add_exchange_tables() -> bool:
+    """
+    Create both exchange_data and exchange_metadata tables.
+
+    This is the main migration function for Phase 1 Task 2.
+    It ensures both tables exist and creates them if needed.
+
+    Returns:
+        bool: True if both tables created/exist, False if either failed
+
+    Example:
+        >>> success = migrate_add_exchange_tables()
+        >>> print(success)
+        True
+    """
+    success = True
+
+    if not create_exchange_data_table():
+        success = False
+
+    if not create_exchange_metadata_table():
+        success = False
+
+    if success:
+        print("[DB] Exchange tables migration completed successfully")
+
+    return success
