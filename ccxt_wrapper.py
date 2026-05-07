@@ -22,11 +22,12 @@ except ImportError:
     ccxt = None
     ccxt_async = None
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# Configure logging at module level
+if not logging.getLogger().handlers:
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
 logger = logging.getLogger(__name__)
 
 
@@ -65,101 +66,8 @@ class MultiExchangeManager:
     }
 
     # All supported exchanges by CCXT (100+)
-    ALL_EXCHANGES = [
-        'aax', 'aevo', 'alpaca', 'ascendex', 'bequant', 'bigone', 'binance',
-        'binancecoinm', 'binanceusdm', 'bingx', 'bit2c', 'bitbank', 'bitbay',
-        'bitfinex', 'bitfinex2', 'bitflyer', 'bitget', 'bithumb', 'bitkub',
-        'bitmart', 'bitmex', 'bitopro', 'bitso', 'bitstamp', 'bittrex',
-        'bitvavo', 'bl3p', 'blofin', 'bybit', 'bybitlinear', 'bybitinverse',
-        'cex', 'coinbase', 'coinbaseex', 'coincheck', 'coinex', 'coinlist',
-        'coinmarketcap', 'coinmetro', 'coinone', 'coinsbit', 'coinspot',
-        'cryptocom', 'currencycom', 'deribit', 'dydx', 'exmo', 'fameex',
-        'fbtc', 'fmfw', 'ftx', 'ftxus', 'gate', 'gateio', 'gemini', 'geminicoinbase',
-        'glassnode', 'gmo', 'hitbtc', 'hollaex', 'huobi', 'huobijp', 'hyperliquid',
-        'ibkr', 'idex', 'independentreserve', 'indodax', 'infura', 'injective',
-        'itbit', 'kraken', 'krakenfutures', 'kucoin', 'kucoinfutures', 'kuna',
-        'latoken', 'lbank', 'ledu', 'luno', 'lykke', 'mexc', 'mexcfutures',
-        'mixcoins', 'mobula', 'nft', 'nominex', 'norbitex', 'okcoin', 'okx',
-        'oone', 'openpeer', 'opportunity', 'opx', 'orbit', 'orangex',
-        'orca', 'orderly', 'oreodex', 'orocoinex', 'p2b', 'pancakeswap',
-        'panini', 'pangolin', 'paritex', 'payward', 'phemex', 'pioneer',
-        'pmap', 'poloniex', 'poloniexfutures', 'polynomialprotocol', 'pool',
-        'poseidon', 'postman', 'ppx', 'prime', 'primebit', 'primex',
-        'probit', 'probitex', 'profit', 'profitly', 'pronetwork', 'proteus',
-        'protofi', 'prune', 'psy', 'pump', 'pureblock', 'quoine', 'raydium',
-        'rectifi', 'reddio', 'referex', 'reflex', 'relay', 'renaissance',
-        'reputable', 'republic', 'reshuffle', 'resonate', 'response', 'result',
-        'resumption', 'retain', 'retinue', 'retreat', 'return', 'reveal',
-        'revenue', 'reverse', 'review', 'revise', 'revoke', 'rhino', 'ripio',
-        'risex', 'river', 'riverex', 'roadmap', 'roaring', 'roastery',
-        'rockitcoin', 'rockstead', 'rodeo', 'rogerthat', 'roicechain',
-        'rollercoin', 'ronin', 'rook', 'rookie', 'roomba', 'rooster',
-        'roottrade', 'ropro', 'rorund', 'rosefinch', 'roshan', 'rostock',
-        'rougeex', 'roughcuts', 'roulette', 'routemaps', 'router', 'routing',
-        'rowdy', 'roxe', 'royal', 'royalblock', 'royaltrade', 'royce',
-        'rubidium', 'ruby', 'rudder', 'ruffle', 'rugged', 'ruggedprotocol',
-        'rulebook', 'rummage', 'rumor', 'rune', 'runestones', 'rungit',
-        'runner', 'running', 'runs', 'runup', 'runway', 'rupay', 'rupture',
-        'rural', 'rush', 'rusher', 'rushing', 'rushy', 'rusine', 'rust',
-        'rustico', 'rusty', 'ruth', 'ruthless', 'rutted', 'ruzuku', 'ruzzy',
-        'rwx', 'ryan', 'rybnex', 'ryes', 'ryesilk', 'ryot', 'ryujinx',
-        'ryzen', 'saber', 'sabex', 'sable', 'sabot', 'sabre', 'sac',
-        'sacked', 'sacred', 'sacrifice', 'sacristy', 'sad', 'saddle',
-        'saddleback', 'saddled', 'saddler', 'sadism', 'sadist', 'sadly',
-        'sadness', 'sado', 'safari', 'safe', 'safeguard', 'safely',
-        'safekeep', 'safeness', 'safer', 'safest', 'safety', 'saffron',
-        'saga', 'sagacious', 'sagacity', 'sage', 'sagely', 'sageness',
-        'sager', 'sages', 'sagest', 'sagger', 'saggy', 'sagittal',
-        'sagittarius', 'sago', 'sagoin', 'sagos', 'saguaro', 'saguaros',
-        'sahib', 'sahiwal', 'sahkmet', 'sahls', 'sahorn', 'sahrawi',
-        'sahre', 'sahra', 'sahrawis', 'sahu', 'sahuaro', 'said', 'saida',
-        'saiden', 'saiding', 'saids', 'saiga', 'saigas', 'saigem',
-        'saigon', 'saija', 'sail', 'sailboat', 'sailboats', 'sailed',
-        'sailer', 'sailers', 'sailfish', 'sailfishes', 'saili', 'sailing',
-        'sailings', 'sailless', 'sailmaker', 'sailmakers', 'sailmaking',
-        'sails', 'sailship', 'sailships', 'saim', 'saimi', 'sain',
-        'sainete', 'sainim', 'saining', 'sainin', 'saint', 'saintdom',
-        'sainted', 'sainter', 'saintest', 'saintf', 'saintfoin', 'sainthood',
-        'sainthoods', 'saintish', 'saintism', 'saintlier', 'saintliest',
-        'saintlily', 'saintliness', 'saintling', 'saintly', 'saints',
-        'saintship', 'saintships', 'saintsimonism', 'saintsimonist',
-        'saintsimonists', 'saints', 'saintship', 'saintships', 'saio',
-        'saip', 'saiph', 'sair', 'sairdan', 'saired', 'sairer', 'sairest',
-        'sairing', 'sairly', 'sairned', 'sairs', 'sairs', 'sais', 'saise',
-        'saised', 'saisen', 'saising', 'saist', 'saita', 'saitch',
-        'saitches', 'saiter', 'saithe', 'saithes', 'saithe', 'saithed',
-        'saithes', 'saiyajin', 'saiyajins', 'sajama', 'sajanah', 'sajani',
-        'sajanog', 'sajatake', 'sajatake', 'sajaun', 'sajcinema', 'sajcinemas',
-        'sajdah', 'sajdahs', 'sajiah', 'sajiao', 'sajiaos', 'sajida',
-        'sajidah', 'sajidahs', 'sajido', 'sajidos', 'sajify', 'sajil',
-        'sajils', 'sajim', 'sajims', 'sajina', 'sajinas', 'sajinah',
-        'sajinc', 'sajincs', 'sajind', 'sajinds', 'sajine', 'sajines',
-        'sajing', 'sajingual', 'sajings', 'sajinhawk', 'sajinhawks',
-        'sajinkle', 'sajinkles', 'sajinos', 'sajins', 'sajinski',
-        'sajins', 'sajipu', 'sajipus', 'sajira', 'sajiras', 'sajisaka',
-        'sajisakas', 'sajish', 'sajisis', 'sajist', 'sajists', 'sajita',
-        'sajitas', 'sajith', 'sajiths', 'sajitical', 'sajitics', 'sajitine',
-        'sajitines', 'sajitism', 'sajitisms', 'sajitis', 'sajitist',
-        'sajitists', 'sajitize', 'sajitized', 'sajitizes', 'sajitizing',
-        'sajitly', 'sajitness', 'sajitnesses', 'sajits', 'sajitship',
-        'sajitships', 'sajittude', 'sajittudes', 'sajitule', 'sajitules',
-        'sajitum', 'sajitums', 'sajitune', 'sajitunes', 'sajituric',
-        'sajiturous', 'sajitus', 'sajituses', 'sajivan', 'sajivans',
-        'sajiw', 'sajiws', 'sajiz', 'sajizzes', 'sajka', 'sajkas',
-        'sajking', 'sajkings', 'sajko', 'sajkos', 'sajli', 'sajlis',
-        'sajma', 'sajman', 'sajmans', 'sajmas', 'sajmat', 'sajmats',
-        'sajmi', 'sajmia', 'sajmias', 'sajmic', 'sajmical', 'sajmically',
-        'sajmician', 'sajmicians', 'sajmicing', 'sajmicins', 'sajmicly',
-        'sajmics', 'sajmid', 'sajmids', 'sajmie', 'sajmies', 'sajmif',
-        'sajmifs', 'sajmig', 'sajmigs', 'sajmih', 'sajmihs', 'sajmii',
-        'sajmiis', 'sajmij', 'sajmijs', 'sajmik', 'sajmiks', 'sajmil',
-        'sajmils', 'sajmim', 'sajmims', 'sajmin', 'sajmins', 'sajmio',
-        'sajmios', 'sajmip', 'sajmips', 'sajmique', 'sajmiques', 'sajmir',
-        'sajmirs', 'sajmis', 'sajmisha', 'sajmisham', 'sajmishs',
-        'sajmism', 'sajmisms', 'sajmist', 'sajmists', 'sajmit', 'sajmits',
-        'sajmiu', 'sajmius', 'sajmiv', 'sajmivs', 'sajmiw', 'sajmiws',
-        'sajmix', 'sajmixs', 'sajmiy', 'sajmiys', 'sajmiz', 'sajmizs',
-    ]
+    # Dynamically populated from CCXT library to ensure accuracy
+    ALL_EXCHANGES = list(ccxt.exchanges) if CCXT_AVAILABLE else []
 
     def __init__(
         self,
@@ -189,7 +97,6 @@ class MultiExchangeManager:
         self.enable_async = enable_async
         self.verbose = verbose
         self.exchange_instances: dict[str, Any] = {}
-        self.last_request_time: dict[str, datetime] = {}
 
         if verbose:
             logger.setLevel(logging.DEBUG)
@@ -283,8 +190,8 @@ class MultiExchangeManager:
                             'has_trades': dummy.has.get('fetchTrades', False),
                             'has_order_book': dummy.has.get('fetchOrderBook', False),
                         }
-                except:
-                    pass
+                except Exception as e:
+                    logger.error(f"Failed to get info for exchange '{exchange_name}': {e}")
 
         return result
 
