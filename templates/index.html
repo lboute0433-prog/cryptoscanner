@@ -10255,9 +10255,69 @@ setInterval(loadDashMood, 300000);
     </div>
   </div>
   <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-    <button class="news-coin-btn active" id="mex-spot-btn" onclick="switchMultiEx('spot',this)">💱 SPOT</button>
+    <button class="news-coin-btn active" id="mex-price-btn" onclick="switchMultiEx('price',this)">💰 PRIX COMPARATIF</button>
+    <button class="news-coin-btn" id="mex-spot-btn" onclick="switchMultiEx('spot',this)">💱 SPOT</button>
     <button class="news-coin-btn" id="mex-perp-btn" onclick="switchMultiEx('perp',this)">📉 PERP</button>
     <button class="news-coin-btn" id="mex-arb-btn" onclick="switchMultiEx('arbitrage',this)">💰 ARBITRAGE</button>
+  </div>
+
+  <!-- PRICE COMPARISON TABLE & CHART -->
+  <div id="mex-price-panel">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;max-width:100%">
+      <div style="flex:1;min-width:300px">
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;font-weight:700">Écart Prix</div>
+        <canvas id="spread-chart" style="max-height:250px"></canvas>
+      </div>
+      <div style="flex:1;min-width:300px">
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;font-weight:700">Comparatif en Direct</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+          <button class="news-coin-btn" id="price-btn-btc" onclick="loadPriceComparison('BTC',this)">BTC</button>
+          <button class="news-coin-btn active" id="price-btn-eth" onclick="loadPriceComparison('ETH',this)">ETH</button>
+          <button class="news-coin-btn" id="price-btn-sol" onclick="loadPriceComparison('SOL',this)">SOL</button>
+        </div>
+        <div id="spread-stats" style="display:flex;gap:8px;flex-wrap:wrap">
+          <div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:8px;padding:8px 12px;font-size:.75rem">
+            <div style="color:var(--muted)">MIN</div>
+            <div id="price-min" style="color:var(--green);font-family:var(--title);font-size:.95rem;font-weight:700">—</div>
+          </div>
+          <div style="background:rgba(212,175,55,.1);border:1px solid rgba(212,175,55,.3);border-radius:8px;padding:8px 12px;font-size:.75rem">
+            <div style="color:var(--muted)">MAX</div>
+            <div id="price-max" style="color:var(--yellow);font-family:var(--title);font-size:.95rem;font-weight:700">—</div>
+          </div>
+          <div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:8px 12px;font-size:.75rem">
+            <div style="color:var(--muted)">ÉCART %</div>
+            <div id="price-spread" style="color:var(--red);font-family:var(--title);font-size:.95rem;font-weight:700">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Price Comparison Table -->
+    <div class="table-wrap"><div class="table-scroll"><table>
+      <thead><tr>
+        <th style="text-align:left">SYMBOLE</th>
+        <th>BINANCE</th>
+        <th>BYBIT</th>
+        <th>KRAKEN</th>
+        <th>OKX</th>
+        <th onclick="sortPriceTable('spread_pct')">ÉCART % ↕</th>
+      </tr></thead>
+      <tbody id="price-comparison-body">
+        <tr><td colspan="6" style="color:var(--muted);padding:30px;text-align:center">⏳ Chargement...</td></tr>
+      </tbody>
+    </table></div></div>
+
+    <!-- Arbitrage Alerts -->
+    <div style="margin-top:20px;padding:16px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:12px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <div style="font-size:1.2rem">🚨</div>
+        <div style="font-family:var(--title);font-size:.95rem;color:var(--red);letter-spacing:1px">OPPORTUNITÉS D'ARBITRAGE</div>
+      </div>
+      <div style="font-size:.75rem;color:var(--muted);margin-bottom:12px">Écarts > 1% (avant frais & glissement)</div>
+      <div id="arbitrage-alerts" style="display:flex;flex-direction:column;gap:8px">
+        <div style="color:var(--muted);padding:10px;text-align:center">Aucune opportunité détectée</div>
+      </div>
+    </div>
   </div>
 
   <!-- BYBIT -->
@@ -10630,11 +10690,14 @@ function applyMultiExMode(mode) {
 function switchMultiEx(mode,btn) {
   document.querySelectorAll('#tab-multiex .news-coin-btn').forEach(function(b){b.classList.remove('active');});
   if(btn) btn.classList.add('active');
+  var isPrice = mode==='price';
   var isArb = mode==='arbitrage';
-  document.getElementById('mex-bybit-panel').style.display=isArb?'none':'';
-  document.getElementById('mex-okx-panel').style.display=isArb?'none':'';
-  document.getElementById('mex-arb-panel').style.display=mode==='arbitrage'?'':'none';
-  if(!isArb) applyMultiExMode(mode);
+  document.getElementById('mex-price-panel').style.display=isPrice?'':'none';
+  document.getElementById('mex-bybit-panel').style.display=(isArb||isPrice)?'none':'';
+  document.getElementById('mex-okx-panel').style.display=(isArb||isPrice)?'none':'';
+  document.getElementById('mex-arb-panel').style.display=isArb?'':'none';
+  if(isPrice) { loadPriceComparison('ETH'); startPriceAutoUpdate(); }
+  else if(!isArb) applyMultiExMode(mode);
 }
 function sortBybit(k){if(_bybitSortKey===k)_bybitSortDir*=-1;else{_bybitSortKey=k;_bybitSortDir=-1;}renderBybit();}
 function sortOkx(k){if(_okxSortKey===k)_okxSortDir*=-1;else{_okxSortKey=k;_okxSortDir=-1;}renderOkx();}
@@ -10703,6 +10766,211 @@ function renderArb() {
 }
 
 function fmtP2(p){if(!p)return '—';return '$'+(p<0.01?p.toFixed(6):p<1?p.toFixed(4):p.toFixed(2));}
+
+// ══════════════════════════════════════════════════════════════
+// PRICE COMPARISON (Phase 1 Task 5)
+// ══════════════════════════════════════════════════════════════
+var _priceComparisonData = {};
+var _priceCurrentSymbol = 'ETH';
+var _priceChartInstance = null;
+var _priceAutoUpdateInterval = null;
+var _priceSortKey = 'spread_pct';
+var _priceSortDir = -1;
+
+async function loadPriceComparison(symbol) {
+  _priceCurrentSymbol = (symbol || 'ETH').toUpperCase();
+  // Update active button
+  document.querySelectorAll('#tab-multiex .news-coin-btn').forEach(function(b) {
+    var btnId = b.id || '';
+    if(btnId.startsWith('price-btn-')) b.classList.remove('active');
+  });
+  var activeBtn = document.getElementById('price-btn-' + _priceCurrentSymbol.toLowerCase());
+  if(activeBtn) activeBtn.classList.add('active');
+
+  var body = document.getElementById('price-comparison-body');
+  if(body) body.innerHTML = '<tr><td colspan="6" style="color:var(--muted);padding:30px;text-align:center">⏳ Chargement ' + _priceCurrentSymbol + '...</td></tr>';
+
+  try {
+    var url = '/api/prices/multi?symbol=' + encodeURIComponent(_priceCurrentSymbol) + '&exchanges=binance,bybit,kraken,okx';
+    var response = await fetch(url);
+    if(!response.ok) throw new Error('HTTP ' + response.status);
+    var data = await response.json();
+
+    if(data.status === 'error') {
+      if(body) body.innerHTML = '<tr><td colspan="6" style="color:var(--red);padding:20px;text-align:center">❌ ' + safeHtml(data.error || 'Erreur') + '</td></tr>';
+      return;
+    }
+
+    _priceComparisonData = data;
+    updatePriceTable();
+    updateSpreadChart();
+    displayArbitrageAlerts();
+  } catch(e) {
+    console.error('Price comparison error:', e);
+    if(body) body.innerHTML = '<tr><td colspan="6" style="color:var(--red);padding:20px;text-align:center">❌ ' + safeHtml(e.message) + '</td></tr>';
+  }
+}
+
+function updatePriceTable() {
+  var body = document.getElementById('price-comparison-body');
+  if(!body || !_priceComparisonData.exchanges) return;
+
+  var exch = _priceComparisonData.exchanges || {};
+  var row = '<tr><td style="text-align:left"><b style="color:var(--accent)">' + (_priceComparisonData.symbol || _priceCurrentSymbol) + '</b></td>';
+
+  // Display prices for each exchange
+  var exchanges = ['binance', 'bybit', 'kraken', 'okx'];
+  exchanges.forEach(function(ex) {
+    var data = exch[ex];
+    var price = data ? data.price : null;
+    row += '<td>' + (price !== null ? '$' + price.toFixed(2) : '—') + '</td>';
+  });
+
+  // Display spread
+  var spread = _priceComparisonData.spread || {};
+  var spreadPct = spread.pct || 0;
+  var spreadColor = spreadPct > 1 ? 'var(--red)' : spreadPct > 0.5 ? 'var(--yellow)' : 'var(--green)';
+  row += '<td style="color:' + spreadColor + ';font-weight:700">' + spreadPct.toFixed(3) + '%</td></tr>';
+
+  // Update stats
+  document.getElementById('price-min').textContent = '$' + (spread.min || 0).toFixed(2);
+  document.getElementById('price-max').textContent = '$' + (spread.max || 0).toFixed(2);
+  document.getElementById('price-spread').textContent = spreadPct.toFixed(3) + '%';
+
+  body.innerHTML = row;
+}
+
+function updateSpreadChart() {
+  var canvas = document.getElementById('spread-chart');
+  if(!canvas) return;
+
+  var ctx = canvas.getContext('2d');
+  if(!ctx) return;
+
+  var exch = _priceComparisonData.exchanges || {};
+  var exchanges = ['binance', 'bybit', 'kraken', 'okx'];
+  var prices = [];
+  var labels = [];
+  var colors = [];
+
+  exchanges.forEach(function(ex) {
+    var data = exch[ex];
+    if(data && data.price !== null && data.price !== undefined) {
+      labels.push(ex.charAt(0).toUpperCase() + ex.slice(1));
+      prices.push(data.price);
+      colors.push(getSpreadColor(data.price));
+    }
+  });
+
+  // Destroy existing chart if it exists
+  if(_priceChartInstance) {
+    _priceChartInstance.destroy();
+    _priceChartInstance = null;
+  }
+
+  _priceChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Prix (' + _priceCurrentSymbol + ')',
+        data: prices,
+        backgroundColor: colors,
+        borderColor: colors,
+        borderWidth: 2,
+        borderRadius: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(context) { return '$' + context.parsed.y.toFixed(2); }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: false,
+          grid: { color: 'rgba(255,255,255,.05)' },
+          ticks: { color: 'var(--muted)', font: { size: 11 } }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: 'var(--muted)', font: { size: 11 } }
+        }
+      }
+    }
+  });
+}
+
+function getSpreadColor(price) {
+  var spread = _priceComparisonData.spread || {};
+  var spreadPct = spread.pct || 0;
+  if(spreadPct > 1) return 'rgba(239, 68, 68, 0.7)';      // Red
+  if(spreadPct > 0.5) return 'rgba(212, 175, 55, 0.7)';   // Yellow
+  return 'rgba(16, 185, 129, 0.7)';                        // Green
+}
+
+function displayArbitrageAlerts() {
+  var alertsDiv = document.getElementById('arbitrage-alerts');
+  if(!alertsDiv) return;
+
+  var exch = _priceComparisonData.exchanges || {};
+  var spread = _priceComparisonData.spread || {};
+
+  if(spread.pct < 1) {
+    alertsDiv.innerHTML = '<div style="color:var(--muted);padding:10px;text-align:center">✓ Aucune opportunité (écart < 1%)</div>';
+    return;
+  }
+
+  // Find buy and sell exchanges
+  var minEx = null, maxEx = null;
+  var minPrice = Infinity, maxPrice = -Infinity;
+
+  Object.keys(exch).forEach(function(ex) {
+    var price = exch[ex].price || 0;
+    if(price < minPrice) { minPrice = price; minEx = ex; }
+    if(price > maxPrice) { maxPrice = price; maxEx = ex; }
+  });
+
+  if(!minEx || !maxEx) {
+    alertsDiv.innerHTML = '<div style="color:var(--muted);padding:10px;text-align:center">⚠️ Données insuffisantes</div>';
+    return;
+  }
+
+  var spreadAmount = maxPrice - minPrice;
+  var symbol = _priceComparisonData.symbol || _priceCurrentSymbol;
+
+  alertsDiv.innerHTML = '<div style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);border-radius:8px;padding:12px;margin-bottom:8px">'
+    + '<div style="font-size:.8rem;color:var(--text);margin-bottom:6px">'
+    + '<b style="color:var(--green)">ACHETER sur ' + minEx.toUpperCase() + '</b> à <b>$' + minPrice.toFixed(2) + '</b>'
+    + '</div>'
+    + '<div style="font-size:.8rem;color:var(--text)">'
+    + '<b style="color:var(--red)">VENDRE sur ' + maxEx.toUpperCase() + '</b> à <b>$' + maxPrice.toFixed(2) + '</b>'
+    + '</div>'
+    + '<div style="font-size:.85rem;color:var(--yellow);margin-top:8px;font-weight:700">'
+    + '💰 Gain brut: +$' + spreadAmount.toFixed(2) + ' / ' + spread.pct.toFixed(3) + '%'
+    + '</div>'
+    + '</div>';
+}
+
+function sortPriceTable(key) {
+  if(_priceSortKey === key) _priceSortDir *= -1;
+  else { _priceSortKey = key; _priceSortDir = -1; }
+  updatePriceTable();
+}
+
+function startPriceAutoUpdate() {
+  // Auto-refresh every 30 seconds
+  if(_priceAutoUpdateInterval) clearInterval(_priceAutoUpdateInterval);
+  _priceAutoUpdateInterval = setInterval(function() {
+    loadPriceComparison(_priceCurrentSymbol);
+  }, 30000);
+}
 </script>
 
 <div class="tab" id="tab-backtest">
