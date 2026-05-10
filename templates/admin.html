@@ -304,7 +304,10 @@ textarea.form-input{resize:vertical;min-height:80px}
   <!-- ALERTS CONFIGURATION -->
   <div class="admin-content" id="tab-alerts">
     <div class="panel">
-      <div class="panel-title">🔔 CONFIGURATION DES ALERTES</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div class="panel-title">🔔 CONFIGURATION DES ALERTES</div>
+        <button class="action-btn" onclick="openAlertsTutorial()" style="border:1px solid rgba(201,168,76,.3);color:var(--accent);padding:8px 12px;font-size:.75rem" title="Aide et tutoriel">📖 TUTORIEL</button>
+      </div>
       <p style="font-size:.72rem;color:var(--muted);margin-bottom:20px">Contrôlez les paramètres de chaque type d'alerte en temps réel. Les modifications s'appliquent immédiatement.</p>
 
       <!-- Smart Signals Config -->
@@ -1059,6 +1062,79 @@ document.addEventListener('DOMContentLoaded', loadAlertConfigs);
 fetch('/api/auth/me', {credentials:'same-origin'}).then(r=>r.json()).then(d => {
   if (d.logged && d.role === 'admin') showAdminDashboard(d.username);
 });
+
+// ── Tutorial Modal ──────────────────────────────────────
+function openAlertsTutorial() {
+  const modal = document.getElementById('alerts-tutorial-modal');
+  if(modal) modal.style.display = 'flex';
+}
+
+function closeAlertsTutorial() {
+  const modal = document.getElementById('alerts-tutorial-modal');
+  if(modal) modal.style.display = 'none';
+}
+
+window.addEventListener('click', (e) => {
+  const modal = document.getElementById('alerts-tutorial-modal');
+  if(e.target === modal) modal.style.display = 'none';
+});
 </script>
+
+<!-- TUTORIAL MODAL -->
+<div id="alerts-tutorial-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;max-width:700px;max-height:80vh;overflow-y:auto;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,.4)">
+
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <div style="font-family:var(--title);font-size:.9rem;color:var(--accent);letter-spacing:2px">📖 TUTORIEL ALERTES</div>
+      <button onclick="closeAlertsTutorial()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.2rem;line-height:1">✕</button>
+    </div>
+
+    <!-- Content -->
+    <div style="font-size:.75rem;color:var(--text);line-height:1.8">
+
+      <div style="margin-bottom:24px;padding:16px;background:rgba(201,168,76,.08);border-left:3px solid var(--accent)">
+        <div style="color:var(--accent);font-weight:600;margin-bottom:8px">📈 SMART SIGNALS</div>
+        <div style="color:var(--muted)">
+          <p style="margin-bottom:8px"><b>Score minimum:</b> Filtre les signaux faibles. Baisse la valeur pour recevoir plus d'alertes (moins fiables). Augmente pour moins d'alertes (plus fiables).</p>
+          <p style="margin-bottom:8px"><b>Exemple:</b> Score min = 50 → tu reçois tous les signaux avec score ≥ 50. Score min = 85 → seulement les signaux excellents.</p>
+          <p style="margin-bottom:8px"><b>Max par cycle:</b> Limite le nombre d'alertes toutes les 2 minutes. Réduis pour éviter le spam.</p>
+          <p><b>Cooldown:</b> Empêche les doublons. Un signal BTC ne s'envoie qu'une fois par N heures.</p>
+        </div>
+      </div>
+
+      <div style="margin-bottom:24px;padding:16px;background:rgba(52,211,153,.08);border-left:3px solid var(--green)">
+        <div style="color:var(--green);font-weight:600;margin-bottom:8px">🔁 RETRACE RSI</div>
+        <div style="color:var(--muted)">
+          <p style="margin-bottom:8px"><b>RSI survente (oversold):</b> Seuil bas (défaut 30). Quand RSI &lt; 30 = achat potentiel.</p>
+          <p style="margin-bottom:8px"><b>RSI surachat (overbought):</b> Seuil haut (défaut 70). Quand RSI &gt; 70 = vente potentielle.</p>
+          <p style="margin-bottom:8px"><b>Exemple:</b> Si tu mets oversold = 20 (plus strict) → moins d'alertes mais plus fiables.</p>
+          <p><b>Impact:</b> Plus rapproché = plus sensible. Plus éloigné = moins d'alertes.</p>
+        </div>
+      </div>
+
+      <div style="margin-bottom:24px;padding:16px;background:rgba(248,113,113,.08);border-left:3px solid var(--red)">
+        <div style="color:var(--red);font-weight:600;margin-bottom:8px">📊 MACRO EVENTS</div>
+        <div style="color:var(--muted)">
+          <p style="margin-bottom:8px"><b>Filtre impact:</b> Reçois les annonces macroéconomiques importantes (FOMC, NFP, etc).</p>
+          <p style="margin-bottom:8px"><b>Fenêtre de temps:</b> Reçois les alertes uniquement entre 8h et 22h UTC (évite la nuit).</p>
+          <p><b>Exemple:</b> Impact = High → seulement les annonces très importantes.</p>
+        </div>
+      </div>
+
+      <div style="padding:16px;background:rgba(0,229,255,.08);border-left:3px solid var(--accent2)">
+        <div style="color:var(--accent2);font-weight:600;margin-bottom:8px">⚡ APRÈS MODIFICATION</div>
+        <div style="color:var(--muted)">
+          <p style="margin-bottom:8px">Clique <b>SAUVEGARDER</b> en bas de chaque bloc pour appliquer.</p>
+          <p style="margin-bottom:8px">Les changements s'appliquent au prochain cycle (max 2-3 minutes).</p>
+          <p style="margin-bottom:8px"><b>Test rapide:</b> Baisse score_min à 10 pour voir TOUS les signaux en cache.</p>
+          <p><b>Consulte:</b> Va sur l'onglet SMART SIGNALS pour voir les signaux filtrés en temps réel.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
