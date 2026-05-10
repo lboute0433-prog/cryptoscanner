@@ -1452,6 +1452,9 @@ window.hideKpiSkeleton = function() {
 <style>
 .nav-page-btn{background:linear-gradient(180deg, rgba(20,20,22,.94), rgba(14,14,16,.98));border:1px solid rgba(92,88,80,.16);border-radius:18px;padding:22px;cursor:pointer;transition:.22s ease;text-align:left;width:100%;box-shadow:0 18px 34px rgba(0,0,0,.14)}
 .nav-page-btn:hover{border-color:rgba(201,168,76,.28);background:linear-gradient(180deg, rgba(20,36,56,.98), rgba(12,23,37,.98));transform:translateY(-3px);box-shadow:0 22px 40px rgba(0,0,0,.2)}
+.nav-page-btn[data-tier-required="paid"]{position:relative}
+.nav-page-btn[data-tier-required="paid"].tier-locked{opacity:0.65;cursor:not-allowed;pointer-events:none}
+.nav-page-btn[data-tier-required="paid"].tier-locked::after{content:"🔒";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:2rem;opacity:0.8}
 </style>
 
 <!-- ═══ NAV: ANALYSE ═══ -->
@@ -1466,7 +1469,7 @@ window.hideKpiSkeleton = function() {
       <button class="nav-page-btn" onclick="showTab('cvd')" style="position:relative"><div style="font-size:1.8rem;margin-bottom:8px">📉</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">CVD FLOW</div><div style="font-size:.68rem;color:var(--muted)">Delta volume · Divergences</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(0,229,255,.12);color:var(--accent);border:1px solid rgba(0,229,255,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">💎 PAID</span></button>
       <button class="nav-page-btn" onclick="showTab('heatmap')"><div style="font-size:1.8rem;margin-bottom:8px">🌡️</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">HEATMAP</div><div style="font-size:.68rem;color:var(--muted)">Vue thermique</div></button>
       <button class="nav-page-btn" onclick="showTab('brief_vip')" style="border-color:rgba(201,168,76,.3);position:relative"><div style="font-size:1.8rem;margin-bottom:8px">🌍</div><div style="font-family:var(--title);font-size:.8rem;color:var(--gold);margin-bottom:4px">BRIEF VIP</div><div style="font-size:.68rem;color:var(--muted)">Analyse géo. · Macro exclusive</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(201,168,76,.12);color:var(--gold);border:1px solid rgba(201,168,76,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">👑 VIP</span></button>
-      <button class="nav-page-btn" onclick="showTab('smart')" style="position:relative"><div style="font-size:1.8rem;margin-bottom:8px">🧠</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">SMART SIGNALS</div><div style="font-size:.68rem;color:var(--muted)">Configurations · Cassures</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(0,229,255,.12);color:var(--accent);border:1px solid rgba(0,229,255,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">💎 PAID</span></button>
+      <button class="nav-page-btn" id="btn-smart-signals" data-tier-required="paid" onclick="showTab('smart')" style="position:relative"><div style="font-size:1.8rem;margin-bottom:8px">🧠</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">SMART SIGNALS</div><div style="font-size:.68rem;color:var(--muted)">Configurations · Cassures</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(0,229,255,.12);color:var(--accent);border:1px solid rgba(0,229,255,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">💎 PAID</span></button>
       <button class="nav-page-btn" onclick="showTab('setups')" style="border-color:rgba(201,168,76,.3);position:relative"><div style="font-size:1.8rem;margin-bottom:8px">📚</div><div style="font-family:var(--title);font-size:.8rem;color:var(--gold);margin-bottom:4px">SETUPS</div><div style="font-size:.68rem;color:var(--muted)">Stratégies validées · Statistiques</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(201,168,76,.12);color:var(--gold);border:1px solid rgba(201,168,76,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">👑 VIP</span></button>
       <button class="nav-page-btn" onclick="showTab('investor')" style="position:relative"><div style="font-size:1.8rem;margin-bottom:8px">🔬</div><div style="font-family:var(--title);font-size:.8rem;color:var(--accent);margin-bottom:4px">ANALYSE INVESTISSEUR</div><div style="font-size:.68rem;color:var(--muted)">Tokenomics · TVL · Fondamentaux</div><span style="position:absolute;top:8px;right:8px;font-size:.55rem;background:rgba(0,229,255,.12);color:var(--accent);border:1px solid rgba(0,229,255,.25);padding:2px 6px;border-radius:99px;letter-spacing:.5px">💎 PAID</span></button>
     </div>
@@ -1704,7 +1707,7 @@ window.hideKpiSkeleton = function() {
     <div>
       <div style="font-family:var(--title);font-size:1rem;color:var(--accent);letter-spacing:2px">🧠 SMART SIGNALS — DÉTECTION INTELLIGENTE</div>
       <div style="font-size:.7rem;color:var(--muted);margin-top:4px">
-        Confirmation multi-critères · Patterns bougies · Breakouts · Divergences RSI · Score minimum 40/100
+        Confirmation multi-critères · Patterns bougies · Breakouts · Divergences RSI · Score minimum <span id="smart-score-display">50</span>/100 <span style="font-size:.65rem;color:var(--accent)">(Admin)</span>
       </div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
@@ -7617,6 +7620,95 @@ const TAB_ACCESS_RULES = {
   blacklist:       'admin',    // Gestion blacklist coins
 };
 
+// ══════════════════════════════════════════════════════════════
+// TIER ACCESS INITIALIZATION — Called on page load
+// ══════════════════════════════════════════════════════════════
+
+function initTierAccess() {
+  /**
+   * Initialize tier-based access control on page load.
+   * Detects user tier and sets up visual indicators for access-restricted features.
+   *
+   * Features:
+   * - Reads current user tier from currentUser global variable
+   * - Determines if user is FREE (visitor) or PAID (member/vip/admin)
+   * - Updates visual indicators on tabs
+   * - Sets up access gate for restricted features
+   */
+  const userRole = getCurrentRole();
+  const userTier = userRole === 'visitor' ? 'free' : (userRole === 'member' || userRole === 'paid' || userRole === 'vip' || userRole === 'admin') ? 'paid' : 'free';
+
+  // Store tier globally for easy access throughout the app
+  window.userTier = userTier;
+
+  // Update visual indicators for tier-locked tabs
+  if (userTier === 'free') {
+    // Lock PAID tabs for FREE users
+    const paidTabs = document.querySelectorAll('[data-tier-required="paid"]');
+    paidTabs.forEach(tab => {
+      // Add visual lock indicator
+      tab.classList.add('tier-locked');
+      // Update tooltip to indicate locked status
+      if (!tab.title) {
+        tab.title = 'Upgrade to Premium to access this feature';
+      }
+    });
+  }
+
+  // Log tier status for debugging
+  console.log('[Tier] User tier initialized:', {
+    role: userRole,
+    tier: userTier,
+    hasSmartSignalsAccess: userTier === 'paid'
+  });
+
+  // Ensure access gate tab exists for tier-gated features
+  ensureAccessGateTab();
+
+  // Return tier info for other functions
+  return { role: userRole, tier: userTier };
+}
+
+function checkTabAccess(tabName) {
+  /**
+   * Check if current user has access to a specific tab.
+   *
+   * @param {string} tabName - Name of the tab to check
+   * @returns {boolean} True if user has access, False otherwise
+   *
+   * Examples:
+   *   checkTabAccess('smart') -> checks if user can access SMART SIGNALS (PAID)
+   *   checkTabAccess('signals') -> always true (FREE tab)
+   */
+  const requiredRole = TAB_ACCESS_RULES[tabName];
+  if (!requiredRole) return true; // No restriction
+
+  return hasAccess(requiredRole);
+}
+
+function getTierInfo() {
+  /**
+   * Get current user tier information.
+   *
+   * @returns {Object} Tier information
+   *   {
+   *     role: string (visitor, member, paid, vip, admin)
+   *     tier: string (free or paid)
+   *     hasSmartSignalsAccess: boolean
+   *     displayName: string (human-readable tier name)
+   *   }
+   */
+  const role = getCurrentRole();
+  const tier = window.userTier || (role === 'visitor' ? 'free' : 'paid');
+
+  return {
+    role: role,
+    tier: tier,
+    hasSmartSignalsAccess: tier === 'paid',
+    displayName: ACCESS_ROLE_LABELS[role] || role
+  };
+}
+
 function getCurrentRole() {
   return (currentUser && currentUser.role) ? currentUser.role : 'visitor';
 }
@@ -7971,6 +8063,15 @@ async function loadSmartSignals() {
     smartSignalsData = data.signals || [];
     const ts = document.getElementById('smart-ts');
     if(ts) ts.textContent = `MAJ: ${data.ts||'—'}`;
+
+    // Update score_min display from admin settings
+    const scoreDisplay = document.getElementById('smart-score-display');
+    if(scoreDisplay && data.score_min !== undefined) {
+      scoreDisplay.textContent = data.score_min;
+      // Store for empty message
+      window._currentScoreMin = data.score_min;
+    }
+
     renderSmartSignals(smartSignalsData);
   } catch(e) {
     document.getElementById('smart-signals-list').innerHTML =
@@ -8003,7 +8104,8 @@ function renderSmartSignals(signals) {
 
   const el = document.getElementById('smart-signals-list');
   if(!filtered.length) {
-    el.innerHTML = '<div style="color:var(--muted);padding:40px;text-align:center">Aucun signal fort détecté pour le moment.<br><span style="font-size:.7rem">Les signaux nécessitent au moins 2 critères alignés + score ≥ 40/100</span></div>';
+    const scoreMin = window._currentScoreMin || 50;
+    el.innerHTML = `<div style="color:var(--muted);padding:40px;text-align:center">Aucun signal détecté pour le moment.<br><span style="font-size:.7rem">Score minimum configuré: ≥ ${scoreMin}/100 (Paramètres ADMIN)<br>Les signaux calculés sont affichés ici.</span></div>`;
     return;
   }
 
@@ -9710,6 +9812,11 @@ fetch('/api/market').then(r=>r.json()).then(d => {
 
 // 3. Auth
 checkAuth().then(() => {
+  // Initialize tier-based access control
+  if (typeof initTierAccess === 'function') {
+    initTierAccess();
+  }
+
   if (currentUser) {
     updateAdminPill(currentUser.role);
     checkTOTPStatus();
