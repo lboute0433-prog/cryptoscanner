@@ -3528,19 +3528,91 @@ function renderCotConclusions(btcSig, ethSig, sp5Sig, goldSig) {
     </div>
   </div>
 
+  <!-- ALERTES PRIX — RÈGLES PAR TIER -->
+  <div class="form-panel" style="border:1px solid rgba(0,229,255,.25);border-radius:12px;padding:16px;background:linear-gradient(135deg,rgba(0,229,255,.06),transparent);margin-bottom:20px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-family:var(--title);font-size:.85rem;color:var(--accent);letter-spacing:2px">🔔 MES ALERTES</div>
+      <button class="btn btn-outline" style="padding:4px 10px;font-size:.65rem" onclick="loadAlerts()">🔄 Rafraîchir</button>
+    </div>
+
+    <!-- RÈGLES PAR TIER -->
+    <div style="background:rgba(0,0,0,.3);border:1px solid rgba(0,229,255,.2);border-radius:8px;padding:10px;margin-bottom:12px;font-size:.65rem">
+      <div style="color:var(--muted);margin-bottom:6px;letter-spacing:1px">RÈGLES PAR TIER:</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:6px">
+        <div><span style="color:var(--yellow)">FREE:</span> 0 max</div>
+        <div><span style="color:var(--green)">MEMBRE:</span> 5 max</div>
+        <div><span style="color:var(--accent)">PAYANT:</span> 10 max</div>
+        <div><span style="color:var(--accent2)">VIP:</span> ∞</div>
+        <div><span style="color:#ff6b6b">ADMIN:</span> ∞</div>
+      </div>
+    </div>
+
+    <!-- TIER ACTUEL ET LIMITE -->
+    <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:10px;margin-bottom:12px;font-size:.7rem">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <span style="color:var(--muted)">TON TIER:</span>
+          <span id="al-user-tier" style="color:var(--accent);font-weight:600;margin-left:6px">—</span>
+        </div>
+        <div id="al-limit-display" style="color:var(--text)">
+          <span id="al-count" style="font-weight:600">0</span>/<span id="al-max">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MESSAGE UPGRADE (si limite atteinte) -->
+    <div id="al-upgrade-msg" style="display:none;background:rgba(255,193,7,.1);border:1px solid rgba(255,193,7,.3);border-radius:8px;padding:10px;margin-bottom:12px;text-align:center;font-size:.7rem;color:var(--yellow)">
+      ⚠️ LIMITE ATTEINTE - Passer à MEMBRE pour débloquer
+    </div>
+  </div>
+
   <!-- ═══ WATCHLIST ═══ -->
   <div class="form-panel" style="border:1px solid rgba(212,175,55,.25);border-radius:12px;padding:16px;background:linear-gradient(135deg,rgba(212,175,55,.06),transparent);margin-bottom:20px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
       <div style="font-family:var(--title);font-size:.85rem;color:var(--accent);letter-spacing:2px">👁️ MA WATCHLIST</div>
       <button class="btn btn-outline" style="padding:4px 10px;font-size:.65rem" onclick="loadWatchlist()">🔄 Rafraîchir</button>
     </div>
+
+    <!-- RÈGLES PAR TIER -->
+    <div style="background:rgba(0,0,0,.3);border:1px solid rgba(0,229,255,.2);border-radius:8px;padding:10px;margin-bottom:12px;font-size:.65rem">
+      <div style="color:var(--muted);margin-bottom:6px;letter-spacing:1px">RÈGLES PAR TIER:</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:6px">
+        <div><span style="color:var(--yellow)">FREE:</span> 0 max</div>
+        <div><span style="color:var(--green)">MEMBRE:</span> 5 max</div>
+        <div><span style="color:var(--accent)">PAYANT:</span> 10 max</div>
+        <div><span style="color:var(--accent2)">VIP:</span> ∞</div>
+        <div><span style="color:#ff6b6b">ADMIN:</span> ∞</div>
+      </div>
+    </div>
+
+    <!-- TIER ACTUEL ET LIMITE -->
+    <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:10px;margin-bottom:12px;font-size:.7rem">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <span style="color:var(--muted)">TON TIER:</span>
+          <span id="wl-user-tier" style="color:var(--accent);font-weight:600;margin-left:6px">—</span>
+        </div>
+        <div id="wl-limit-display" style="color:var(--text)">
+          <span id="wl-count" style="font-weight:600">0</span>/<span id="wl-max">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- INPUT & BOUTON (désactivé si limite atteinte) -->
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:flex-end">
       <div style="flex:1;min-width:150px">
         <label style="display:block;font-size:.65rem;color:var(--muted);margin-bottom:4px;letter-spacing:.5px">AJOUTER UNE CRYPTO</label>
         <input class="form-input" id="w-symbol" placeholder="BTC, ETH, SOL..." style="width:100%;font-size:.8rem" onkeypress="if(event.key==='Enter') addToWatchlist()">
       </div>
-      <button class="btn btn-primary" onclick="addToWatchlist()" style="padding:8px 16px;font-size:.7rem">+ AJOUTER</button>
+      <button class="btn btn-primary" id="wl-add-btn" onclick="addToWatchlist()" style="padding:8px 16px;font-size:.7rem">+ AJOUTER</button>
     </div>
+
+    <!-- MESSAGE UPGRADE (si limite atteinte) -->
+    <div id="wl-upgrade-msg" style="display:none;background:rgba(255,193,7,.1);border:1px solid rgba(255,193,7,.3);border-radius:8px;padding:10px;margin-bottom:12px;text-align:center;font-size:.7rem;color:var(--yellow)">
+      ⚠️ LIMITE ATTEINTE - Passer à MEMBRE pour débloquer
+    </div>
+
+    <!-- WATCHLIST ITEMS -->
     <div id="watchlist-items" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px">
       <div style="padding:8px;text-align:center;color:var(--muted);font-size:.7rem">Chargement...</div>
     </div>
@@ -5424,7 +5496,7 @@ function showTab(name) {
     'lexique':          () => loadLexique(),
     'exchange_connect': () => {},
     'journal':          () => loadTrades(),
-    'alertes':          () => { loadAlerts(); loadWatchlist(); },
+    'alertes':          () => { loadAlerts(); loadWatchlistAlerts(); },
     'portfolio':        () => loadPortfolio(),
     'news':             () => { loadNewsTab('all', null); initNewsCategories(); },
     'blacklist':        () => loadBlacklist(),
@@ -5788,7 +5860,7 @@ function updateAlertThresholdLabel() {
 }
 
 async function loadAlerts() {
-  const res  = await fetch('/api/alerts');
+  const res  = await fetch('/api/alerts', { credentials: 'include' });
   const data = await res.json();
   const active    = data.filter(a => !a.triggered);
   const triggered = data.filter(a =>  a.triggered);
@@ -5819,27 +5891,61 @@ async function loadAlerts() {
       <button class="btn btn-danger" style="padding:2px 8px;font-size:.6rem" onclick="delAlert(${a.id})">✕</button>
     </div>`;
   }).join('') : '<div class="muted" style="padding:12px 0">Aucun déclenchement</div>';
+
+  // Update tier UI
+  const userTier = window._userTier || 'free';
+  updateAlertsUI(data, active.length, userTier);
 }
 
 async function addAlert() {
   const sym = document.getElementById('a-sym').value.trim().toUpperCase();
   const price = parseFloat(document.getElementById('a-price').value);
   if (!sym || isNaN(price)) return;
-  await fetch('/api/alerts', {method:'POST', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({symbol:sym, condition:document.getElementById('a-cond').value, target_price:price})});
-  ['a-sym','a-price'].forEach(id => document.getElementById(id).value='');
-  loadAlerts();
+
+  // Check tier limit
+  const userTier = window._userTier || 'free';
+  const max = ALERTS_LIMITS[userTier] || 0;
+
+  if (max === 0) {
+    showModal('Accès Alertes', 'Alertes non disponibles en tier FREE<br><br>Upgradez à MEMBRE pour débloquer cette fonctionnalité.', 'warning');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/alerts', {method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
+      body:JSON.stringify({symbol:sym, condition:document.getElementById('a-cond').value, target_price:price})});
+    if (res.ok) {
+      ['a-sym','a-price'].forEach(id => document.getElementById(id).value='');
+      loadAlerts();
+    } else {
+      const e = await res.json();
+      if (res.status === 429 || e.error?.includes('limite')) {
+        showModal('Limite Atteinte', 'Vous avez atteint votre limite de ' + max + ' alertes<br><br>Upgradez pour augmenter votre limite.', 'warning');
+      } else {
+        showModal('Erreur', e.error || 'Impossible de créer l\'alerte', 'error');
+      }
+    }
+  } catch(e) {
+    console.error('[AddAlert]', e);
+    showModal('Erreur Réseau', 'Impossible de contacter le serveur. Vérifiez votre connexion.', 'error');
+  }
 }
 async function delAlert(id) {
-  await fetch('/api/alerts/'+id, {method:'DELETE'});
-  loadAlerts();
+  const confirmed = await showConfirmModal('Supprimer l\'alerte', 'Êtes-vous certain de vouloir supprimer cette alerte ?', 'warning');
+  if (!confirmed) return;
+  try {
+    await fetch('/api/alerts/'+id, {method:'DELETE', credentials:'include'});
+    loadAlerts();
+  } catch(e) {
+    console.error('[DelAlert]', e);
+  }
 }
 async function toggleAlert(id) {
-  await fetch('/api/alerts/'+id+'/toggle', {method:'POST'});
+  await fetch('/api/alerts/'+id+'/toggle', {method:'POST', credentials:'include'});
   loadAlerts();
 }
 async function acknowledgeAlerts() {
-  await fetch('/api/alerts/acknowledge', {method:'POST'});
+  await fetch('/api/alerts/acknowledge', {method:'POST', credentials:'include'});
   updateAlertBadge();
   loadAlerts();
 }
@@ -5849,7 +5955,7 @@ function openAlertsPanel() {
 }
 async function updateAlertBadge() {
   try {
-    const res = await fetch('/api/alerts/unread-count');
+    const res = await fetch('/api/alerts/unread-count', {credentials:'include'});
     if (!res.ok) return;
     const {count} = await res.json();
     const pill = document.getElementById('alert-bell-pill');
@@ -5860,66 +5966,424 @@ async function updateAlertBadge() {
   } catch(e) {}
 }
 
-// ── WATCHLIST MANAGEMENT ────────────────────────────────────────
-async function loadWatchlist() {
-  try {
-    const res = await fetch('/api/watchlist');
-    if (!res.ok) return;
-    const watchlist = await res.json();
-    const container = document.getElementById('watchlist-items');
-    if (!container) return;
+// ── TIER & USER MANAGEMENT ──────────────────────────────────────
+// Map role to subscription tier
+function getRoleTier(role) {
+  const roleMap = {
+    'visitor': 'free',
+    'free': 'free',
+    'member': 'member',
+    'paid': 'paid',
+    'vip': 'vip',
+    'admin': 'admin'
+  };
+  return roleMap[role?.toLowerCase()] || 'free';
+}
 
-    if (watchlist.length === 0) {
-      container.innerHTML = '<div style="padding:8px;text-align:center;color:var(--muted);font-size:.7rem;grid-column:1/-1">Aucune crypto dans votre watchlist</div>';
+// Update global tier variable from currentUser
+function updateUserTierGlobal() {
+  if (currentUser && currentUser.role) {
+    window._userTier = getRoleTier(currentUser.role);
+  } else {
+    window._userTier = 'free';
+  }
+  console.log('[Tier]', window._userTier);
+}
+
+// Styled modal for messages (replaces alert())
+function showModal(title, message, icon='info') {
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  `;
+
+  const iconMap = {
+    'error': '❌',
+    'warning': '⚠️',
+    'success': '✅',
+    'info': 'ℹ️'
+  };
+
+  const borderColorMap = {
+    'error': 'rgba(239,68,68,.3)',
+    'warning': 'rgba(255,193,7,.3)',
+    'success': 'rgba(34,197,94,.3)',
+    'info': 'rgba(0,229,255,.3)'
+  };
+
+  const box = document.createElement('div');
+  box.style.cssText = `
+    background: var(--card);
+    border: 1px solid ${borderColorMap[icon] || 'rgba(0,229,255,.3)'};
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 480px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.4);
+  `;
+
+  box.innerHTML = `
+    <div style="display: flex; align-items: flex-start; gap: 16px; margin-bottom: 16px">
+      <div style="font-size: 32px; margin-top: -4px">${iconMap[icon] || 'ℹ️'}</div>
+      <div>
+        <div style="font-family: var(--title); font-size: 1.1rem; color: var(--accent); margin-bottom: 8px">${title}</div>
+        <div style="color: var(--text); line-height: 1.5; font-size: .9rem">${message}</div>
+      </div>
+    </div>
+    <div style="display: flex; gap: 10px; justify-content: flex-end">
+      <button class="btn btn-primary" style="padding: 8px 20px; font-size: .85rem" onclick="this.closest('div').parentElement.parentElement.remove()">OK</button>
+    </div>
+  `;
+
+  modal.appendChild(box);
+  document.body.appendChild(modal);
+
+  // Close on backdrop click
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.remove();
+  });
+
+  // Close on Escape key
+  const closeOnEscape = (e) => {
+    if (e.key === 'Escape') {
+      modal.remove();
+      document.removeEventListener('keydown', closeOnEscape);
+    }
+  };
+  document.addEventListener('keydown', closeOnEscape);
+}
+
+// Confirmation modal with OK/Cancel buttons
+function showConfirmModal(title, message, icon='warning') {
+  return new Promise((resolve) => {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    `;
+
+    const iconMap = {
+      'error': '❌',
+      'warning': '⚠️',
+      'success': '✅',
+      'info': 'ℹ️'
+    };
+
+    const borderColorMap = {
+      'error': 'rgba(239,68,68,.3)',
+      'warning': 'rgba(255,193,7,.3)',
+      'success': 'rgba(34,197,94,.3)',
+      'info': 'rgba(0,229,255,.3)'
+    };
+
+    const box = document.createElement('div');
+    box.style.cssText = `
+      background: var(--card);
+      border: 1px solid ${borderColorMap[icon] || 'rgba(255,193,7,.3)'};
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 480px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.4);
+    `;
+
+    const okBtn = document.createElement('button');
+    okBtn.style.cssText = `
+      padding: 8px 20px;
+      font-size: .85rem;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 700;
+    `;
+    okBtn.textContent = 'Confirmer';
+    okBtn.onclick = () => {
+      modal.remove();
+      document.removeEventListener('keydown', closeOnEscape);
+      resolve(true);
+    };
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.style.cssText = `
+      padding: 8px 20px;
+      font-size: .85rem;
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+    `;
+    cancelBtn.textContent = 'Annuler';
+    cancelBtn.onclick = () => {
+      modal.remove();
+      document.removeEventListener('keydown', closeOnEscape);
+      resolve(false);
+    };
+
+    box.innerHTML = `
+      <div style="display: flex; align-items: flex-start; gap: 16px; margin-bottom: 20px">
+        <div style="font-size: 32px; margin-top: -4px">${iconMap[icon] || '⚠️'}</div>
+        <div>
+          <div style="font-family: var(--title); font-size: 1.1rem; color: var(--accent); margin-bottom: 8px">${title}</div>
+          <div style="color: var(--text); line-height: 1.5; font-size: .9rem">${message}</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px; justify-content: flex-end"></div>
+    `;
+
+    const buttonContainer = box.querySelector('div:last-child');
+    buttonContainer.appendChild(cancelBtn);
+    buttonContainer.appendChild(okBtn);
+
+    modal.appendChild(box);
+    document.body.appendChild(modal);
+
+    // Close on backdrop click = cancel
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove();
+        document.removeEventListener('keydown', closeOnEscape);
+        resolve(false);
+      }
+    });
+
+    // Escape key = cancel
+    const closeOnEscape = (e) => {
+      if (e.key === 'Escape') {
+        modal.remove();
+        document.removeEventListener('keydown', closeOnEscape);
+        resolve(false);
+      }
+    };
+    document.addEventListener('keydown', closeOnEscape);
+  });
+}
+
+// ── WATCHLIST MANAGEMENT ────────────────────────────────────────
+// Tier limits
+const WATCHLIST_LIMITS = {
+  'free': 0,
+  'visitor': 0,
+  'member': 5,
+  'paid': 10,
+  'vip': 999,
+  'admin': 999
+};
+
+// ── ALERTES MANAGEMENT ───────────────────────────────────────────
+// Tier limits (same as watchlist)
+const ALERTS_LIMITS = {
+  'free': 0,
+  'visitor': 0,
+  'member': 5,
+  'paid': 10,
+  'vip': 999,
+  'admin': 999
+};
+
+async function loadWatchlistAlerts() {
+  try {
+    const res = await fetch('/api/watchlist', { credentials: 'include' });
+    console.log('[Watchlist] Fetch response:', res.status);
+    if (!res.ok) {
+      // Si pas authentifié ou erreur, afficher quand même les règles
+      console.log('[Watchlist] Not ok, showing empty UI');
+      updateWatchlistUI([], 0, 'free');
       return;
     }
-
-    container.innerHTML = watchlist.map(w => {
-      const price = w.price ? '$'+parseFloat(w.price).toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—';
-      const chg = w.change_pct != null ? (w.change_pct > 0 ? '+' : '')+w.change_pct.toFixed(1)+'%' : '—';
-      const chgColor = w.change_pct > 0 ? 'var(--green)' : w.change_pct < 0 ? 'var(--red)' : 'var(--muted)';
-      const volDisplay = w.volume_usdt ? (w.volume_usdt >= 1000000 ? (w.volume_usdt/1000000).toFixed(1)+'M' : (w.volume_usdt/1000).toFixed(0)+'K') : '—';
-      return `
-        <div style="background:rgba(212,175,55,.1);border:1px solid rgba(212,175,55,.2);border-radius:8px;padding:10px;position:relative">
-          <div style="font-weight:700;color:var(--accent);font-size:.8rem;margin-bottom:4px">${w.symbol}</div>
-          <div style="font-size:.65rem;color:var(--muted);margin-bottom:6px">${price}</div>
-          <div style="font-size:.65rem;color:${chgColor};margin-bottom:4px">${chg}</div>
-          <div style="font-size:.6rem;color:var(--muted);margin-bottom:8px">Vol: ${volDisplay}</div>
-          <button class="btn" style="width:100%;padding:4px;font-size:.6rem;border-color:rgba(239,68,68,.4);color:var(--red)" onclick="removeFromWatchlist(${w.id})">✕ Supprimer</button>
-        </div>
-      `;
-    }).join('');
+    const watchlist = await res.json();
+    const userTier = window._userTier || 'free';
+    console.log('[Watchlist] Loaded:', watchlist.length, 'items, tier:', userTier);
+    updateWatchlistUI(watchlist, watchlist.length, userTier);
   } catch(e) {
-    console.error('[Watchlist]', e);
+    console.error('[Watchlist] Error:', e);
   }
 }
+
+function updateWatchlistUI(watchlist, count, tier) {
+  console.log('[UpdateWatchlistUI] Called with count:', count, 'tier:', tier);
+  const container = document.getElementById('watchlist-items');
+  const tierDisplay = document.getElementById('wl-user-tier');
+  const countDisplay = document.getElementById('wl-count');
+  const maxDisplay = document.getElementById('wl-max');
+  const addBtn = document.getElementById('wl-add-btn');
+  const upgradeMsg = document.getElementById('wl-upgrade-msg');
+  const inputField = document.getElementById('w-symbol');
+
+  console.log('[UpdateWatchlistUI] Container found:', !!container, 'tierDisplay:', !!tierDisplay);
+
+  // Use current global tier if not provided
+  if (!tier || tier === 'free') {
+    updateUserTierGlobal();
+    tier = window._userTier || 'free';
+    console.log('[UpdateWatchlistUI] Updated tier to:', tier);
+  }
+
+  // Update tier display
+  if (tierDisplay) tierDisplay.textContent = tier.toUpperCase();
+
+  // Update count/limit
+  const max = WATCHLIST_LIMITS[tier] || 0;
+  if (countDisplay) countDisplay.textContent = count;
+  if (maxDisplay) maxDisplay.textContent = max;
+
+  // Check if at limit
+  const atLimit = max > 0 && count >= max;
+
+  // Disable/enable button
+  if (addBtn) {
+    addBtn.disabled = atLimit && max > 0;
+    addBtn.style.opacity = atLimit && max > 0 ? '0.5' : '1';
+    addBtn.style.cursor = atLimit && max > 0 ? 'not-allowed' : 'pointer';
+  }
+
+  // Show/hide upgrade message
+  if (upgradeMsg) {
+    upgradeMsg.style.display = (max === 0 || atLimit) ? 'block' : 'none';
+  }
+
+  // Disable input if no limit
+  if (inputField) {
+    inputField.disabled = max === 0;
+    inputField.style.opacity = max === 0 ? '0.5' : '1';
+  }
+
+  // Show watchlist items or empty message
+  if (!container) return;
+
+  if (watchlist.length === 0) {
+    const msg = max === 0
+      ? 'Watchlist non disponible en tier FREE'
+      : 'Aucune crypto dans votre watchlist';
+    container.innerHTML = `<div style="padding:8px;text-align:center;color:var(--muted);font-size:.7rem;grid-column:1/-1">${msg}</div>`;
+    return;
+  }
+
+  container.innerHTML = watchlist.map(w => {
+    const price = w.price ? '$'+parseFloat(w.price).toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—';
+    const chg = w.change_pct != null ? (w.change_pct > 0 ? '+' : '')+w.change_pct.toFixed(1)+'%' : '—';
+    const chgColor = w.change_pct > 0 ? 'var(--green)' : w.change_pct < 0 ? 'var(--red)' : 'var(--muted)';
+    const volDisplay = w.volume_usdt ? (w.volume_usdt >= 1000000 ? (w.volume_usdt/1000000).toFixed(1)+'M' : (w.volume_usdt/1000).toFixed(0)+'K') : '—';
+    return `
+      <div style="background:rgba(212,175,55,.1);border:1px solid rgba(212,175,55,.2);border-radius:8px;padding:10px;position:relative;cursor:pointer" onclick="openChart('${w.symbol}')">
+        <div style="font-weight:700;color:var(--accent);font-size:.8rem;margin-bottom:4px">${w.symbol}</div>
+        <div style="font-size:.65rem;color:var(--muted);margin-bottom:6px">${price}</div>
+        <div style="font-size:.65rem;color:${chgColor};margin-bottom:4px">${chg}</div>
+        <div style="font-size:.6rem;color:var(--muted);margin-bottom:8px">Vol: ${volDisplay}</div>
+        <button class="btn" style="width:100%;padding:4px;font-size:.6rem;border-color:rgba(239,68,68,.4);color:var(--red)" onclick="event.stopPropagation();removeFromWatchlist(${w.id})">✕ Supprimer</button>
+      </div>
+    `;
+  }).join('');
+}
+
 
 async function addToWatchlist() {
   const input = document.getElementById('w-symbol');
   const sym = (input.value || '').trim().toUpperCase();
   if (!sym) return;
+
+  // Check tier limit
+  const userTier = window._userTier || 'free';
+  const max = WATCHLIST_LIMITS[userTier] || 0;
+
+  if (max === 0) {
+    showModal('Accès Watchlist', 'Watchlist non disponible en tier FREE<br><br>Upgradez à MEMBRE pour débloquer cette fonctionnalité.', 'warning');
+    return;
+  }
+
   try {
-    const res = await fetch('/api/watchlist', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({symbol:sym})});
+    const res = await fetch('/api/watchlist', {method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body:JSON.stringify({symbol:sym})});
     if (res.ok) {
       input.value = '';
-      loadWatchlist();
+      loadWatchlistAlerts();
     } else {
       const e = await res.json();
-      alert('Erreur: '+(e.error || 'Impossible d\'ajouter la crypto'));
+      if (res.status === 429 || e.error?.includes('limite')) {
+        showModal('Limite Atteinte', 'Vous avez atteint votre limite de ' + max + ' watchlists<br><br>Upgradez pour augmenter votre limite.', 'warning');
+      } else {
+        showModal('Erreur', e.error || 'Impossible d\'ajouter la crypto', 'error');
+      }
     }
   } catch(e) {
     console.error('[AddWatchlist]', e);
-    alert('Erreur réseau');
+    showModal('Erreur Réseau', 'Impossible de contacter le serveur. Vérifiez votre connexion.', 'error');
   }
 }
 
 async function removeFromWatchlist(wid) {
-  if (!confirm('Supprimer de la watchlist?')) return;
+  const confirmed = await showConfirmModal('Supprimer de la watchlist', 'Êtes-vous certain de vouloir retirer cet actif de votre watchlist ?', 'warning');
+  if (!confirmed) return;
   try {
-    await fetch('/api/watchlist/'+wid, {method:'DELETE'});
-    loadWatchlist();
+    await fetch('/api/watchlist/'+wid, {method:'DELETE', credentials:'include'});
+    loadWatchlistAlerts();
   } catch(e) {
     console.error('[RemoveWatchlist]', e);
+  }
+}
+
+// ── ALERTES UI ────────────────────────────────────────────────────
+function updateAlertsUI(alerts, count, tier) {
+  const tierDisplay = document.getElementById('al-user-tier');
+  const countDisplay = document.getElementById('al-count');
+  const maxDisplay = document.getElementById('al-max');
+  const upgradeMsg = document.getElementById('al-upgrade-msg');
+  const aSymInput = document.getElementById('a-sym');
+  const aPriceInput = document.getElementById('a-price');
+  const aCreateBtn = document.querySelector('button[onclick="addAlert()"]');
+
+  // Use current global tier if not provided
+  if (!tier || tier === 'free') {
+    updateUserTierGlobal();
+    tier = window._userTier || 'free';
+  }
+
+  // Update tier display
+  if (tierDisplay) tierDisplay.textContent = tier.toUpperCase();
+
+  // Update count/limit
+  const max = ALERTS_LIMITS[tier] || 0;
+  if (countDisplay) countDisplay.textContent = count;
+  if (maxDisplay) maxDisplay.textContent = max;
+
+  // Check if at limit
+  const atLimit = max > 0 && count >= max;
+
+  // Disable/enable form inputs and button
+  if (aSymInput) {
+    aSymInput.disabled = max === 0;
+    aSymInput.style.opacity = max === 0 ? '0.5' : '1';
+  }
+  if (aPriceInput) {
+    aPriceInput.disabled = max === 0;
+    aPriceInput.style.opacity = max === 0 ? '0.5' : '1';
+  }
+  if (aCreateBtn) {
+    aCreateBtn.disabled = (max === 0 || atLimit);
+    aCreateBtn.style.opacity = (max === 0 || atLimit) ? '0.5' : '1';
+    aCreateBtn.style.cursor = (max === 0 || atLimit) ? 'not-allowed' : 'pointer';
+  }
+
+  // Show/hide upgrade message
+  if (upgradeMsg) {
+    upgradeMsg.style.display = (max === 0 || atLimit) ? 'block' : 'none';
   }
 }
 
@@ -7060,7 +7524,7 @@ socket.on('news_update', data => {
 
 // ── INIT V7 ───────────────────────────────────────────────────
 async function loadWatchlist() {
-  const res  = await fetch('/api/watchlist');
+  const res  = await fetch('/api/watchlist', { credentials: 'include' });
   const data = await res.json();
   const tbody = document.getElementById('watchlist-body');
   if (!data.length) {
@@ -7081,14 +7545,14 @@ async function loadWatchlist() {
 async function addWatchlist() {
   const sym = document.getElementById('wl-sym').value.trim().toUpperCase();
   if (!sym) return;
-  await fetch('/api/watchlist', {method:'POST',headers:{'Content-Type':'application/json'},
+  await fetch('/api/watchlist', {method:'POST',headers:{'Content-Type':'application/json'}, credentials:'include',
     body:JSON.stringify({symbol:sym})});
   document.getElementById('wl-sym').value = '';
   loadWatchlist();
 }
 
 async function delWatchlist(id) {
-  await fetch('/api/watchlist/'+id, {method:'DELETE'});
+  await fetch('/api/watchlist/'+id, {method:'DELETE', credentials:'include'});
   loadWatchlist();
 }
 
@@ -7742,15 +8206,25 @@ function initTierAccess() {
    *
    * Features:
    * - Reads current user tier from currentUser global variable
-   * - Determines if user is FREE (visitor) or PAID (member/vip/admin)
+   * - Maps role to detailed tier (free, member, paid, vip, admin)
    * - Updates visual indicators on tabs
    * - Sets up access gate for restricted features
    */
   const userRole = getCurrentRole();
-  const userTier = userRole === 'visitor' ? 'free' : (userRole === 'member' || userRole === 'paid' || userRole === 'vip' || userRole === 'admin') ? 'paid' : 'free';
+  // Map role to tier with granular support
+  const tierMap = {
+    'visitor': 'free',
+    'free': 'free',
+    'member': 'member',
+    'paid': 'paid',
+    'vip': 'vip',
+    'admin': 'admin'
+  };
+  const userTier = tierMap[userRole] || 'free';
 
   // Store tier globally for easy access throughout the app
   window.userTier = userTier;
+  window._userTier = userTier; // Also set _userTier for consistency
 
   // Update visual indicators for tier-locked tabs
   if (userTier === 'free') {
@@ -7770,7 +8244,7 @@ function initTierAccess() {
   console.log('[Tier] User tier initialized:', {
     role: userRole,
     tier: userTier,
-    hasSmartSignalsAccess: userTier === 'paid'
+    hasSmartSignalsAccess: userTier !== 'free'
   });
 
   // Ensure access gate tab exists for tier-gated features
@@ -8059,6 +8533,8 @@ function showLoggedIn(username) {
   }
   // Pill admin
   updateAdminPill(currentUser&&currentUser.role);
+  // Initialize tier from currentUser
+  updateUserTierGlobal();
 }
 
 function showLoggedOut() {
