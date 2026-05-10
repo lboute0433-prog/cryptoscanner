@@ -48,6 +48,7 @@ from scanner_engine import (
     VALID_SUBSCRIPTION_STATUSES,
     normalize_role,
     normalize_subscription_status,
+    load_admin_alert_settings,
 )
 from news_macro import (
     init_news_db, fetch_news_rss, get_news_from_db,
@@ -191,18 +192,69 @@ _smart_signals_cache = []
 _smart_signals_ts = None
 _signals_lock = threading.Lock()
 
+# ── Settings cache for smart_signal_loop with refresh strategy ────
+_loop_settings = None
+_loop_settings_ts = None
+_settings_refresh_interval = 300  # Refresh every 5 minutes (300 seconds)
+
 def smart_signal_loop():
-    global _smart_signals_cache, _smart_signals_ts
+    """
+    Main signal scanning loop that detects smart signals on crypto coins.
+
+    This function:
+    1. Loads configuration from load_admin_alert_settings()
+    2. Scans all symbols for signals using dynamic thresholds
+    3. Detects RSI retraces on small caps
+    4. Caches top N signals (configurable)
+    5. Broadcasts updates via WebSocket
+
+    Configuration is loaded at startup and refreshed every 5 minutes to allow
+    for runtime changes via the admin UI without restarting.
+
+    Uses thread-safe locks for cache and signal deduplication.
+    """
+    global _smart_signals_cache, _smart_signals_ts, _loop_settings, _loop_settings_ts
+
     while True:
         try:
+            # ── Load/refresh settings every 5 minutes ────────────────────────
+            now = time.time()
+            if (_loop_settings is None or
+                (now - _loop_settings_ts > _settings_refresh_interval)):
+                try:
+                    _loop_settings = load_admin_alert_settings()
+                    _loop_settings_ts = now
+                except Exception as e:
+                    print(f"[SmartSignals] Error loading settings: {e}")
+                    # Fall back to defaults if loading fails
+                    if _loop_settings is None:
+                        _loop_settings = {
+                            'vol_min_24h': 2_000_000,
+                            'cache_size': 20,
+                            'scan_interval': 120
+                        }
+
+            settings = _loop_settings or {}
+
+            # ── Load volume thresholds from settings (in millions, convert to USDT) ──
+            vol_min_standard = settings.get('vol_min_standard', 2) * 1_000_000
+            vol_min_small_cap = settings.get('vol_min_small_cap', 0.5) * 1_000_000
+            vol_max_small_cap = settings.get('vol_max_small_cap', 2) * 1_000_000
+
+            # ── Load other settings ──────────────────────────────────────────
+            cache_size_limit = settings.get('cache_size', 20)
+            scan_interval = settings.get('scan_interval', 5)  # in seconds
+
+            # ── Fetch current market data ────────────────────────────────────
             market = engine.get_last()
             coins  = market.get("coins", [])
 
-            # ── Niveau 1 : signaux standard ($2M+, scannés pour Smart Signals) ──
-            standard_coins = [c for c in coins if c.get("volume_usdt", 0) > 2_000_000][:50]
-            # ── Niveau 2 : small caps ($500K+, suivi RSI retrace seulement) ──────
+            # ── Niveau 1 : signaux standard (configurable threshold, scannés pour Smart Signals) ──
+            standard_coins = [c for c in coins
+                            if c.get("volume_usdt", 0) > vol_min_standard][:50]
+            # ── Niveau 2 : small caps (configurable range, suivi RSI retrace seulement) ──────
             small_caps = [c for c in coins
-                          if 500_000 <= c.get("volume_usdt", 0) <= 2_000_000][:30]
+                          if vol_min_small_cap <= c.get("volume_usdt", 0) <= vol_max_small_cap][:30]
 
             results = []
 
@@ -240,9 +292,10 @@ def smart_signal_loop():
                         update_rsi_history(sym, rsi)
                 except: continue
 
+            # ── Sort and cache with configurable limit ────────────────────────
             results.sort(key=lambda x: x["score"], reverse=True)
             with _signals_lock:
-                _smart_signals_cache = results[:20]
+                _smart_signals_cache = results[:cache_size_limit]
                 _smart_signals_ts    = datetime.now().strftime("%H:%M:%S")
 
             # ── Sauvegarde historique en DB (signaux score >= 50) ─────────────
@@ -268,7 +321,10 @@ def smart_signal_loop():
             socketio.emit("smart_signals_update", {"signals": _smart_signals_cache, "ts": _smart_signals_ts})
         except Exception as e:
             print(f"[SmartSignals] {e}")
-        time.sleep(120)
+
+        # ── Sleep for configurable interval (in seconds) ──────────────────────
+        # scan_interval is already set in the loop above from settings
+        time.sleep(scan_interval)
 
 _alerted_signals = set()
 _alerted_retraces = set()   # dédup spécifique aux alertes retrace RSI
