@@ -7966,7 +7966,7 @@ async function loadSmartSignals() {
   document.getElementById('smart-signals-list').innerHTML =
     '<div style="color:var(--muted);padding:40px;text-align:center">⏳ Analyse en cours (1-2 min)...</div>';
   try {
-    const res  = await fetch('/api/smart_signals');
+    const res  = await fetch('/api/smart_signals?role=paid');
     const data = await res.json();
     smartSignalsData = data.signals || [];
     const ts = document.getElementById('smart-ts');
@@ -8017,7 +8017,7 @@ function renderSmartSignals(signals) {
     const sign = s.change_pct >= 0 ? '+' : '';
     const rsiColor = s.rsi ? (s.rsi >= 70 ? 'var(--red)' : s.rsi <= 30 ? 'var(--green)' : 'var(--muted)') : 'var(--muted)';
 
-    return `<div class="smart-card ${dirClass}" onclick="openChart('${s.symbol}')">
+    return `<div class="smart-card ${dirClass}" data-symbol="${s.symbol}" onclick="if(this.closest('.smart-card')) openChart(this.dataset.symbol)">
       <div style="display:flex;align-items:center;gap:12px">
         <div class="score-ring ${ringClass}">${s.score}</div>
         <div style="flex:1">

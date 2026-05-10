@@ -1425,10 +1425,126 @@ def api_signals():
     return jsonify(engine.get_signals())
 
 
+def _format_signal_for_role(signal, role):
+    """
+    Return signal fields appropriate for FREE or PAID users.
+
+    Args:
+        signal (dict): Full signal data
+        role (str): 'free' or 'paid'
+
+    Returns:
+        dict: Filtered signal appropriate for user tier
+    """
+    if role == "free":
+        # Basic fields only for FREE users
+        return {
+            "symbol": signal.get("symbol"),
+            "score": signal.get("score"),
+            "rsi": signal.get("rsi"),
+            "volume_mult": signal.get("volume_mult"),
+            "timestamp": signal.get("timestamp"),
+            "price": signal.get("price"),
+            "change_pct": signal.get("change_pct"),
+            "volume_usdt": signal.get("volume_usdt"),
+            "direction": signal.get("direction"),
+            "tags": signal.get("tags", [])
+        }
+    else:  # role == "paid"
+        # Return full signal with all details
+        return signal
+
+
+def _get_user_role_tier():
+    """
+    Detect current user's tier from session.
+    Returns 'free' or 'paid' based on subscription level.
+
+    Maps user.role or subscription_tier to API-level free/paid classification:
+    - FREE: visitor, member, free
+    - PAID: paid, vip, admin
+    """
+    sess = get_session()
+    if not sess:
+        return "free"
+
+    user_id = sess.get("user_id")
+    if not user_id:
+        return "free"
+
+    # Try to get subscription_tier first (database field)
+    try:
+        user_tier = get_user_tier(user_id)
+        # subscription_tier can be: free, member, vip
+        # Map 3-tier system (free, member, vip) to 2-tier API (free vs paid)
+        if user_tier in ("free",):
+            return "free"
+        elif user_tier in ("member", "vip"):
+            # Both member and vip get paid features
+            return "paid"
+    except (KeyError, ValueError, TypeError) as e:
+        # Expected: missing tier or invalid value
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.debug(f"Debug: Expected error getting user tier: {e}")
+    except Exception as e:
+        # Unexpected error - log it
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Unexpected error getting user tier: {e}")
+
+    # Fallback: check session role if available
+    user_role = sess.get("role", "visitor")
+    if user_role in ("visitor", "member", "free"):
+        return "free"
+    elif user_role in ("paid", "vip", "admin"):
+        return "paid"
+
+    return "free"
+
+
 @app.route("/api/smart_signals")
 def api_smart_signals():
+    """
+    Return smart signals with role-based filtering.
+
+    Query parameters:
+        - role: optional 'free' or 'paid' (defaults to current user tier)
+
+    Returns:
+        - FREE: Basic fields (symbol, score, rsi, volume, timestamp)
+        - PAID: Full signal details (all fields + patterns, divergences, etc.)
+        - Applies score_min filter from admin settings
+    """
     with _signals_lock:
-        return jsonify({"signals": _smart_signals_cache, "ts": _smart_signals_ts})
+        # Get role from parameter or detect from session
+        requested_role = (request.args.get("role") or "").strip().lower()
+        if requested_role not in ("free", "paid"):
+            role = _get_user_role_tier()
+        else:
+            role = requested_role
+
+        # Load admin settings for score filtering
+        settings = load_admin_alert_settings()
+        score_min = settings.get("smart_signals", {}).get("score_min", 85)
+
+        # Filter signals
+        filtered_signals = []
+        for signal in _smart_signals_cache:
+            # Skip signals below minimum score
+            if signal.get("score", 0) < score_min:
+                continue
+
+            # Format for role
+            formatted = _format_signal_for_role(signal, role)
+            filtered_signals.append(formatted)
+
+        return jsonify({
+            "signals": filtered_signals,
+            "ts": _smart_signals_ts,
+            "role": role,
+            "score_min": score_min
+        })
 
 
 @app.route("/api/smart_signals/history")
