@@ -1748,7 +1748,7 @@ window.hideKpiSkeleton = function() {
           📊 Divergence — RSI vs Prix
         </div>
       </div>
-      <!-- Filtre direction -->
+      <!-- Filtre direction & symbole -->
       <div class="ai-side-card">
         <div class="ai-side-title">🎯 FILTRER</div>
         <div style="display:flex;flex-direction:column;gap:6px">
@@ -1756,6 +1756,13 @@ window.hideKpiSkeleton = function() {
           <button class="news-coin-btn" onclick="filterSmartSignals('buy',this)">🟢 Achat</button>
           <button class="news-coin-btn" onclick="filterSmartSignals('sell',this)">🔴 Vente</button>
           <button class="news-coin-btn" onclick="filterSmartSignals('high',this)">⭐ Score ≥ 70</button>
+        </div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+          <div style="font-size:.65rem;color:var(--muted);margin-bottom:6px">RECHERCHE CRYPTO</div>
+          <div style="display:flex;gap:4px">
+            <input id="smart-search-symbol" class="form-input" placeholder="BTC, ETH..." style="flex:1;font-size:.7rem;padding:6px 8px" oninput="searchSmartSignals(this.value)">
+            <button class="btn btn-primary" onclick="searchSmartSignals('')" style="padding:6px 8px;font-size:.7rem">✕</button>
+          </div>
         </div>
       </div>
     </div>
@@ -3499,6 +3506,25 @@ function renderCotConclusions(btcSig, ethSig, sp5Sig, goldSig) {
       <button class="btn btn-primary" onclick="addAlert()">CRÉER</button>
     </div>
   </div>
+
+  <!-- ═══ WATCHLIST ═══ -->
+  <div class="form-panel" style="border:1px solid rgba(212,175,55,.25);border-radius:12px;padding:16px;background:linear-gradient(135deg,rgba(212,175,55,.06),transparent);margin-bottom:20px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-family:var(--title);font-size:.85rem;color:var(--accent);letter-spacing:2px">👁️ MA WATCHLIST</div>
+      <button class="btn btn-outline" style="padding:4px 10px;font-size:.65rem" onclick="loadWatchlist()">🔄 Rafraîchir</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:flex-end">
+      <div style="flex:1;min-width:150px">
+        <label style="display:block;font-size:.65rem;color:var(--muted);margin-bottom:4px;letter-spacing:.5px">AJOUTER UNE CRYPTO</label>
+        <input class="form-input" id="w-symbol" placeholder="BTC, ETH, SOL..." style="width:100%;font-size:.8rem" onkeypress="if(event.key==='Enter') addToWatchlist()">
+      </div>
+      <button class="btn btn-primary" onclick="addToWatchlist()" style="padding:8px 16px;font-size:.7rem">+ AJOUTER</button>
+    </div>
+    <div id="watchlist-items" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px">
+      <div style="padding:8px;text-align:center;color:var(--muted);font-size:.7rem">Chargement...</div>
+    </div>
+  </div>
+
   <!-- Alertes actives -->
   <div style="font-family:var(--title);font-size:.72rem;color:var(--accent);letter-spacing:2px;padding:14px 0 6px">ALERTES ACTIVES</div>
   <div id="alerts-list"></div>
@@ -5377,7 +5403,7 @@ function showTab(name) {
     'lexique':          () => loadLexique(),
     'exchange_connect': () => {},
     'journal':          () => loadTrades(),
-    'alertes':          () => loadAlerts(),
+    'alertes':          () => { loadAlerts(); loadWatchlist(); },
     'portfolio':        () => loadPortfolio(),
     'news':             () => { loadNewsTab('all', null); initNewsCategories(); },
     'blacklist':        () => loadBlacklist(),
@@ -5812,6 +5838,70 @@ async function updateAlertBadge() {
     cnt.textContent = count;
   } catch(e) {}
 }
+
+// ── WATCHLIST MANAGEMENT ────────────────────────────────────────
+async function loadWatchlist() {
+  try {
+    const res = await fetch('/api/watchlist');
+    if (!res.ok) return;
+    const watchlist = await res.json();
+    const container = document.getElementById('watchlist-items');
+    if (!container) return;
+
+    if (watchlist.length === 0) {
+      container.innerHTML = '<div style="padding:8px;text-align:center;color:var(--muted);font-size:.7rem;grid-column:1/-1">Aucune crypto dans votre watchlist</div>';
+      return;
+    }
+
+    container.innerHTML = watchlist.map(w => {
+      const price = w.price ? '$'+parseFloat(w.price).toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—';
+      const chg = w.change_pct != null ? (w.change_pct > 0 ? '+' : '')+w.change_pct.toFixed(1)+'%' : '—';
+      const chgColor = w.change_pct > 0 ? 'var(--green)' : w.change_pct < 0 ? 'var(--red)' : 'var(--muted)';
+      const volDisplay = w.volume_usdt ? (w.volume_usdt >= 1000000 ? (w.volume_usdt/1000000).toFixed(1)+'M' : (w.volume_usdt/1000).toFixed(0)+'K') : '—';
+      return `
+        <div style="background:rgba(212,175,55,.1);border:1px solid rgba(212,175,55,.2);border-radius:8px;padding:10px;position:relative">
+          <div style="font-weight:700;color:var(--accent);font-size:.8rem;margin-bottom:4px">${w.symbol}</div>
+          <div style="font-size:.65rem;color:var(--muted);margin-bottom:6px">${price}</div>
+          <div style="font-size:.65rem;color:${chgColor};margin-bottom:4px">${chg}</div>
+          <div style="font-size:.6rem;color:var(--muted);margin-bottom:8px">Vol: ${volDisplay}</div>
+          <button class="btn" style="width:100%;padding:4px;font-size:.6rem;border-color:rgba(239,68,68,.4);color:var(--red)" onclick="removeFromWatchlist(${w.id})">✕ Supprimer</button>
+        </div>
+      `;
+    }).join('');
+  } catch(e) {
+    console.error('[Watchlist]', e);
+  }
+}
+
+async function addToWatchlist() {
+  const input = document.getElementById('w-symbol');
+  const sym = (input.value || '').trim().toUpperCase();
+  if (!sym) return;
+  try {
+    const res = await fetch('/api/watchlist', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({symbol:sym})});
+    if (res.ok) {
+      input.value = '';
+      loadWatchlist();
+    } else {
+      const e = await res.json();
+      alert('Erreur: '+(e.error || 'Impossible d\'ajouter la crypto'));
+    }
+  } catch(e) {
+    console.error('[AddWatchlist]', e);
+    alert('Erreur réseau');
+  }
+}
+
+async function removeFromWatchlist(wid) {
+  if (!confirm('Supprimer de la watchlist?')) return;
+  try {
+    await fetch('/api/watchlist/'+wid, {method:'DELETE'});
+    loadWatchlist();
+  } catch(e) {
+    console.error('[RemoveWatchlist]', e);
+  }
+}
+
 // ── RSI DISTRIBUTION CHART (Signaux) ─────────────────────────
 var _signalsRsiChart = null;
 function drawSignalsRSIChart(signals) {
@@ -8083,15 +8173,27 @@ function filterSmartSignals(filter, btn) {
   smartFilter = filter;
   document.querySelectorAll('#tab-smart .news-coin-btn').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
+  document.getElementById('smart-search-symbol').value = '';
+  renderSmartSignals(smartSignalsData);
+}
+
+function searchSmartSignals(searchTerm) {
+  window._smartSearchTerm = searchTerm.toUpperCase().trim();
   renderSmartSignals(smartSignalsData);
 }
 
 function renderSmartSignals(signals) {
-  // Filtrer
+  // Filtrer par direction
   let filtered = signals;
   if (smartFilter === 'buy')  filtered = signals.filter(s=>s.direction==='buy');
   if (smartFilter === 'sell') filtered = signals.filter(s=>s.direction==='sell');
   if (smartFilter === 'high') filtered = signals.filter(s=>s.score>=70);
+
+  // Filtrer par symbole (recherche)
+  const searchTerm = window._smartSearchTerm || '';
+  if (searchTerm) {
+    filtered = filtered.filter(s => s.symbol && s.symbol.toUpperCase().includes(searchTerm));
+  }
 
   // Stats
   const buys  = signals.filter(s=>s.direction==='buy').length;

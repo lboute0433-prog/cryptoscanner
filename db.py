@@ -833,6 +833,29 @@ def migrate_add_exchange_tables() -> bool:
     return success
 
 
+def migrate_add_watchlist_table():
+    """Create watchlist table for user coin tracking."""
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS watchlist (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                symbol TEXT NOT NULL,
+                added DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, symbol),
+                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        ''')
+        conn.commit()
+        print("[DB] Migration: Created watchlist table")
+    except Exception as e:
+        print(f"[DB] Error creating watchlist table: {e}")
+    finally:
+        conn.close()
+
+
 # ── Fonction pour charger les paramètres d'alerte ──────────────────────
 def load_admin_alert_settings() -> dict:
     """
