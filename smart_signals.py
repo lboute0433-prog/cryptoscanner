@@ -9,6 +9,8 @@ Détection intelligente basée sur :
 - Filtre anti-bruit (ignore les micro-mouvements)
 """
 
+from __future__ import annotations
+
 import requests
 from datetime import datetime
 
@@ -489,37 +491,55 @@ def update_rsi_history(symbol: str, rsi_value: float):
         _rsi_history[symbol].pop(0)
 
 
-def check_rsi_exit(symbol: str, current_rsi: float) -> dict | None:
+def check_rsi_exit(symbol: str, current_rsi: float, rsi_oversold: int = None, rsi_overbought: int = None) -> dict | None:
     """
-    Détecte si le RSI vient de sortir d'une zone extrême (surachat ou survente).
-    - Exit surachat : RSI était >= 70, maintenant < 70 → risque de retrace baissier
-    - Exit survente : RSI était <= 30, maintenant > 30 → rebond possible
-    Retourne un dict de signal ou None.
+    Detect RSI exit from extreme zones (overbought/oversold) using admin settings.
+
+    - Exit overbought: RSI was >= rsi_overbought (default 70), now < threshold → bearish retrace signal
+    - Exit oversold: RSI was <= rsi_oversold (default 30), now > threshold → bullish rebound signal
+
+    Args:
+        symbol: Trading symbol
+        current_rsi: Current RSI value
+        rsi_oversold: Admin setting for oversold threshold (loads from DB if None)
+        rsi_overbought: Admin setting for overbought threshold (loads from DB if None)
+
+    Returns:
+        Dict with signal info (direction, name, rsi values, action) or None if no exit detected
     """
+    # Load admin settings if not provided (for backward compatibility)
+    if rsi_oversold is None or rsi_overbought is None:
+        from scanner_engine import load_admin_alert_settings
+        settings = load_admin_alert_settings()
+        if rsi_oversold is None:
+            rsi_oversold = settings.get("rsi_oversold", RSI_OVERSOLD)
+        if rsi_overbought is None:
+            rsi_overbought = settings.get("rsi_overbought", RSI_OVERBOUGHT)
+
     hist = _rsi_history.get(symbol, [])
     if len(hist) < 1:
         return None
     prev_rsi = hist[-1]
 
-    # Exit zone surachat (signal prudence / sortie partielle)
-    if prev_rsi >= RSI_OVERBOUGHT and current_rsi < RSI_OVERBOUGHT:
+    # Exit overbought zone (prudence signal / potential retrace)
+    if prev_rsi >= rsi_overbought and current_rsi < rsi_overbought:
         return {
             "direction": "bearish",
             "name":      "⚠️ Sortie Zone Surachat",
             "rsi_prev":  prev_rsi,
             "rsi_now":   round(current_rsi, 1),
-            "desc":      f"RSI {prev_rsi} → {current_rsi:.1f} (quitte la zone > 70)",
+            "desc":      f"RSI {prev_rsi} → {current_rsi:.1f} (quitte la zone > {rsi_overbought})",
             "action":    "Prudence — retrace possible · envisager sortie partielle"
         }
 
-    # Exit zone survente (signal rebond possible)
-    if prev_rsi <= RSI_OVERSOLD and current_rsi > RSI_OVERSOLD:
+    # Exit oversold zone (potential rebound signal)
+    if prev_rsi <= rsi_oversold and current_rsi > rsi_oversold:
         return {
             "direction": "bullish",
             "name":      "🔔 Sortie Zone Survente",
             "rsi_prev":  prev_rsi,
             "rsi_now":   round(current_rsi, 1),
-            "desc":      f"RSI {prev_rsi} → {current_rsi:.1f} (repasse au-dessus de 30)",
+            "desc":      f"RSI {prev_rsi} → {current_rsi:.1f} (repasse au-dessus de {rsi_oversold})",
             "action":    "Rebond potentiel — surveiller confirmation volume"
         }
 

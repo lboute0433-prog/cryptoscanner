@@ -443,27 +443,59 @@ def _send_smart_alerts(signals):
 
 def _send_retrace_alert(symbol: str, rsi_exit: dict, coin: dict, candles_15m=None):
     """
-    Envoie une alerte Telegram de retournement RSI.
-    Dédup : 1 alerte par symbol + direction par heure.
-    candles_15m : données OHLCV pour enrichissements PAID (volume confirmation, SR proximity, volatility)
-    """
-    global _alerted_retraces
-    hour = datetime.now().strftime('%H')
-    key  = f"retrace_{symbol}_{rsi_exit['direction']}_{hour}"
+    Send RSI retrace alert using admin RETRACE RSI settings.
 
+    Uses admin-configured thresholds instead of hardcoded values:
+    - rsi_oversold: Trigger bullish alert when RSI crosses above this
+    - rsi_overbought: Trigger bearish alert when RSI crosses below this
+    - retrace_cooldown_hours: Cooldown between alerts for same symbol+direction
+
+    Args:
+        symbol: Trading symbol (e.g., "BTC")
+        rsi_exit: Dict with keys: direction, name, rsi_prev, rsi_now, desc, action
+        coin: Dict with price data (price, change_pct, volume_usdt)
+        candles_15m: Optional 15-min candles for enriched PAID alerts
+    """
+    global _last_alert_time
+
+    # Load admin settings
+    settings = load_admin_alert_settings()
+    rsi_oversold = settings.get("rsi_oversold", 30)
+    rsi_overbought = settings.get("rsi_overbought", 70)
+    cooldown_hours = settings.get("retrace_cooldown_hours", 1)
+    cooldown_seconds = cooldown_hours * 3600
+
+    # Build cooldown key: symbol_signaltype (e.g., "BTC_OVERSOLD", "BTC_OVERBOUGHT")
+    signal_type = "OVERBOUGHT" if rsi_exit["direction"] == "bearish" else "OVERSOLD"
+    cooldown_key = f"{symbol}_{signal_type}"
+
+    current_time = time.time()
+
+    # Check cooldown: prevent duplicate alerts within cooldown_seconds
     with _alert_lock:
-        if key in _alerted_retraces: return
-        _alerted_retraces.add(key)
-        if len(_alerted_retraces) > 300:
-            _alerted_retraces = set(list(_alerted_retraces)[-150:])
+        last_time = _last_alert_time.get(cooldown_key, 0)
+        time_since_last = current_time - last_time
+
+        if time_since_last < cooldown_seconds:
+            # Still within cooldown window, skip this alert
+            return
+
+        # Update timestamp for this symbol+signal_type
+        _last_alert_time[cooldown_key] = current_time
+
+        # Cleanup old entries to prevent unbounded growth
+        if len(_last_alert_time) > 500:
+            sorted_entries = sorted(_last_alert_time.items(), key=lambda x: x[1], reverse=True)
+            _last_alert_time.clear()  # Clear while locked
+            _last_alert_time.update(dict(sorted_entries[:200]))  # Update while locked
 
     price      = coin.get("price", 0)
     change_pct = coin.get("change_pct", 0)
     volume_usd = coin.get("volume_usdt", 0)
 
-    print(f"[Retrace] {symbol} — {rsi_exit['name']} RSI {rsi_exit['rsi_prev']}→{rsi_exit['rsi_now']}")
+    print(f"[Retrace] {symbol} — {rsi_exit['name']} RSI {rsi_exit['rsi_prev']}→{rsi_exit['rsi_now']} (RSI thresholds: oversold={rsi_oversold}, overbought={rsi_overbought})")
 
-    # Envoyer version FREE sur le canal public Telegram
+    # Send FREE version to public Telegram channel
     msg_free = build_retrace_alert(symbol, rsi_exit, price, change_pct, volume_usd, for_role="free", candles_15m=candles_15m)
     _tk = TELEGRAM_TOKEN
     _ch = TELEGRAM_CHAT
@@ -474,11 +506,21 @@ def _send_retrace_alert(symbol: str, rsi_exit: dict, coin: dict, candles_15m=Non
                 json={"chat_id": _ch, "text": msg_free, "parse_mode": "HTML"},
                 timeout=5
             )
-        except: pass
+        except (requests.RequestException, ValueError, TypeError) as e:
+            print(f"[Retrace] Failed to send FREE alert for {symbol}: {e}")
+        except Exception as e:
+            # Intentionally catch remaining exceptions to prevent one bad alert from breaking the loop
+            print(f"[Retrace] Unexpected error sending FREE alert for {symbol}: {e}")
 
-    # Envoyer version PAID aux membres payants (via dashboard websocket)
+    # Send PAID version to paid members via dashboard WebSocket
     msg_paid = build_retrace_alert(symbol, rsi_exit, price, change_pct, volume_usd, for_role="paid", candles_15m=candles_15m)
-    engine._broadcast_to_members(msg_paid, min_role="paid")
+    try:
+        engine._broadcast_to_members(msg_paid, min_role="paid")
+    except (AttributeError, KeyError, TypeError) as e:
+        print(f"[Retrace] Failed to broadcast PAID alert for {symbol}: {e}")
+    except Exception as e:
+        # Intentionally catch remaining exceptions to prevent one bad alert from breaking the loop
+        print(f"[Retrace] Unexpected error broadcasting PAID alert for {symbol}: {e}")
 
 
 # ── Boucles Background ───────────────────────────────────────

@@ -1533,3 +1533,129 @@ class ScannerEngine:
                     return {"api_key": row["api_key"], "api_secret": row["api_secret"]}
             except: pass
             return None
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ADMIN ALERT SETTINGS LOADER — Centralized Configuration Management
+# ══════════════════════════════════════════════════════════════════════════════
+
+def load_admin_alert_settings() -> dict:
+    """
+    Load all ADMIN alert configuration parameters from database.
+
+    This function centralizes the loading of all signal detection parameters
+    that are configured via the admin UI. It reads from the database using
+    the existing get_setting() function and provides sensible defaults.
+
+    Returns a dictionary with four configuration blocks:
+
+    1. SMART SIGNALS Block:
+        - score_min (int): Minimum composite score for signal (default: 85)
+        - variation_pump (float): Pump threshold percentage (default: 4.0)
+        - variation_dump (float): Dump threshold percentage (default: -4.0)
+        - vol_mult_min (float): Volume multiplier threshold (default: 5.0)
+        - criteria_min (int): Minimum criteria met for signal (default: 3)
+        - adr_min (float): Average Daily Range minimum % (default: 25)
+        - cooldown_hours (int): Hours before same pair can signal again (default: 1)
+        - max_per_cycle (int): Max signals per scan cycle (default: 3)
+
+    2. RETRACE RSI Block:
+        - rsi_oversold (int): RSI threshold for oversold (default: 30)
+        - rsi_overbought (int): RSI threshold for overbought (default: 70)
+        - retrace_cooldown_hours (int): Hours cooldown for RSI signals (default: 1)
+
+    3. MACRO EVENTS Block:
+        - macro_impact_filter (str): Impact level filter: 'low'|'medium'|'high' (default: 'high')
+        - macro_window_start_utc (int): Start hour UTC for macro events (default: 8)
+        - macro_window_end_utc (int): End hour UTC for macro events (default: 22)
+
+    4. PLATEFORME Block:
+        - pump_dump_threshold (float): Global pump/dump detection threshold (default: 1.0)
+        - scan_interval (int): Scan interval in minutes (default: 5)
+        - vol_spike_mult (float): Volume spike multiplier (default: 1.0)
+        - vol_min_24h (float): Minimum 24h volume in millions (default: 2)
+        - ema200_enabled (bool): Enable EMA200 filter (default: True)
+        - adx_min (int): Minimum ADX value (default: 8)
+        - fear_greed_limit (int): Fear & Greed index limit (default: -15)
+        - cache_size (int): Cache size for recent alerts (default: 20)
+
+    Raises:
+        None - All exceptions are caught and defaults are returned
+
+    Returns:
+        dict: Configuration dictionary with all parameters
+
+    Example:
+        >>> config = load_admin_alert_settings()
+        >>> score_min = config["score_min"]
+        >>> rsi_oversold = config["rsi_oversold"]
+        >>> ema_enabled = config["ema200_enabled"]
+    """
+
+    # Define all defaults
+    DEFAULTS = {
+        # SMART SIGNALS Block
+        "score_min": 85,
+        "variation_pump": 4.0,
+        "variation_dump": -4.0,
+        "vol_mult_min": 5.0,
+        "criteria_min": 3,
+        "adr_min": 25,
+        "cooldown_hours": 1,
+        "max_per_cycle": 3,
+
+        # RETRACE RSI Block
+        "rsi_oversold": 30,
+        "rsi_overbought": 70,
+        "retrace_cooldown_hours": 1,
+
+        # MACRO EVENTS Block
+        "macro_impact_filter": "high",
+        "macro_window_start_utc": 8,
+        "macro_window_end_utc": 22,
+
+        # PLATEFORME Block
+        "pump_dump_threshold": 1.0,
+        "scan_interval": 5,
+        "vol_spike_mult": 1.0,
+        "vol_min_24h": 2,
+        "vol_min_standard": 2,
+        "vol_min_small_cap": 0.5,
+        "vol_max_small_cap": 2,
+        "ema200_enabled": True,
+        "adx_min": 8,
+        "fear_greed_limit": -15,
+        "cache_size": 20
+    }
+
+    config = {}
+
+    for key, default_value in DEFAULTS.items():
+        try:
+            # Get the value from database
+            db_value = get_setting(key, "")
+
+            # If no value in DB, use default
+            if not db_value:
+                config[key] = default_value
+                continue
+
+            # Type conversion based on default value type
+            if isinstance(default_value, bool):
+                # Convert string to boolean
+                config[key] = db_value.lower() in ("true", "1", "yes")
+            elif isinstance(default_value, int):
+                # Convert to integer
+                config[key] = int(float(db_value))
+            elif isinstance(default_value, float):
+                # Convert to float
+                config[key] = float(db_value)
+            else:
+                # String value - use as-is
+                config[key] = str(db_value).lower()
+
+        except Exception as e:
+            # On any error (DB connection, type conversion), use default
+            config[key] = default_value
+
+    return config
