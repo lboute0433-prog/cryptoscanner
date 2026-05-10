@@ -197,7 +197,47 @@ _loop_settings = None
 _loop_settings_ts = None
 _settings_refresh_interval = 300  # Refresh every 5 minutes (300 seconds)
 
-def smart_signal_loop():
+def _scan_coins_at_level(coins, level_name, analyze_signals=True):
+    """Scan coins at a given market level (standard or small cap)"""
+    results = []
+    for coin in coins:
+        sym = coin["symbol"]
+        try:
+            candles = engine.fetch_candles(sym, "15m", 50)
+            if len(candles) < 25:
+                continue
+            closes = [c["c"] for c in candles]
+            rsi = calc_rsi(closes)
+
+            # Mise à jour historique RSI + détection retrace
+            if rsi is not None:
+                retrace = check_rsi_exit(sym, rsi)
+                if retrace:
+                    _send_retrace_alert(sym, retrace, coin, candles_15m=candles)
+                update_rsi_history(sym, rsi)
+
+            signal = {
+                "symbol": sym,
+                "level": level_name,
+                "rsi": rsi,
+                "timestamp": datetime.now()
+            }
+
+            if analyze_signals:
+                signal_analysis = analyze_coin_smart(sym, candles)
+                if signal_analysis:
+                    signal.update(signal_analysis)
+                    results.append(signal)
+            else:
+                results.append(signal)
+
+        except (KeyError, ValueError, TypeError, Exception) as e:
+            print(f"Error analyzing {sym}: {e}")
+            continue
+
+    return results
+
+def smart_signal_loop() -> None:
     """
     Main signal scanning loop that detects smart signals on crypto coins.
 
@@ -213,7 +253,8 @@ def smart_signal_loop():
 
     Uses thread-safe locks for cache and signal deduplication.
     """
-    global _smart_signals_cache, _smart_signals_ts, _loop_settings, _loop_settings_ts
+    global _smart_signals_cache, _smart_signals_ts
+    global _loop_settings, _loop_settings_ts
 
     while True:
         try:
@@ -235,6 +276,7 @@ def smart_signal_loop():
                             'cache_size': 20,
                             'scan_interval': 5
                         }
+                    _loop_settings_ts = now  # Add this line to prevent rapid retries
 
             settings = _loop_settings or {}
 
@@ -258,41 +300,21 @@ def smart_signal_loop():
             small_caps = [c for c in coins
                           if vol_min_small_cap <= c.get("volume_usdt", 0) <= vol_max_small_cap][:30]
 
-            results = []
-
             # ── Scan standard ─────────────────────────────────────────────────
-            for coin in standard_coins:
-                sym = coin["symbol"]
-                try:
-                    candles = engine.fetch_candles(sym, "15m", 50)
-                    if len(candles) < 25: continue
-                    closes = [c["c"] for c in candles]
-                    rsi    = calc_rsi(closes)
-                    # Mise à jour historique RSI + détection retrace
-                    if rsi is not None:
-                        retrace = check_rsi_exit(sym, rsi)
-                        if retrace:
-                            _send_retrace_alert(sym, retrace, coin, candles_15m=candles)
-                        update_rsi_history(sym, rsi)
-                    # Signal standard
-                    signal = analyze_coin_smart(sym, candles)
-                    if signal: results.append(signal)
-                except: continue
+            standard_results = _scan_coins_at_level(
+                standard_coins,
+                "standard",
+                analyze_signals=True
+            )
 
             # ── Scan small caps (RSI retrace uniquement) ──────────────────────
-            for coin in small_caps:
-                sym = coin["symbol"]
-                try:
-                    candles = engine.fetch_candles(sym, "15m", 50)
-                    if len(candles) < 25: continue
-                    closes = [c["c"] for c in candles]
-                    rsi    = calc_rsi(closes)
-                    if rsi is not None:
-                        retrace = check_rsi_exit(sym, rsi)
-                        if retrace:
-                            _send_retrace_alert(sym, retrace, coin, candles_15m=candles)
-                        update_rsi_history(sym, rsi)
-                except: continue
+            small_cap_results = _scan_coins_at_level(
+                small_caps,
+                "small_caps",
+                analyze_signals=False
+            )
+
+            results = standard_results + small_cap_results
 
             # ── Sort and cache with configurable limit ────────────────────────
             results.sort(key=lambda x: x["score"], reverse=True)
