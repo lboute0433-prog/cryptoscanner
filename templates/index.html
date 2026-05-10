@@ -1716,6 +1716,27 @@ window.hideKpiSkeleton = function() {
     </div>
   </div>
 
+  <!-- ═══ ANALYSE RAPIDE CRYPTO ═══ -->
+  <div style="background:linear-gradient(135deg,rgba(16,185,129,.12),rgba(0,229,255,.08));border:1px solid rgba(16,185,129,.3);border-radius:12px;padding:16px;margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div style="font-family:var(--title);font-size:.85rem;color:var(--accent);letter-spacing:2px">⚡ ANALYSE RAPIDE CRYPTO</div>
+      <div style="font-size:.65rem;color:var(--muted)">Analyse instantanée PUMP/DUMP/NEUTRE basée sur les données locales</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+      <div style="flex:1;min-width:140px">
+        <label style="display:block;font-size:.65rem;color:var(--muted);margin-bottom:4px;letter-spacing:.5px">SYMBOLE</label>
+        <input id="quick-analysis-symbol" class="form-input" placeholder="BTC, ETH, SOL..." style="width:100%;font-size:.75rem" onkeypress="if(event.key==='Enter') runQuickAnalysis()">
+      </div>
+      <button class="btn btn-primary" onclick="runQuickAnalysis()" style="padding:8px 16px;font-size:.7rem">🔍 ANALYSER</button>
+      <button class="btn btn-outline" style="padding:8px 12px;font-size:.7rem" onclick="toggleQuickAnalysisPanel()">📊 Afficher</button>
+    </div>
+    <div id="quick-analysis-result" style="margin-top:12px;display:none;padding:12px;background:rgba(0,0,0,.3);border-radius:8px;border-left:3px solid var(--accent)">
+      <div id="quick-analysis-content" style="font-size:.75rem;line-height:1.8">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
   <!-- Stats -->
   <div class="stats-grid" style="margin-bottom:16px">
     <div class="stat-card green"><div class="val" id="ss-buy">—</div><div class="lbl">SIGNAUX ACHAT</div></div>
@@ -8070,6 +8091,129 @@ async function loginUser() {
 
 async function logoutUser() {
   await fetch('/api/auth/logout',{method:'POST'}); showLoggedOut(); loadPortfolio();
+}
+
+// ── QUICK ANALYSIS (ANALYSE RAPIDE) ──────────────────────────
+async function runQuickAnalysis() {
+  const sym = (document.getElementById('quick-analysis-symbol').value || '').trim().toUpperCase();
+  if (!sym) {
+    alert('Entrez un symbole crypto');
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/coin/${sym}/quick-analysis`);
+    if (!res.ok) {
+      const err = await res.json();
+      document.getElementById('quick-analysis-content').innerHTML =
+        `<div style="color:var(--red)">❌ ${err.error || 'Crypto non trouvée ou données indisponibles'}</div>`;
+      document.getElementById('quick-analysis-result').style.display = 'block';
+      return;
+    }
+
+    const analysis = await res.json();
+    displayQuickAnalysisResult(analysis);
+    document.getElementById('quick-analysis-result').style.display = 'block';
+  } catch(e) {
+    document.getElementById('quick-analysis-content').innerHTML =
+      `<div style="color:var(--red)">❌ Erreur: ${e.message}</div>`;
+    document.getElementById('quick-analysis-result').style.display = 'block';
+  }
+}
+
+function displayQuickAnalysisResult(analysis) {
+  const sym = analysis.symbol || '?';
+  const verdict = analysis.verdict || 'NEUTRE';
+  const verdictColor = verdict === 'PUMP' ? 'var(--green)' : verdict === 'DUMP' ? 'var(--red)' : 'var(--yellow)';
+  const verdictEmoji = verdict === 'PUMP' ? '📈' : verdict === 'DUMP' ? '📉' : '⏸️';
+
+  const rsi = analysis.rsi || 0;
+  const rsiStatus = rsi < 30 ? '🟢 SURVENTE' : rsi > 70 ? '🔴 SURACHAT' : '⚪ NEUTRE';
+  const rsiColor = rsi < 30 ? 'var(--green)' : rsi > 70 ? 'var(--red)' : 'var(--muted)';
+
+  const vol = analysis.volume_pct_change || 0;
+  const volStatus = vol > 50 ? '📊 Volume ×'+((vol/100)+1).toFixed(1) : vol > 0 ? '📈 +'+vol.toFixed(1)+'%' : '—';
+
+  const score = analysis.score || 0;
+  const scoreColor = score >= 70 ? 'var(--green)' : score >= 50 ? 'var(--yellow)' : 'var(--red)';
+
+  const price = analysis.price || 0;
+  const change = analysis.change_24h || 0;
+  const changeColor = change >= 0 ? 'var(--green)' : 'var(--red)';
+  const changeStr = (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
+
+  const patterns = analysis.patterns || [];
+  const criteria = analysis.criteria || [];
+
+  document.getElementById('quick-analysis-content').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <!-- Verdict -->
+      <div style="background:rgba(212,175,55,.1);padding:10px;border-radius:6px;border-left:3px solid ${verdictColor}">
+        <div style="font-size:.65rem;color:var(--muted);margin-bottom:4px">ANALYSE</div>
+        <div style="font-size:1.1rem;font-weight:700;color:${verdictColor}">${verdictEmoji} ${verdict}</div>
+        <div style="font-size:.65rem;color:var(--muted);margin-top:4px">Score: <span style="color:${scoreColor};font-weight:600">${score}/100</span></div>
+      </div>
+
+      <!-- Price Info -->
+      <div style="background:rgba(16,185,129,.1);padding:10px;border-radius:6px;border-left:3px solid var(--accent)">
+        <div style="font-size:.65rem;color:var(--muted);margin-bottom:4px">${sym}</div>
+        <div style="font-size:.9rem;color:var(--text);margin-bottom:2px"><b>$${price.toFixed(price >= 1 ? 2 : 6)}</b></div>
+        <div style="font-size:.7rem;color:${changeColor};font-weight:600">${changeStr} 24h</div>
+      </div>
+    </div>
+
+    <!-- Technical Indicators -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <div style="background:rgba(26,48,80,.4);padding:8px;border-radius:6px;border:1px solid rgba(0,229,255,.2)">
+        <div style="font-size:.65rem;color:var(--muted);margin-bottom:4px">RSI (Relative Strength)</div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="font-size:.85rem;font-weight:600;color:var(--text)">${rsi.toFixed(1)}</div>
+          <div style="font-size:.65rem;color:${rsiColor}">${rsiStatus}</div>
+        </div>
+        <div style="background:rgba(0,0,0,.3);height:3px;border-radius:2px;margin-top:4px;overflow:hidden">
+          <div style="width:${rsi}%;height:100%;background:linear-gradient(90deg,var(--red),var(--yellow),var(--green))"></div>
+        </div>
+      </div>
+
+      <div style="background:rgba(26,48,80,.4);padding:8px;border-radius:6px;border:1px solid rgba(0,229,255,.2)">
+        <div style="font-size:.65rem;color:var(--muted);margin-bottom:4px">VOLUME 24H</div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="font-size:.75rem;font-weight:600;color:var(--text)">$${(analysis.volume_usdt || 0).toLocaleString('fr-FR', {notation:'compact',maximumFractionDigits:1})}</div>
+          <div style="font-size:.65rem">${volStatus}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detected Criteria -->
+    ${criteria.length > 0 ? `
+    <div style="background:rgba(26,48,80,.4);padding:8px;border-radius:6px;border:1px solid rgba(0,229,255,.2)">
+      <div style="font-size:.65rem;color:var(--muted);margin-bottom:6px">CRITÈRES DÉTECTÉS</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        ${criteria.map(c => `<span style="background:rgba(0,229,255,.15);color:var(--accent);padding:2px 6px;border-radius:3px;font-size:.65rem">${c}</span>`).join('')}
+      </div>
+    </div>
+    ` : ''}
+
+    <!-- Patterns -->
+    ${patterns.length > 0 ? `
+    <div style="background:rgba(26,48,80,.4);padding:8px;border-radius:6px;border:1px solid rgba(0,229,255,.2);margin-top:8px">
+      <div style="font-size:.65rem;color:var(--muted);margin-bottom:6px">PATTERNS BOUGIES</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        ${patterns.map(p => `<span style="background:rgba(212,175,55,.15);color:var(--yellow);padding:2px 6px;border-radius:3px;font-size:.65rem">${p}</span>`).join('')}
+      </div>
+    </div>
+    ` : ''}
+
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(0,229,255,.1);display:flex;gap:8px">
+      <a href="https://fr.tradingview.com/chart/?symbol=BINANCE:${sym}USDT" target="_blank" class="btn" style="flex:1;text-align:center;padding:6px;font-size:.7rem;border-color:rgba(0,229,255,.3);color:var(--accent)">📊 TradingView</a>
+      <button class="btn" style="flex:1;padding:6px;font-size:.7rem" onclick="loadSmartSignals()">🔄 Signaux</button>
+    </div>
+  `;
+}
+
+function toggleQuickAnalysisPanel() {
+  const result = document.getElementById('quick-analysis-result');
+  if (result) result.style.display = result.style.display === 'none' ? 'block' : 'none';
 }
 
 // ── SMART SIGNALS V10 ────────────────────────────────────────

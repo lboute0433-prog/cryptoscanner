@@ -1575,6 +1575,84 @@ def api_smart_signals_history():
         return jsonify({"ok": False, "history": [], "error": str(e)})
 
 
+@app.route("/api/coin/<symbol>/quick-analysis")
+def api_quick_analysis(symbol):
+    """Quick crypto analysis endpoint - PUMP/DUMP/NEUTRE based on local scanner data."""
+    symbol = symbol.upper().strip()
+    try:
+        # Get all coins from cache
+        coins = engine._last_data.get("coins", [])
+        coin_data = next((c for c in coins if c.get("symbol") == symbol), None)
+
+        if not coin_data:
+            return jsonify({"error": f"Crypto {symbol} non trouvée"}), 404
+
+        # Calculate RSI from candles
+        from smart_signals import calc_rsi
+        candles = engine._last_data.get("candles", {}).get(symbol, [])
+        rsi_val = calc_rsi(candles) if candles else 50
+
+        # Get current price and change
+        price = float(coin_data.get("price", 0))
+        change_24h = float(coin_data.get("change_pct", 0))
+        volume = float(coin_data.get("volume_usdt", 0))
+        vol_change = 0
+
+        # Analyze patterns and criteria
+        criteria = []
+        patterns = []
+        score = 50  # Base score
+
+        # RSI analysis
+        if rsi_val < 30:
+            criteria.append("RSI Survente")
+            score += 15
+        elif rsi_val > 70:
+            criteria.append("RSI Surachat")
+            score -= 10
+
+        # Volume analysis - check if high
+        if volume > 10000000:  # Threshold for "normal" volume
+            criteria.append("Volume Élevé")
+            score += 5
+
+        # Price change analysis
+        if change_24h > 3:
+            criteria.append("Hausse Notable +3%")
+            score += 10
+        elif change_24h < -3:
+            criteria.append("Baisse Notable -3%")
+            score -= 10
+
+        # Determine final verdict based on score and trend
+        if score >= 70 and change_24h > 0:
+            verdict = "PUMP"
+        elif score <= 40 and change_24h < 0:
+            verdict = "DUMP"
+        else:
+            verdict = "NEUTRE"
+
+        # Cap score at 100
+        score = min(100, max(0, score))
+
+        return jsonify({
+            "symbol": symbol,
+            "verdict": verdict,
+            "score": int(score),
+            "price": price,
+            "change_24h": round(change_24h, 2),
+            "volume_usdt": round(volume, 0),
+            "volume_pct_change": round(vol_change, 2),
+            "rsi": round(rsi_val, 1),
+            "criteria": criteria,
+            "patterns": patterns,
+            "timestamp": datetime.now().isoformat()
+        })
+    except Exception as e:
+        print(f"[QuickAnalysis] Erreur {symbol}: {e}")
+        return jsonify({"error": f"Erreur d'analyse: {str(e)}"}), 500
+
+
 @app.route("/api/candles/<symbol>")
 def get_candles(symbol):
     interval = request.args.get("interval", "1h")
