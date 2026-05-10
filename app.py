@@ -15,7 +15,7 @@ import threading, time, os, sys, sqlite3
 from db import (
     get_connection, migrate_add_subscription_tier, migrate_add_platform_settings,
     get_setting, set_setting, toggle_user_exchange_setting, get_user_enabled_exchanges,
-    migrate_add_exchange_tables
+    migrate_add_exchange_tables, load_admin_alert_settings
 )
 import requests as req
 import smtplib
@@ -1525,8 +1525,11 @@ def api_smart_signals():
             role = requested_role
 
         # Load admin settings for score filtering
+        print(f"[DEBUG /api/smart_signals] Loading admin settings...")
         settings = load_admin_alert_settings()
+        print(f"[DEBUG /api/smart_signals] Settings loaded: {settings}")
         score_min = settings.get("smart_signals", {}).get("score_min", 85)
+        print(f"[DEBUG /api/smart_signals] score_min = {score_min}")
 
         # Filter signals
         filtered_signals = []
