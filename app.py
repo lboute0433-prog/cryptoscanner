@@ -1529,7 +1529,7 @@ def api_smart_signals():
         print(f"[DEBUG /api/smart_signals] Loading admin settings...")
         settings = load_admin_alert_settings()
         print(f"[DEBUG /api/smart_signals] Settings loaded: {settings}")
-        score_min = settings.get("smart_signals", {}).get("score_min", 85)
+        score_min = settings.get("score_min", 85)
         print(f"[DEBUG /api/smart_signals] score_min = {score_min}")
 
         # Filter signals
