@@ -15,7 +15,7 @@ import threading, time, os, sys, sqlite3
 from db import (
     get_connection, migrate_add_subscription_tier, migrate_add_platform_settings,
     get_setting, set_setting, toggle_user_exchange_setting, get_user_enabled_exchanges,
-    migrate_add_exchange_tables, load_admin_alert_settings
+    migrate_add_exchange_tables, load_admin_alert_settings, init_alert_settings
 )
 import requests as req
 import smtplib
@@ -156,6 +156,7 @@ init_backtest_db()
 init_indices_db()
 migrate_add_subscription_tier()
 migrate_add_platform_settings()
+init_alert_settings()
 migrate_add_exchange_tables()
 
 try:

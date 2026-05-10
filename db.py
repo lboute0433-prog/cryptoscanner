@@ -831,3 +831,115 @@ def migrate_add_exchange_tables() -> bool:
         print("[DB] Exchange tables migration completed successfully")
 
     return success
+
+
+# ── Fonction pour charger les paramètres d'alerte ──────────────────────
+def load_admin_alert_settings() -> dict:
+    """
+    Charge les paramètres d'alerte depuis la table platform_settings.
+    Retourne un dictionnaire avec la structure attendue par le code.
+
+    Structure retournée:
+    {
+        'smart_signals': {'score_min': 85, 'max_per_cycle': 3, ...},
+        'retrace_rsi': {'rsi_oversold': 30, 'rsi_overbought': 70, ...},
+        'macro_events': {...}
+    }
+    """
+    import json
+
+    conn = get_connection()
+    cur = conn.cursor()
+
+    try:
+        # Charger tous les paramètres depuis platform_settings
+        cur.execute('SELECT key, value FROM platform_settings')
+        rows = cur.fetchall()
+
+        settings = {}
+        for key, value in rows:
+            try:
+                # Essayer de parser comme JSON
+                settings[key] = json.loads(value)
+            except (json.JSONDecodeError, TypeError):
+                # Si ce n'est pas du JSON, garder comme string
+                settings[key] = value
+
+        # Retourner les paramètres avec les valeurs par défaut si manquantes
+        return {
+            'smart_signals': settings.get('smart_signals', {
+                'score_min': 85,
+                'max_per_cycle': 3,
+                'cooldown_hours': 24
+            }),
+            'retrace_rsi': settings.get('retrace_rsi', {
+                'rsi_oversold': 30,
+                'rsi_overbought': 70,
+                'cooldown_hours': 12
+            }),
+            'macro_events': settings.get('macro_events', {
+                'importance': 'moyen',
+                'enabled': True,
+                'cooldown_hours': 6
+            })
+        }
+    except Exception as e:
+        print(f"[DB] Erreur chargement settings: {e}")
+        # Retourner les valeurs par défaut en cas d'erreur
+        return {
+            'smart_signals': {'score_min': 85, 'max_per_cycle': 3, 'cooldown_hours': 24},
+            'retrace_rsi': {'rsi_oversold': 30, 'rsi_overbought': 70, 'cooldown_hours': 12},
+            'macro_events': {'importance': 'moyen', 'enabled': True, 'cooldown_hours': 6}
+        }
+    finally:
+        conn.close()
+
+
+def init_alert_settings():
+    """Initialize JSON-formatted alert settings if they don't exist in the database."""
+    import json
+
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        # Check if alert settings already exist
+        cur.execute("SELECT COUNT(*) FROM platform_settings WHERE key IN ('smart_signals', 'retrace_rsi', 'macro_events')")
+        count = cur.fetchone()[0]
+
+        if count >= 3:
+            # Settings already initialized
+            return
+
+        # Define the alert configuration structure
+        smart_signals = {
+            'score_min': 50,
+            'max_per_cycle': 3,
+            'cooldown_hours': 24
+        }
+
+        retrace_rsi = {
+            'rsi_oversold': 30,
+            'rsi_overbought': 70,
+            'cooldown_hours': 12
+        }
+
+        macro_events = {
+            'importance': 'moyen',
+            'enabled': True,
+            'cooldown_hours': 6
+        }
+
+        # Insert or replace these settings
+        cur.execute("INSERT OR REPLACE INTO platform_settings (key, value) VALUES (?, ?)",
+                    ('smart_signals', json.dumps(smart_signals)))
+        cur.execute("INSERT OR REPLACE INTO platform_settings (key, value) VALUES (?, ?)",
+                    ('retrace_rsi', json.dumps(retrace_rsi)))
+        cur.execute("INSERT OR REPLACE INTO platform_settings (key, value) VALUES (?, ?)",
+                    ('macro_events', json.dumps(macro_events)))
+
+        conn.commit()
+        print("[DB] Alert settings initialized: smart_signals, retrace_rsi, macro_events")
+    except Exception as e:
+        print(f"[DB] Error initializing alert settings: {e}")
+    finally:
+        conn.close()
