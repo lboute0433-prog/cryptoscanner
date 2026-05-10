@@ -229,9 +229,11 @@ def smart_signal_loop():
                     # Fall back to defaults if loading fails
                     if _loop_settings is None:
                         _loop_settings = {
-                            'vol_min_24h': 2_000_000,
+                            'vol_min_standard': 2,
+                            'vol_min_small_cap': 0.5,
+                            'vol_max_small_cap': 2,
                             'cache_size': 20,
-                            'scan_interval': 120
+                            'scan_interval': 5
                         }
 
             settings = _loop_settings or {}
