@@ -887,21 +887,20 @@ def require_tier(minimum_tier):
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
-            from security import get_session
-            user = get_session()
+            # Get session from request (avoid circular import)
+            from flask import request, jsonify
+            from scanner_engine import engine
+
+            token = request.cookies.get("cs_token") or request.headers.get("X-Session-Token")
+            user = engine.validate_session(token) if token else None
+
             if not user:
-                try:
-                    from flask import jsonify
-                    return jsonify({'error': 'Not authenticated'}), 401
-                except Exception:
-                    return {'error': 'Not authenticated'}, 401
+                return jsonify({'error': 'Not authenticated'}), 401
+
             user_tier = get_user_tier(user['id'])
             if TIER_LEVELS.get(user_tier, 0) < TIER_LEVELS.get(minimum_tier, 0):
-                try:
-                    from flask import jsonify
-                    return jsonify({'error': f'Minimum tier required: {minimum_tier}'}), 403
-                except Exception:
-                    return {'error': f'Minimum tier required: {minimum_tier}'}, 403
+                return jsonify({'error': f'Minimum tier required: {minimum_tier}'}), 403
+
             return f(*args, **kwargs)
         return wrapper
     return decorator
