@@ -1030,6 +1030,17 @@ tbody tr { transition:background .15s ease; }
   .stat-card .val { font-size:.9rem; }
   .mobile-nav-btn { font-size:.43rem; min-width:38px; }
 }
+/* Force mobile menu on iOS Firefox and other mobile devices */
+@media (max-device-width:812px) and (orientation:portrait) {
+  nav { display:none !important; }
+  .mobile-nav { display:block !important; }
+  body { padding-bottom:68px !important; }
+}
+@media (max-device-width:1024px) and (orientation:landscape) {
+  nav { display:none !important; }
+  .mobile-nav { display:block !important; }
+  body { padding-bottom:68px !important; }
+}
 
 
 /* ── TOAST SYSTEM ────────────────────────────── */
