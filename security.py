@@ -29,6 +29,11 @@ try:
 except Exception:
     request = None
 
+try:
+    from db import get_connection
+except Exception:
+    get_connection = None
+
 from db import get_connection  # noqa: E402
 
 # ── Dépendances optionnelles avec fallbacks ───────────────────
@@ -897,7 +902,7 @@ def require_tier(minimum_tier):
                 return jsonify({'error': 'Not authenticated', 'ok': False}), 401
 
             # Validate session using local database query to avoid circular import
-            conn = connect_sqlite()
+            conn = get_connection()
             try:
                 sess = conn.execute(
                     "SELECT id, user_id, created_at FROM sessions WHERE token = ?",
