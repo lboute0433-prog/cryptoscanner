@@ -73,6 +73,7 @@ from smart_signals import (
     update_rsi_history, check_rsi_exit, build_retrace_alert,
     calc_rsi,
 )
+from rsi_engine import build_rsi_heatmap_data, init_rsi_db, clear_rsi_cache
 from lexique import get_all_terms, get_term, get_by_category, search_terms
 from lexique import get_categories as get_lexique_categories
 from backtest_engine import (
@@ -667,6 +668,12 @@ def start_runtime_services():
             _start_background_tasks()
         else:
             print("[Startup] Taches de fond desactivees (RUN_BACKGROUND_JOBS=false)")
+
+        # Initialize RSI engine
+        try:
+            init_rsi_db()
+        except Exception as e:
+            print(f"[Init] RSI engine init error: {e}")
 
 # ── Auth Helpers ──────────────────────────────────────────────
 def get_session():
@@ -3464,6 +3471,41 @@ try:
 
 except ImportError:
     print("[Heatmap] Warning: heatmap_engine not available")
+
+# ──────────────────────────────────────────────────────────────
+# RSI HEATMAP API ENDPOINTS
+# ──────────────────────────────────────────────────────────────
+
+@app.route("/api/heatmap/rsi")
+@require_tier('member')
+def api_heatmap_rsi():
+    """Get RSI heatmap for top 50 coins. GET params: ?timeframe=1w|1m"""
+    timeframe = request.args.get('timeframe', '1w')
+    if timeframe not in ['1w', '1m']:
+        return jsonify({'error': 'Invalid timeframe'}), 400
+
+    try:
+        data = build_rsi_heatmap_data(timeframe=timeframe)
+        return jsonify({
+            'success': True,
+            'data': data,
+            'timeframe': timeframe,
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        print(f"[API] /api/heatmap/rsi error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route("/api/heatmap/rsi/refresh", methods=['POST'])
+@require_tier('member')
+def api_heatmap_rsi_refresh():
+    """Force refresh RSI cache"""
+    try:
+        clear_rsi_cache()
+        return jsonify({'success': True, 'message': 'RSI cache cleared'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 # ══════════════════════════════════════════════════════════════
 # LANCER LES THREADS DE FOND AU DÉMARRAGE DU MODULE
