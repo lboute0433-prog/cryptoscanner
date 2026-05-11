@@ -14942,6 +14942,13 @@ function updateScatterPlotFilter() {
 }
 
 function renderScatterPlot(data) {
+  // Wait for Plotly to be available
+  if (typeof Plotly === 'undefined') {
+    console.error('[Scatter] Plotly not loaded yet, retrying...');
+    setTimeout(() => renderScatterPlot(data), 500);
+    return;
+  }
+
   // Get active filters
   const filters = {
     overbought: document.getElementById('filter-overbought').checked,
