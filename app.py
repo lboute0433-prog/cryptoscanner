@@ -3527,7 +3527,7 @@ def api_heatmap_rsi_refresh():
 
 
 @app.route("/api/heatmap/scatter")
-@require_tier('member')
+@require_tier('free')
 def api_heatmap_scatter():
     """Get RSI scatter plot data (1W vs 1M for all coins)"""
     try:
@@ -3547,6 +3547,14 @@ def api_heatmap_scatter():
 # Cet appel s'exécute APRÈS que toutes les fonctions soient définies
 # mais AVANT le if __name__ block, garantissant que sur Gunicorn,
 # les threads (scan_loop, macro_loop, smart_signal_loop) se lancent
+try:
+    # Initialize database tables FIRST
+    from scanner_engine import init_db
+    init_db()
+    print("[Init] Database initialized ✓")
+except Exception as e:
+    print(f"[Init] Database init error: {e}")
+
 try:
     start_runtime_services()
     print("[Init] Background services lancés ✓")
