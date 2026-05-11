@@ -243,13 +243,14 @@ def build_rsi_heatmap_data(timeframe='1w'):
 def build_scatter_plot_data():
     """
     Build data for scatter plot: RSI 1W vs RSI 1M for all coins.
-    Uses cached data from build_rsi_heatmap_data calls.
+    Uses ONLY cached data - no API calls (fast path only).
 
     Returns:
         [
             {'symbol': 'BTC', 'rsi_1w': 65.2, 'rsi_1m': 58.5, 'zone': 'overbought'},
             ...
         ]
+        or [] if cache is empty
     """
     cache_key = "rsi_scatter_plot"
     cached = cache.get(cache_key)
@@ -259,15 +260,14 @@ def build_scatter_plot_data():
 
     print("[RSI] Building scatter plot from cached RSI data...")
 
-    # Get RSI 1W and 1M from cache (fast path)
+    # Get RSI 1W and 1M from cache ONLY (no API calls)
     rsi_1w_data = cache.get("rsi_heatmap_1w")
     rsi_1m_data = cache.get("rsi_heatmap_1m")
 
-    # If not in cache, build it quickly (max 10 coins for speed)
-    if not rsi_1w_data:
-        rsi_1w_data = build_rsi_heatmap_data('1w')
-    if not rsi_1m_data:
-        rsi_1m_data = build_rsi_heatmap_data('1m')
+    # If cache is empty, return empty result (data will be populated by next heatmap call)
+    if not rsi_1w_data or not rsi_1m_data:
+        print("[RSI] Heatmap data not yet cached - returning empty scatter plot")
+        return []
 
     # Map data by symbol
     rsi_1w_map = {c['symbol']: c.get('rsi_1w') for c in rsi_1w_data}

@@ -642,6 +642,22 @@ _background_tasks_started = False
 _background_tasks_lock = threading.Lock()
 
 
+def rsi_heatmap_warmer():
+    """Background task: Warm RSI heatmap cache every 4 minutes"""
+    print("[RSI] Heatmap warmer started")
+    time.sleep(5)  # Wait for app to settle
+    while True:
+        try:
+            print("[RSI] Warming cache...")
+            build_rsi_heatmap_data('1w')
+            build_rsi_heatmap_data('1m')
+            print("[RSI] Cache warmed ✓")
+        except Exception as e:
+            print(f"[RSI] Warmer error: {e}")
+
+        time.sleep(240)  # Warm cache every 4 minutes
+
+
 def _start_background_tasks():
     if IS_RAILWAY:
         print("[Startup] Railway - lancement des taches de fond")
@@ -649,12 +665,14 @@ def _start_background_tasks():
         socketio.start_background_task(macro_loop)
         socketio.start_background_task(smart_signal_loop)
         socketio.start_background_task(_init_market_info)
+        socketio.start_background_task(rsi_heatmap_warmer)
     else:
         print("[Startup] Local - lancement des threads de fond")
         threading.Thread(target=scan_loop, daemon=True, name="scan_loop").start()
         threading.Thread(target=macro_loop, daemon=True, name="macro_loop").start()
         threading.Thread(target=smart_signal_loop, daemon=True, name="smart_signal_loop").start()
         threading.Thread(target=_init_market_info, daemon=True, name="init_market_info").start()
+        threading.Thread(target=rsi_heatmap_warmer, daemon=True, name="rsi_heatmap_warmer").start()
 
 
 def start_runtime_services():
