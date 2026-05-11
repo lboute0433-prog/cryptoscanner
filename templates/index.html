@@ -5486,6 +5486,30 @@ setTimeout(() => {
   }
 }, 5000);
 
+// ── TAB ACCESS RULES ──────────────────────────────────────────
+const TAB_ACCESS_RULES = {
+  watchlist:       'member',
+  portfolio:       'member',
+  journal:         'member',
+  alertes:         'member',
+  exchange_connect:'member',
+  whales:          'member',
+  forex:           'member',
+  indices:         'member',
+  mood:            'member',
+  institutional_flows: 'member',
+  smart:           'paid',
+  cot:             'paid',
+  cvd:             'paid',
+  ai:              'paid',
+  backtest:        'paid',
+  multiex:         'paid',
+  investor:        'paid',
+  brief_vip:       'vip',
+  setups:          'vip',
+  blacklist:       'admin',
+};
+
 // ── TABS ──────────────────────────────────────────────────────
 function showTab(name) {
   _pendingTab = null; // Effacer le stub
@@ -8193,31 +8217,6 @@ const ACCESS_ROLE_ORDER = {
   admin: 4,
   banned: -1
 };
-const TAB_ACCESS_RULES = {
-  // ── Visitor (libre) ── dashboard, market, signals, heatmap, news, macro, calculator, lexique, settings
-  // ── Member ───────────────────────────────────────────────────────────────────
-  watchlist:       'member',
-  portfolio:       'member',
-  journal:         'member',
-  alertes:         'member',
-  exchange_connect:'member',
-  whales:          'member',   // alertes institutionnelles
-  forex:           'member',   // taux forex live
-  indices:         'member',   // indices globaux
-  mood:            'member',   // market mood
-  institutional_flows: 'member', // liquidations + funding rates
-  // ── Paid ─────────────────────────────────────────────────────────────────────
-  smart:           'paid',     // Smart Signals avancés (avantage compétitif)
-  cot:             'paid',     // COT CFTC institutionnel
-  cvd:             'paid',     // CVD Flow order book
-  ai:              'paid',     // IA Analyste personnalisée
-  backtest:        'paid',     // Backtesting stratégies
-  multiex:         'paid',     // Multi-exchange comparaison
-  investor:        'paid',     // Analyse investisseur complète
-  // ── Admin ────────────────────────────────────────────────────────────────────
-  blacklist:       'admin',    // Gestion blacklist coins
-};
-
 // ══════════════════════════════════════════════════════════════
 // TIER ACCESS INITIALIZATION — Called on page load
 // ══════════════════════════════════════════════════════════════
