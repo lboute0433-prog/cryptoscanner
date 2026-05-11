@@ -14751,62 +14751,72 @@ document.addEventListener('tabChanged', (e) => {
 </div>
 
 </body>
-</html>
-                                                        
-// ──────────────────────────────────────────────────────
-// RSI HEATMAP
-// ──────────────────────────────────────────────────────
 
+<script>
+// RSI HEATMAP
 let currentRSITimeframe = '1w';
 let rsiHeatmapCache = {};
 
 async function loadRSIHeatmap(timeframe='1w') {
   currentRSITimeframe = timeframe;
   
-  // Update UI buttons
   document.getElementById('rsi-tf-1w').classList.toggle('active', timeframe==='1w');
   document.getElementById('rsi-tf-1m').classList.toggle('active', timeframe==='1m');
   
-  // Show loading
-  document.getElementById('rsi-loading').style.display = 'block';
-  document.getElementById('rsi-error').style.display = 'none';
+  const showLoading = document.getElementById('rsi-loading');
+  if (showLoading) showLoading.style.display = 'block';
+  
+  if (rsiHeatmapCache[timeframe]) {
+    renderRSIHeatmap(rsiHeatmapCache[timeframe], timeframe);
+    if (showLoading) showLoading.style.display = 'none';
+    return;
+  }
   
   try {
-    const res = await fetch(`/api/heatmap/rsi?timeframe=${timeframe}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const response = await fetch(`/api/heatmap/rsi?timeframe=${timeframe}`, {
+      credentials: 'include'
+    });
     
-    const json = await res.json();
-    if (!json.success) throw new Error(json.error || 'API error');
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
     
-    rsiHeatmapCache[timeframe] = json.data;
-    renderRSIHeatmap(json.data, timeframe);
-  } catch (e) {
-    console.error('[RSI Heatmap]', e);
-    document.getElementById('rsi-error').textContent = `Erreur: ${e.message}`;
-    document.getElementById('rsi-error').style.display = 'block';
+    const json = await response.json();
+    
+    if (json.success && json.data) {
+      rsiHeatmapCache[timeframe] = json.data;
+      renderRSIHeatmap(json.data, timeframe);
+    } else {
+      document.getElementById('rsi-error').textContent = json.error || 'Impossible de charger les donnees';
+    }
+  } catch (error) {
+    console.error('[RSI Error]', error);
+    document.getElementById('rsi-error').textContent = 'Erreur: ' + error.message;
   } finally {
-    document.getElementById('rsi-loading').style.display = 'none';
+    if (showLoading) showLoading.style.display = 'none';
   }
 }
 
 function renderRSIHeatmap(data, timeframe) {
-  const grid = document.getElementById('rsi-heatmap-grid');
   const rsiKey = timeframe === '1w' ? 'rsi_1w' : 'rsi_1m';
+  const grid = document.getElementById('rsi-heatmap-grid');
+  const error = document.getElementById('rsi-error');
   
-  // Calculate stats
+  if (!grid) return;
+  
+  error.textContent = '';
+  
   let oversold = 0, neutral = 0, overbought = 0;
   
   const html = data.map(coin => {
     const rsi = coin[rsiKey];
     if (rsi === null || rsi === undefined) return '';
     
-    // Classify state
     let state = 'neutral';
     if (rsi < 30) { state = 'oversold'; oversold++; }
     else if (rsi > 70) { state = 'overbought'; overbought++; }
     else { neutral++; }
     
-    // Calculate color intensity
     const intensity = Math.abs(rsi - 50) / 50;
     let bgColor;
     
@@ -14818,10 +14828,8 @@ function renderRSIHeatmap(data, timeframe) {
       bgColor = `rgba(100, 100, 100, ${0.15 + intensity * 0.3})`;
     }
     
-    // Text color based on RSI direction
     const textColor = rsi > 55 ? '#ff3366' : rsi < 45 ? '#1976d2' : '#999999';
     
-    // Build HTML
     return `<div class="heat-cell" style="background:${bgColor};cursor:pointer" title="${coin.symbol} RSI=${rsi.toFixed(1)}">
       <div style="display:flex;align-items:center;justify-content:center;gap:3px;height:20px">
         <img src="https://cdn.jsdelivr.net/gh/ErikThiart/cryptocurrency-icons@master/32/${coin.symbol.toLowerCase()}.png"
@@ -14834,29 +14842,29 @@ function renderRSIHeatmap(data, timeframe) {
   }).filter(h => h).join('');
   
   if (!html) {
-    grid.innerHTML = '<div style="padding:20px;color:var(--muted);text-align:center">Aucune donnée disponible</div>';
+    grid.innerHTML = '<div style="padding:20px;color:var(--muted);text-align:center">Aucune donnee disponible</div>';
   } else {
     grid.innerHTML = html;
   }
   
-  // Update stats
   document.getElementById('rsi-oversold-count').textContent = oversold;
   document.getElementById('rsi-neutral-count').textContent = neutral;
   document.getElementById('rsi-overbought-count').textContent = overbought;
 }
 
-// Auto-load RSI heatmap when tab becomes active
 setTimeout(() => {
   const tabElement = document.getElementById('tab-rsi-heatmap');
   if (tabElement) {
     const checkAndLoad = () => {
       if (tabElement.classList.contains('active') && !rsiHeatmapCache['1w']) {
-        console.log('[RSI] Auto-loading on tab activation');
         loadRSIHeatmap('1w');
       }
     };
-    
     const obs = new MutationObserver(checkAndLoad);
     obs.observe(tabElement, {attributes: true, attributeFilter: ['class']});
   }
 }, 100);
+</script>
+
+</body>
+</html>
