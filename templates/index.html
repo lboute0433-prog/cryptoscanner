@@ -5486,17 +5486,6 @@ setTimeout(() => {
   }
 }, 5000);
 
-// Force menu mobile sur iOS - simple fallback
-if (window.innerWidth <= 820 || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-  var mobileNav = document.querySelector('.mobile-nav');
-  if (mobileNav) {
-    mobileNav.style.display = 'block !important';
-    // Masquer nav principal
-    var mainNav = document.querySelector('header nav');
-    if (mainNav) mainNav.style.display = 'none';
-  }
-}
-
 // ── TABS ──────────────────────────────────────────────────────
 function showTab(name) {
   _pendingTab = null; // Effacer le stub
