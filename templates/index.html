@@ -5486,6 +5486,17 @@ setTimeout(() => {
   }
 }, 5000);
 
+// Force menu mobile sur iOS/mobile
+function checkMobileNav() {
+  const isMobile = window.innerWidth <= 768 || /iPhone|iPad|Android|Mobile/i.test(navigator.userAgent);
+  const mobileNav = document.querySelector('.mobile-nav');
+  const desktopNav = document.querySelector('nav:not(.mobile-nav)');
+  if (mobileNav) mobileNav.style.display = isMobile ? 'block' : 'none';
+  if (desktopNav) desktopNav.style.display = isMobile ? 'none' : 'block';
+}
+checkMobileNav();
+window.addEventListener('resize', checkMobileNav);
+
 // ── TABS ──────────────────────────────────────────────────────
 function showTab(name) {
   _pendingTab = null; // Effacer le stub
