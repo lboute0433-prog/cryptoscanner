@@ -905,7 +905,7 @@ def require_tier(minimum_tier):
             conn = get_connection()
             try:
                 sess = conn.execute(
-                    "SELECT id, user_id, created_at FROM sessions WHERE token = ?",
+                    "SELECT token, user_id, created FROM sessions WHERE token = ?",
                     (token,)
                 ).fetchone()
 
@@ -914,7 +914,26 @@ def require_tier(minimum_tier):
 
                 # Check session expiration (24 hours)
                 import time
-                age = time.time() - sess[2]
+                from datetime import datetime
+
+                # created is stored as TEXT in two possible formats
+                created_str = sess[2]
+                if not created_str:
+                    created_time = time.time()
+                else:
+                    try:
+                        # Try Unix timestamp format first
+                        created_time = float(created_str)
+                    except (ValueError, TypeError):
+                        try:
+                            # Try ISO format (e.g., "2026-05-11T07:21:07.245934")
+                            dt = datetime.fromisoformat(created_str.replace('Z', '+00:00'))
+                            created_time = dt.timestamp()
+                        except (ValueError, TypeError):
+                            # If can't parse, treat session as just created
+                            created_time = time.time()
+
+                age = time.time() - created_time
                 if age > 86400:
                     return jsonify({'error': 'Session expired', 'ok': False}), 401
 
