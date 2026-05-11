@@ -27,6 +27,11 @@ def _create_session():
     session.mount("http://", adapter)
     session.mount("https://", adapter)
 
+    # Add User-Agent header for API compatibility
+    session.headers.update({
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    })
+
     return session
 
 _session = _create_session()
