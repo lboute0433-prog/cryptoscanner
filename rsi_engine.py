@@ -243,6 +243,7 @@ def build_rsi_heatmap_data(timeframe='1w'):
 def build_scatter_plot_data():
     """
     Build data for scatter plot: RSI 1W vs RSI 1M for all coins.
+    Uses cached data from build_rsi_heatmap_data calls.
 
     Returns:
         [
@@ -256,54 +257,53 @@ def build_scatter_plot_data():
         print("[RSI] Cache hit for scatter plot")
         return cached
 
-    print("[RSI] Building scatter plot data (1W + 1M)...")
-    symbols = get_top50_symbols()
+    print("[RSI] Building scatter plot from cached RSI data...")
+
+    # Get RSI 1W and 1M from cache (fast path)
+    rsi_1w_data = cache.get("rsi_heatmap_1w")
+    rsi_1m_data = cache.get("rsi_heatmap_1m")
+
+    # If not in cache, build it quickly (max 10 coins for speed)
+    if not rsi_1w_data:
+        rsi_1w_data = build_rsi_heatmap_data('1w')
+    if not rsi_1m_data:
+        rsi_1m_data = build_rsi_heatmap_data('1m')
+
+    # Map data by symbol
+    rsi_1w_map = {c['symbol']: c.get('rsi_1w') for c in rsi_1w_data}
+    rsi_1m_map = {c['symbol']: c.get('rsi_1m') for c in rsi_1m_data}
+
     result = []
+    for symbol in rsi_1w_map.keys():
+        rsi_1w_val = rsi_1w_map.get(symbol)
+        rsi_1m_val = rsi_1m_map.get(symbol)
 
-    for symbol in symbols:
-        try:
-            # Fetch both RSI 1W and 1M
-            rsi_1w = fetch_coinglass_rsi(symbol, '1w')
-            rsi_1m = fetch_coinglass_rsi(symbol, '1m')
-
-            # Fallback if CoinGlass fails
-            if not rsi_1w or rsi_1w.get('rsi') is None:
-                rsi_1w_val = calculate_rsi_from_binance(symbol, '1w')
-            else:
-                rsi_1w_val = round(rsi_1w['rsi'], 1)
-
-            if not rsi_1m or rsi_1m.get('rsi') is None:
-                rsi_1m_val = calculate_rsi_from_binance(symbol, '1m')
-            else:
-                rsi_1m_val = round(rsi_1m['rsi'], 1)
-
-            if rsi_1w_val is not None and rsi_1m_val is not None:
-                # Determine zone based on RSI values
-                zone = 'neutral'
-                if rsi_1w_val > 70 or rsi_1m_val > 70:
-                    zone = 'overbought'
-                elif rsi_1w_val < 30 or rsi_1m_val < 30:
-                    zone = 'oversold'
-                elif 60 <= rsi_1w_val <= 70 or 60 <= rsi_1m_val <= 70:
-                    zone = 'strong'
-                elif 30 <= rsi_1w_val <= 40 or 30 <= rsi_1m_val <= 40:
-                    zone = 'weak'
-
-                result.append({
-                    'symbol': symbol,
-                    'rsi_1w': rsi_1w_val,
-                    'rsi_1m': rsi_1m_val,
-                    'zone': zone,
-                    'timestamp': datetime.now().isoformat()
-                })
-        except Exception as e:
-            print(f"[RSI] Error building scatter for {symbol}: {e}")
+        if rsi_1w_val is None or rsi_1m_val is None:
             continue
+
+        # Determine zone based on RSI values
+        zone = 'neutral'
+        if rsi_1w_val > 70 or rsi_1m_val > 70:
+            zone = 'overbought'
+        elif rsi_1w_val < 30 or rsi_1m_val < 30:
+            zone = 'oversold'
+        elif 60 <= rsi_1w_val <= 70 or 60 <= rsi_1m_val <= 70:
+            zone = 'strong'
+        elif 30 <= rsi_1w_val <= 40 or 30 <= rsi_1m_val <= 40:
+            zone = 'weak'
+
+        result.append({
+            'symbol': symbol,
+            'rsi_1w': float(rsi_1w_val),
+            'rsi_1m': float(rsi_1m_val),
+            'zone': zone,
+            'timestamp': datetime.now().isoformat()
+        })
 
     # Cache result
     cache.set(cache_key, result)
 
-    print(f"[RSI] Built scatter plot with {len(result)} / {len(symbols)} coins")
+    print(f"[RSI] Built scatter plot with {len(result)} coins")
     return result
 
 
