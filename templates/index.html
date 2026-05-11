@@ -6,8 +6,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CryptoScanner Pro V11</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root {
   --bg:      #050505;
@@ -5442,26 +5442,37 @@ let chartSymbol = '', chartInstance = null;
 })();
 
 // ── SOCKET ────────────────────────────────────────────────────
-const socket = io();
-socket.on('market_update', data => {
-  allCoins   = data.coins   || [];
-  allSignals = data.signals || [];
-  _buildLogoMap(allCoins);
-  currentExchange = data.exchange || 'binance';
-  updateExchangeUI(currentExchange);
-  document.getElementById('hdr-count').textContent = data.count || allCoins.length;
-  document.getElementById('hdr-sigs').textContent  = allSignals.length;
-  document.getElementById('hdr-ts').textContent    = data.ts || '—';
-  updateStats();
-  renderMarket();
-  renderSignals();
-  renderHeatmap();
-  loadPortfolio();
-  updateAISnapshot();
-  checkSoundAlerts(allSignals);
-  updateDashboard(data, {}, macroData);
-  updateHeroStrip();
-});
+let socket = null;
+function initSocket() {
+  if (typeof io !== 'undefined' && !socket) {
+    socket = io();
+    socket.on('market_update', data => {
+      allCoins   = data.coins   || [];
+      allSignals = data.signals || [];
+      _buildLogoMap(allCoins);
+      currentExchange = data.exchange || 'binance';
+      updateExchangeUI(currentExchange);
+      document.getElementById('hdr-count').textContent = data.count || allCoins.length;
+      document.getElementById('hdr-sigs').textContent  = allSignals.length;
+      document.getElementById('hdr-ts').textContent    = data.ts || '—';
+      updateStats();
+      renderMarket();
+      renderSignals();
+      renderHeatmap();
+      loadPortfolio();
+      updateAISnapshot();
+      checkSoundAlerts(allSignals);
+      updateDashboard(data, {}, macroData);
+      updateHeroStrip();
+    });
+  }
+}
+// Appeler initSocket au chargement de la page
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initSocket);
+} else {
+  initSocket();
+}
 
 // ── TABS ──────────────────────────────────────────────────────
 function showTab(name) {
