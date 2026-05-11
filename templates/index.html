@@ -89,9 +89,9 @@ header {
   position:sticky; top:0; z-index:100;
   box-shadow:0 16px 40px rgba(0,0,0,.28);
 }
-.logo { font-family:var(--title); font-size:1.42rem; letter-spacing:4px; color:#f3f8ff; text-shadow:0 0 24px rgba(201,168,76,.12); }
+.logo { font-family:var(--title); font-size:1.42rem; letter-spacing:4px; color:#f3f8ff; text-shadow:0 0 24px rgba(201,168,76,.12); display:none; }
 .logo span { color:var(--accent); }
-.status-bar { display:flex; gap:10px; align-items:center; font-size:.75rem; flex-wrap:wrap; justify-content:flex-end; }
+.status-bar { display:flex; gap:10px; align-items:center; font-size:.75rem; flex-wrap:wrap; justify-content:flex-end; margin-left:auto; }
 .dot { width:8px;height:8px;border-radius:50%;background:var(--green);
        box-shadow:0 0 8px var(--green); animation:pulse 2s infinite; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
@@ -966,6 +966,18 @@ tbody tr { transition:background .15s ease; }
   .sub-grid, .sub-note-grid { grid-template-columns:1fr; }
 }
 
+/* HAMBURGER MENU */
+.hamburger-btn { display:none; flex-direction:column; justify-content:center; align-items:center; width:40px; height:40px; background:none; border:none; cursor:pointer; padding:0; gap:5px; }
+.hamburger-btn span { display:block; width:24px; height:2px; background:var(--accent); border-radius:2px; transition:all .3s ease; }
+.hamburger-btn.open span:nth-child(1) { transform:rotate(45deg) translate(8px, 8px); }
+.hamburger-btn.open span:nth-child(2) { opacity:0; }
+.hamburger-btn.open span:nth-child(3) { transform:rotate(-45deg) translate(7px, -7px); }
+.hamburger-menu { display:none; position:absolute; top:100%; left:0; right:0; background:linear-gradient(180deg, rgba(16,16,18,.98), rgba(12,12,13,.98)); border:1px solid rgba(92,88,80,.2); border-top:none; z-index:999; padding:8px 0; backdrop-filter:blur(20px); box-shadow:0 12px 32px rgba(0,0,0,.32); flex-direction:column; }
+.hamburger-menu.open { display:flex; }
+.hamburger-item { background:none; border:none; color:var(--text); padding:12px 24px; cursor:pointer; text-align:left; font-family:var(--font); font-size:.85rem; letter-spacing:.8px; transition:.2s ease; border-bottom:1px solid rgba(92,88,80,.1); }
+.hamburger-item:hover { background:rgba(201,168,76,.08); color:var(--accent); }
+.hamburger-item:last-child { border-bottom:none; }
+
 /* ════════════════════════════════════════════════════════════
    RESPONSIVE MOBILE V11
    ════════════════════════════════════════════════════════════ */
@@ -984,14 +996,16 @@ tbody tr { transition:background .15s ease; }
 #mobile-overlay.open { display:block; }
 
 @media (max-width:768px) {
-  header { padding:7px 10px; flex-wrap:wrap; gap:5px; }
+  header { padding:7px 10px; flex-wrap:wrap; gap:5px; position:relative; }
   .logo { font-size:.82rem; }
   .status-bar { display:flex; flex-wrap:nowrap; overflow-x:auto; gap:4px; scrollbar-width:none; }
   .status-bar::-webkit-scrollbar { display:none; }
   .stat-pill { font-size:.55rem; padding:2px 6px; white-space:nowrap; flex-shrink:0; }
+  .hamburger-btn { display:flex; }
   nav { display:none; }
-  .mobile-nav { display:block; }
-  body { padding-bottom:68px; }
+  .hamburger-menu { position:fixed; top:56px; left:0; right:0; bottom:auto; }
+  .mobile-nav { display:none !important; }
+  body { padding-bottom:0; }
   .tab { padding:10px 10px; }
   .stats-grid { grid-template-columns:repeat(2,1fr) !important; gap:7px; margin-bottom:10px; }
   .stat-card { padding:10px 10px; }
@@ -1030,13 +1044,13 @@ tbody tr { transition:background .15s ease; }
   .stat-card .val { font-size:.9rem; }
   .mobile-nav-btn { font-size:.43rem; min-width:38px; }
 }
-/* Force mobile menu on iOS Firefox and other mobile devices */
-@media (max-device-width:812px) and (orientation:portrait) {
+/* Force mobile menu on iOS Firefox - use max-width instead of max-device-width */
+@media (max-width:600px) {
   nav { display:none !important; }
   .mobile-nav { display:block !important; }
   body { padding-bottom:68px !important; }
 }
-@media (max-device-width:1024px) and (orientation:landscape) {
+@media (max-width:1024px) and (orientation:landscape) {
   nav { display:none !important; }
   .mobile-nav { display:block !important; }
   body { padding-bottom:68px !important; }
@@ -1419,6 +1433,9 @@ window.hideKpiSkeleton = function() {
 </script>
 <!-- HEADER -->
 <header>
+  <button id="hamburger-btn" class="hamburger-btn" onclick="toggleHamburgerMenu()" title="Menu">
+    <span></span><span></span><span></span>
+  </button>
   <div class="logo">◈ <span>CRYPTO</span>SCANNER <span style="color:var(--accent2)">PRO V10</span></div>
   <div class="status-bar">
     <div class="dot" id="dot"></div>
@@ -1448,6 +1465,16 @@ window.hideKpiSkeleton = function() {
     <button id="btn-theme-toggle" onclick="toggleTheme()" class="stat-pill" title="Basculer thème clair/sombre" style="cursor:pointer;border:1px solid rgba(201,168,76,.2);background:none;font-size:.82rem;padding:5px 10px">🌙</button>
   </div>
 </header>
+
+<!-- Hamburger Menu Mobile -->
+<div id="hamburger-menu" class="hamburger-menu">
+  <button class="hamburger-item" onclick="hamburgerGo('dashboard')">🏠 TABLEAU DE BORD</button>
+  <button class="hamburger-item" onclick="hamburgerGo('nav_analyse')">📊 ANALYSE</button>
+  <button class="hamburger-item" onclick="hamburgerGo('nav_data')">🌐 DATA</button>
+  <button class="hamburger-item" onclick="hamburgerGo('nav_marches')">🌍 MARCHÉS</button>
+  <button class="hamburger-item" onclick="hamburgerGo('nav_trading')">💼 TRADING</button>
+  <button class="hamburger-item" onclick="hamburgerGo('nav_outils')">⚙️ OUTILS</button>
+</div>
 
 <!-- NAV -->
 <nav>
@@ -12470,15 +12497,36 @@ async function loadBtHistory() {
   <button class="mobile-sub-btn" onclick="mobileGo('multiex')"><span class="msb-icon">🔀</span>MULTI-EX</button>
   <button class="mobile-sub-btn" onclick="mobileGo('blacklist')"><span class="msb-icon">⚫</span>BLACKLIST</button>
 </div>
-<nav class="mobile-nav">
-  <div class="mobile-nav-items">
-    <button class="mobile-nav-btn active" id="mn-home" onclick="mobileGo('dashboard')"><span class="mn-icon">🏠</span>HOME</button>
-    <button class="mobile-nav-btn" id="mn-analyse" onclick="toggleMobileSubmenu('sub-analyse','mn-analyse')"><span class="mn-icon">📊</span>ANALYSE</button>
-    <button class="mobile-nav-btn" id="mn-data" onclick="toggleMobileSubmenu('sub-data','mn-data')"><span class="mn-icon">🌐</span>DATA</button>
-    <button class="mobile-nav-btn" id="mn-trading" onclick="toggleMobileSubmenu('sub-trading','mn-trading')"><span class="mn-icon">💼</span>TRADING</button>
-    <button class="mobile-nav-btn" id="mn-plus" onclick="toggleMobileSubmenu('sub-plus','mn-plus')"><span class="mn-icon">⋯</span>PLUS</button>
-  </div>
-</nav>
+
+<script>
+// Hamburger Menu Functions
+function toggleHamburgerMenu(){
+  var btn = document.getElementById('hamburger-btn');
+  var menu = document.getElementById('hamburger-menu');
+  btn.classList.toggle('open');
+  menu.classList.toggle('open');
+}
+
+function hamburgerGo(tab){
+  var btn = document.getElementById('hamburger-btn');
+  var menu = document.getElementById('hamburger-menu');
+  btn.classList.remove('open');
+  menu.classList.remove('open');
+  showTab(tab);
+  window.scrollTo(0, 0);
+}
+
+// Close menu when clicking outside
+document.addEventListener('click', function(e){
+  var menu = document.getElementById('hamburger-menu');
+  var btn = document.getElementById('hamburger-btn');
+  if(menu && menu.classList.contains('open') && !menu.contains(e.target) && !btn.contains(e.target)){
+    btn.classList.remove('open');
+    menu.classList.remove('open');
+  }
+});
+</script>
+
 <script>
 var _openSub=null;
 function toggleMobileSubmenu(id,btnId){
