@@ -5,6 +5,8 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>◈</text></svg>">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CryptoScanner Pro V11</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@400;500;600&display=swap" rel="stylesheet">
 <script async src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
 <script async src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -5445,8 +5447,9 @@ let chartSymbol = '', chartInstance = null;
 let socket = null;
 function initSocket() {
   if (typeof io !== 'undefined' && !socket) {
-    socket = io();
-    socket.on('market_update', data => {
+    try {
+      socket = io({reconnectionDelay: 500, reconnectionDelayMax: 5000});
+      socket.on('market_update', data => {
       allCoins   = data.coins   || [];
       allSignals = data.signals || [];
       _buildLogoMap(allCoins);
@@ -5464,7 +5467,10 @@ function initSocket() {
       checkSoundAlerts(allSignals);
       updateDashboard(data, {}, macroData);
       updateHeroStrip();
-    });
+      });
+    } catch(e) {
+      console.warn('[Socket.io] Erreur connexion:', e);
+    }
   }
 }
 // Appeler initSocket au chargement de la page
@@ -5473,6 +5479,12 @@ if (document.readyState === 'loading') {
 } else {
   initSocket();
 }
+// Fallback: charger la page même si socket.io timeout (5s max)
+setTimeout(() => {
+  if (!socket) {
+    console.warn('[Socket.io] Timeout - page continue sans socket');
+  }
+}, 5000);
 
 // ── TABS ──────────────────────────────────────────────────────
 function showTab(name) {
