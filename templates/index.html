@@ -5463,6 +5463,32 @@ socket.on('market_update', data => {
   updateHeroStrip();
 });
 
+// ── TAB ACCESS RULES ──────────────────────────────────────────
+const TAB_ACCESS_RULES = {
+  // ── Visitor (libre) ── dashboard, market, signals, heatmap, news, macro, calculator, lexique, settings
+  // ── Member ───────────────────────────────────────────────────────────────────
+  watchlist:       'member',
+  portfolio:       'member',
+  journal:         'member',
+  alertes:         'member',
+  exchange_connect:'member',
+  whales:          'member',   // alertes institutionnelles
+  forex:           'member',   // taux forex live
+  indices:         'member',   // indices globaux
+  mood:            'member',   // market mood
+  institutional_flows: 'member', // liquidations + funding rates
+  // ── Paid ─────────────────────────────────────────────────────────────────────
+  smart:           'paid',     // Smart Signals avancés (avantage compétitif)
+  cot:             'paid',     // COT CFTC institutionnel
+  cvd:             'paid',     // CVD Flow order book
+  ai:              'paid',     // IA Analyste personnalisée
+  backtest:        'paid',     // Backtesting stratégies
+  multiex:         'paid',     // Multi-exchange comparaison
+  investor:        'paid',     // Analyse investisseur complète
+  // ── Admin ────────────────────────────────────────────────────────────────────
+  blacklist:       'admin',    // Gestion blacklist coins
+};
+
 // ── TABS ──────────────────────────────────────────────────────
 function showTab(name) {
   _pendingTab = null; // Effacer le stub
@@ -8170,31 +8196,6 @@ const ACCESS_ROLE_ORDER = {
   admin: 4,
   banned: -1
 };
-const TAB_ACCESS_RULES = {
-  // ── Visitor (libre) ── dashboard, market, signals, heatmap, news, macro, calculator, lexique, settings
-  // ── Member ───────────────────────────────────────────────────────────────────
-  watchlist:       'member',
-  portfolio:       'member',
-  journal:         'member',
-  alertes:         'member',
-  exchange_connect:'member',
-  whales:          'member',   // alertes institutionnelles
-  forex:           'member',   // taux forex live
-  indices:         'member',   // indices globaux
-  mood:            'member',   // market mood
-  institutional_flows: 'member', // liquidations + funding rates
-  // ── Paid ─────────────────────────────────────────────────────────────────────
-  smart:           'paid',     // Smart Signals avancés (avantage compétitif)
-  cot:             'paid',     // COT CFTC institutionnel
-  cvd:             'paid',     // CVD Flow order book
-  ai:              'paid',     // IA Analyste personnalisée
-  backtest:        'paid',     // Backtesting stratégies
-  multiex:         'paid',     // Multi-exchange comparaison
-  investor:        'paid',     // Analyse investisseur complète
-  // ── Admin ────────────────────────────────────────────────────────────────────
-  blacklist:       'admin',    // Gestion blacklist coins
-};
-
 // ══════════════════════════════════════════════════════════════
 // TIER ACCESS INITIALIZATION — Called on page load
 // ══════════════════════════════════════════════════════════════
