@@ -883,24 +883,54 @@ def get_user_tier(user_id):
 
 
 def require_tier(minimum_tier):
-    """Decorator: Check if user has minimum tier."""
+    """Decorator: Check if user has minimum tier. Used in Flask routes."""
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
-            # Get session from request (avoid circular import)
+            # Delayed import to avoid circular dependency at module load time
             from flask import request, jsonify
-            from scanner_engine import engine
 
+            # Get token from cookies or headers
             token = request.cookies.get("cs_token") or request.headers.get("X-Session-Token")
-            user = engine.validate_session(token) if token else None
 
-            if not user:
-                return jsonify({'error': 'Not authenticated'}), 401
+            if not token:
+                return jsonify({'error': 'Not authenticated', 'ok': False}), 401
 
-            user_tier = get_user_tier(user['id'])
-            if TIER_LEVELS.get(user_tier, 0) < TIER_LEVELS.get(minimum_tier, 0):
-                return jsonify({'error': f'Minimum tier required: {minimum_tier}'}), 403
+            # Validate session using local database query to avoid circular import
+            conn = connect_sqlite()
+            try:
+                sess = conn.execute(
+                    "SELECT id, user_id, created_at FROM sessions WHERE token = ?",
+                    (token,)
+                ).fetchone()
 
-            return f(*args, **kwargs)
+                if not sess:
+                    return jsonify({'error': 'Invalid session', 'ok': False}), 401
+
+                # Check session expiration (24 hours)
+                import time
+                age = time.time() - sess[2]
+                if age > 86400:
+                    return jsonify({'error': 'Session expired', 'ok': False}), 401
+
+                # Check user tier
+                user_id = sess[1]
+                user_tier = get_user_tier(user_id)
+
+                if TIER_LEVELS.get(user_tier, 0) < TIER_LEVELS.get(minimum_tier, 0):
+                    return jsonify({
+                        'error': f'Minimum tier required: {minimum_tier}',
+                        'ok': False,
+                        'required_tier': minimum_tier,
+                        'user_tier': user_tier
+                    }), 403
+
+                # Tier check passed, continue to route handler
+                return f(*args, **kwargs)
+            except Exception as e:
+                return jsonify({'error': str(e), 'ok': False}), 500
+            finally:
+                conn.close()
+
         return wrapper
     return decorator
