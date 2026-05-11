@@ -243,14 +243,13 @@ def build_rsi_heatmap_data(timeframe='1w'):
 def build_scatter_plot_data():
     """
     Build data for scatter plot: RSI 1W vs RSI 1M for all coins.
-    Uses ONLY cached data - no API calls (fast path only).
+    Uses cached data first, then Binance API if cache is empty.
 
     Returns:
         [
             {'symbol': 'BTC', 'rsi_1w': 65.2, 'rsi_1m': 58.5, 'zone': 'overbought'},
             ...
         ]
-        or [] if cache is empty
     """
     cache_key = "rsi_scatter_plot"
     cached = cache.get(cache_key)
@@ -258,16 +257,45 @@ def build_scatter_plot_data():
         print("[RSI] Cache hit for scatter plot")
         return cached
 
-    print("[RSI] Building scatter plot from cached RSI data...")
+    print("[RSI] Building scatter plot...")
 
-    # Get RSI 1W and 1M from cache ONLY (no API calls)
+    # Get RSI 1W and 1M from cache first
     rsi_1w_data = cache.get("rsi_heatmap_1w")
     rsi_1m_data = cache.get("rsi_heatmap_1m")
 
-    # If cache is empty, return empty result (data will be populated by next heatmap call)
+    # If cache is empty, calculate from Binance directly (reliable fallback)
     if not rsi_1w_data or not rsi_1m_data:
-        print("[RSI] Heatmap data not yet cached - returning empty scatter plot")
-        return []
+        print("[RSI] Cache empty - calculating from Binance API...")
+        symbols = get_top50_symbols()
+        rsi_1w_data = []
+        rsi_1m_data = []
+
+        for symbol in symbols:
+            try:
+                # Calculate RSI 1W
+                rsi_1w = calculate_rsi_from_binance(symbol, '1w')
+                if rsi_1w is not None:
+                    rsi_1w_data.append({
+                        'symbol': symbol,
+                        'rsi_1w': rsi_1w,
+                        'timestamp': datetime.now().isoformat(),
+                        'source': 'binance'
+                    })
+
+                # Calculate RSI 1M
+                rsi_1m = calculate_rsi_from_binance(symbol, '1M')
+                if rsi_1m is not None:
+                    rsi_1m_data.append({
+                        'symbol': symbol,
+                        'rsi_1m': rsi_1m,
+                        'timestamp': datetime.now().isoformat(),
+                        'source': 'binance'
+                    })
+            except Exception as e:
+                print(f"[RSI] Error calculating for {symbol}: {e}")
+                continue
+
+        print(f"[RSI] Calculated {len(rsi_1w_data)} coins from Binance")
 
     # Map data by symbol
     rsi_1w_map = {c['symbol']: c.get('rsi_1w') for c in rsi_1w_data}
