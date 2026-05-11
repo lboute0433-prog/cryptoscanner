@@ -243,7 +243,8 @@ def build_rsi_heatmap_data(timeframe='1w'):
 def build_scatter_plot_data():
     """
     Build data for scatter plot: RSI 1W vs RSI 1M for all coins.
-    Uses cached data first, then Binance API if cache is empty.
+    Uses cached heatmap data (populated by background warmer task).
+    Returns empty list if cache is empty (warmer will populate within 4 minutes).
 
     Returns:
         [
@@ -257,45 +258,17 @@ def build_scatter_plot_data():
         print("[RSI] Cache hit for scatter plot")
         return cached
 
-    print("[RSI] Building scatter plot...")
+    print("[RSI] Building scatter plot from heatmap cache...")
 
-    # Get RSI 1W and 1M from cache first
+    # Get RSI 1W and 1M from cache (populated by background warmer task)
     rsi_1w_data = cache.get("rsi_heatmap_1w")
     rsi_1m_data = cache.get("rsi_heatmap_1m")
 
-    # If cache is empty, calculate from Binance directly (reliable fallback)
+    # If cache is empty, return empty list (don't make API calls - too slow)
+    # Background warmer task (rsi_heatmap_warmer) will populate cache every 4 minutes
     if not rsi_1w_data or not rsi_1m_data:
-        print("[RSI] Cache empty - calculating from Binance API...")
-        symbols = get_top50_symbols()
-        rsi_1w_data = []
-        rsi_1m_data = []
-
-        for symbol in symbols:
-            try:
-                # Calculate RSI 1W
-                rsi_1w = calculate_rsi_from_binance(symbol, '1w')
-                if rsi_1w is not None:
-                    rsi_1w_data.append({
-                        'symbol': symbol,
-                        'rsi_1w': rsi_1w,
-                        'timestamp': datetime.now().isoformat(),
-                        'source': 'binance'
-                    })
-
-                # Calculate RSI 1M
-                rsi_1m = calculate_rsi_from_binance(symbol, '1M')
-                if rsi_1m is not None:
-                    rsi_1m_data.append({
-                        'symbol': symbol,
-                        'rsi_1m': rsi_1m,
-                        'timestamp': datetime.now().isoformat(),
-                        'source': 'binance'
-                    })
-            except Exception as e:
-                print(f"[RSI] Error calculating for {symbol}: {e}")
-                continue
-
-        print(f"[RSI] Calculated {len(rsi_1w_data)} coins from Binance")
+        print("[RSI] Cache empty - returning empty list. Background warmer will populate within 4 min.")
+        return []
 
     # Map data by symbol
     rsi_1w_map = {c['symbol']: c.get('rsi_1w') for c in rsi_1w_data}
