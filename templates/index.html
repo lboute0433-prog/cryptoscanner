@@ -1301,6 +1301,7 @@ tbody tr { transition:background .15s ease; }
     animation: fadeSlideIn .25s ease;
   }
 </style>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
 <div id="toast-container"></div>
@@ -3261,28 +3262,50 @@ function renderCotConclusions(btcSig, ethSig, sp5Sig, goldSig) {
   </div>
 </div>
 
-<!-- ═══ TAB: RSI HEATMAP ═══ -->
+<!-- ═══ TAB: RSI HEATMAP SCATTER PLOT ═══ -->
 <div class="tab" id="tab-rsi-heatmap">
   <div class="form-panel" style="margin-bottom:16px">
-    <div class="form-title" style="margin-bottom:12px">📊 RSI HEATMAP — TOP 50 CRYPTOS</div>
-    <div style="font-size:.72rem;color:var(--muted);margin-bottom:16px">
-      <div>Bleu = Survente (RSI &lt;30) · Gris = Neutre (30-70) · Rouge = Surachat (RSI &gt;70)</div>
-      <div style="margin-top:4px">Actualisation: toutes les 5 minutes</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="form-title" style="margin:0">📊 RSI HEATMAP — TOP 50 CRYPTOS</div>
+      <button class="interval-btn" onclick="loadScatterPlot()" style="padding:4px 10px;font-size:.7rem">🔄 REFRESH</button>
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-      <button class="interval-btn active" id="rsi-tf-1w" onclick="loadRSIHeatmap('1w')">1 SEMAINE</button>
-      <button class="interval-btn" id="rsi-tf-1m" onclick="loadRSIHeatmap('1m')">1 MOIS</button>
-      <button class="interval-btn" style="margin-left:auto" onclick="loadRSIHeatmap(currentRSITimeframe)">🔄 RAFRAÎCHIR</button>
+    <div style="font-size:.72rem;color:var(--muted);margin-bottom:12px">
+      <div>Scatter Plot: RSI 1W (X-axis) vs RSI 1M (Y-axis) — Zones: OVERBOUGHT (rouge) / STRONG (marron) / NEUTRAL (gris) / WEAK (vert) / OVERSOLD (bleu)</div>
     </div>
-    <div id="rsi-loading" style="display:none;font-size:.7rem;color:var(--muted);margin-bottom:12px">Chargement des données RSI...</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:.7rem;color:var(--muted)">Filtrer par zone:</span>
+      <label style="display:flex;align-items:center;gap:4px;font-size:.65rem;cursor:pointer">
+        <input type="checkbox" id="filter-overbought" checked onchange="updateScatterPlotFilter()"> Overbought
+      </label>
+      <label style="display:flex;align-items:center;gap:4px;font-size:.65rem;cursor:pointer">
+        <input type="checkbox" id="filter-strong" checked onchange="updateScatterPlotFilter()"> Strong
+      </label>
+      <label style="display:flex;align-items:center;gap:4px;font-size:.65rem;cursor:pointer">
+        <input type="checkbox" id="filter-neutral" checked onchange="updateScatterPlotFilter()"> Neutral
+      </label>
+      <label style="display:flex;align-items:center;gap:4px;font-size:.65rem;cursor:pointer">
+        <input type="checkbox" id="filter-weak" checked onchange="updateScatterPlotFilter()"> Weak
+      </label>
+      <label style="display:flex;align-items:center;gap:4px;font-size:.65rem;cursor:pointer">
+        <input type="checkbox" id="filter-oversold" checked onchange="updateScatterPlotFilter()"> Oversold
+      </label>
+    </div>
+    <div id="scatter-loading" style="display:none;font-size:.7rem;color:var(--muted)">Chargement du scatter plot...</div>
   </div>
-  <div class="stats-grid" style="margin-bottom:12px">
-    <div class="stat-card blue"><div class="val" id="rsi-oversold-count">—</div><div class="lbl">SURVENTE (&lt;30)</div></div>
-    <div class="stat-card gray"><div class="val" id="rsi-neutral-count">—</div><div class="lbl">NEUTRE (30-70)</div></div>
-    <div class="stat-card red"><div class="val" id="rsi-overbought-count">—</div><div class="lbl">SURACHAT (&gt;70)</div></div>
+
+  <!-- Plotly chart container -->
+  <div id="rsi-scatter-plot" style="width:100%;height:500px;background:rgba(0,0,0,.3);border-radius:6px;border:1px solid var(--border)"></div>
+
+  <!-- Stats -->
+  <div class="stats-grid" style="margin-top:16px">
+    <div class="stat-card red"><div class="val" id="scatter-overbought-count">—</div><div class="lbl">OVERBOUGHT</div></div>
+    <div class="stat-card orange"><div class="val" id="scatter-strong-count">—</div><div class="lbl">STRONG</div></div>
+    <div class="stat-card gray"><div class="val" id="scatter-neutral-count">—</div><div class="lbl">NEUTRAL</div></div>
+    <div class="stat-card yellow"><div class="val" id="scatter-weak-count">—</div><div class="lbl">WEAK</div></div>
+    <div class="stat-card blue"><div class="val" id="scatter-oversold-count">—</div><div class="lbl">OVERSOLD</div></div>
   </div>
-  <div class="heatmap" id="rsi-heatmap-grid" style="min-height:300px"></div>
-  <div id="rsi-error" style="display:none;padding:12px;background:rgba(255,51,102,.1);border:1px solid rgba(255,51,102,.3);border-radius:4px;color:var(--red);font-size:.7rem;margin-top:16px"></div>
+
+  <div id="scatter-error" style="display:none;padding:12px;background:rgba(255,51,102,.1);border:1px solid rgba(255,51,102,.3);border-radius:4px;color:var(--red);font-size:.7rem;margin-top:16px"></div>
 </div>
 
 <!-- ═══ TAB: MACRO ═══ -->
@@ -14856,14 +14879,155 @@ setTimeout(() => {
   const tabElement = document.getElementById('tab-rsi-heatmap');
   if (tabElement) {
     const checkAndLoad = () => {
-      if (tabElement.classList.contains('active') && !rsiHeatmapCache['1w']) {
-        loadRSIHeatmap('1w');
+      if (tabElement.classList.contains('active')) {
+        loadScatterPlot();
       }
     };
     const obs = new MutationObserver(checkAndLoad);
     obs.observe(tabElement, {attributes: true, attributeFilter: ['class']});
   }
 }, 100);
+
+// ──────────────────────────────────────────────────────
+// RSI SCATTER PLOT (Advanced)
+// ──────────────────────────────────────────────────────
+
+let scatterPlotCache = null;
+const zoneColors = {
+  'overbought': 'rgba(255, 51, 102, 0.8)',
+  'strong': 'rgba(139, 69, 19, 0.8)',
+  'neutral': 'rgba(100, 100, 100, 0.8)',
+  'weak': 'rgba(255, 193, 7, 0.8)',
+  'oversold': 'rgba(25, 118, 210, 0.8)'
+};
+
+const zoneNames = {
+  'overbought': 'Overbought',
+  'strong': 'Strong',
+  'neutral': 'Neutral',
+  'weak': 'Weak',
+  'oversold': 'Oversold'
+};
+
+async function loadScatterPlot() {
+  document.getElementById('scatter-loading').style.display = 'block';
+  document.getElementById('scatter-error').style.display = 'none';
+
+  try {
+    const response = await fetch('/api/heatmap/scatter', { credentials: 'include' });
+
+    if (!response.ok) throw new Error(`API error: ${response.status}`);
+
+    const json = await response.json();
+
+    if (json.success && json.data) {
+      scatterPlotCache = json.data;
+      renderScatterPlot(json.data);
+    } else {
+      throw new Error(json.error || 'Pas de donnees');
+    }
+  } catch (error) {
+    console.error('[Scatter Error]', error);
+    document.getElementById('scatter-error').textContent = 'Erreur: ' + error.message;
+    document.getElementById('scatter-error').style.display = 'block';
+  } finally {
+    document.getElementById('scatter-loading').style.display = 'none';
+  }
+}
+
+function updateScatterPlotFilter() {
+  if (scatterPlotCache) {
+    renderScatterPlot(scatterPlotCache);
+  }
+}
+
+function renderScatterPlot(data) {
+  // Get active filters
+  const filters = {
+    overbought: document.getElementById('filter-overbought').checked,
+    strong: document.getElementById('filter-strong').checked,
+    neutral: document.getElementById('filter-neutral').checked,
+    weak: document.getElementById('filter-weak').checked,
+    oversold: document.getElementById('filter-oversold').checked
+  };
+
+  // Count coins by zone
+  const counts = { overbought: 0, strong: 0, neutral: 0, weak: 0, oversold: 0 };
+
+  // Group data by zone for Plotly
+  const traces = {};
+  Object.keys(zoneNames).forEach(zone => {
+    traces[zone] = { x: [], y: [], text: [], mode: 'markers+text', name: zoneNames[zone], marker: {} };
+  });
+
+  data.forEach(coin => {
+    const zone = coin.zone;
+    counts[zone]++;
+
+    if (filters[zone]) {
+      traces[zone].x.push(coin.rsi_1w);
+      traces[zone].y.push(coin.rsi_1m);
+      traces[zone].text.push(coin.symbol);
+    }
+  });
+
+  // Style each trace
+  Object.keys(traces).forEach(zone => {
+    traces[zone].marker = {
+      size: 12,
+      color: zoneColors[zone],
+      line: { color: 'rgba(255,255,255,0.5)', width: 1 },
+      opacity: 0.9
+    };
+    traces[zone].textposition = 'top center';
+    traces[zone].textfont = { size: 10, color: '#fff' };
+  });
+
+  // Layout for Plotly
+  const layout = {
+    title: { text: 'RSI Heatmap: 1W vs 1M', font: { size: 16, color: 'var(--accent)' } },
+    xaxis: {
+      title: 'RSI 1W',
+      zeroline: false,
+      range: [0, 100],
+      gridcolor: 'rgba(255,255,255,0.1)',
+      showgrid: true
+    },
+    yaxis: {
+      title: 'RSI 1M',
+      zeroline: false,
+      range: [0, 100],
+      gridcolor: 'rgba(255,255,255,0.1)',
+      showgrid: true
+    },
+    plot_bgcolor: 'rgba(20,30,50,0.5)',
+    paper_bgcolor: 'transparent',
+    hovermode: 'closest',
+    margin: { l: 50, r: 50, t: 50, b: 50 },
+    font: { color: 'rgba(200,200,200,0.8)' },
+    showlegend: true,
+    legend: { x: 0.01, y: 0.99, bgcolor: 'rgba(0,0,0,0.7)' }
+  };
+
+  // Add RSI zones as shapes
+  const shapes = [
+    { x0: 70, x1: 100, y0: 70, y1: 100, type: 'rect', fillcolor: 'rgba(255,0,0,0.05)', line: { color: 'rgba(255,0,0,0.2)' }, layer: 'below', name: 'Overbought Zone' },
+    { x0: 30, x1: 70, y0: 30, y1: 70, type: 'rect', fillcolor: 'rgba(100,100,100,0.05)', line: { color: 'rgba(100,100,100,0.2)' }, layer: 'below', name: 'Neutral Zone' },
+    { x0: 0, x1: 30, y0: 0, y1: 30, type: 'rect', fillcolor: 'rgba(25,118,210,0.05)', line: { color: 'rgba(25,118,210,0.2)' }, layer: 'below', name: 'Oversold Zone' }
+  ];
+  layout.shapes = shapes;
+
+  // Render
+  const plotData = Object.values(traces);
+  Plotly.newPlot('rsi-scatter-plot', plotData, layout, { responsive: true, displayModeBar: true });
+
+  // Update stats
+  document.getElementById('scatter-overbought-count').textContent = counts.overbought;
+  document.getElementById('scatter-strong-count').textContent = counts.strong;
+  document.getElementById('scatter-neutral-count').textContent = counts.neutral;
+  document.getElementById('scatter-weak-count').textContent = counts.weak;
+  document.getElementById('scatter-oversold-count').textContent = counts.oversold;
+}
 </script>
 
 </body>

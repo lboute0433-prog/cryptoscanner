@@ -240,6 +240,73 @@ def build_rsi_heatmap_data(timeframe='1w'):
     return result
 
 
+def build_scatter_plot_data():
+    """
+    Build data for scatter plot: RSI 1W vs RSI 1M for all coins.
+
+    Returns:
+        [
+            {'symbol': 'BTC', 'rsi_1w': 65.2, 'rsi_1m': 58.5, 'zone': 'overbought'},
+            ...
+        ]
+    """
+    cache_key = "rsi_scatter_plot"
+    cached = cache.get(cache_key)
+    if cached:
+        print("[RSI] Cache hit for scatter plot")
+        return cached
+
+    print("[RSI] Building scatter plot data (1W + 1M)...")
+    symbols = get_top50_symbols()
+    result = []
+
+    for symbol in symbols:
+        try:
+            # Fetch both RSI 1W and 1M
+            rsi_1w = fetch_coinglass_rsi(symbol, '1w')
+            rsi_1m = fetch_coinglass_rsi(symbol, '1m')
+
+            # Fallback if CoinGlass fails
+            if not rsi_1w or rsi_1w.get('rsi') is None:
+                rsi_1w_val = calculate_rsi_from_binance(symbol, '1w')
+            else:
+                rsi_1w_val = round(rsi_1w['rsi'], 1)
+
+            if not rsi_1m or rsi_1m.get('rsi') is None:
+                rsi_1m_val = calculate_rsi_from_binance(symbol, '1m')
+            else:
+                rsi_1m_val = round(rsi_1m['rsi'], 1)
+
+            if rsi_1w_val is not None and rsi_1m_val is not None:
+                # Determine zone based on RSI values
+                zone = 'neutral'
+                if rsi_1w_val > 70 or rsi_1m_val > 70:
+                    zone = 'overbought'
+                elif rsi_1w_val < 30 or rsi_1m_val < 30:
+                    zone = 'oversold'
+                elif 60 <= rsi_1w_val <= 70 or 60 <= rsi_1m_val <= 70:
+                    zone = 'strong'
+                elif 30 <= rsi_1w_val <= 40 or 30 <= rsi_1m_val <= 40:
+                    zone = 'weak'
+
+                result.append({
+                    'symbol': symbol,
+                    'rsi_1w': rsi_1w_val,
+                    'rsi_1m': rsi_1m_val,
+                    'zone': zone,
+                    'timestamp': datetime.now().isoformat()
+                })
+        except Exception as e:
+            print(f"[RSI] Error building scatter for {symbol}: {e}")
+            continue
+
+    # Cache result
+    cache.set(cache_key, result)
+
+    print(f"[RSI] Built scatter plot with {len(result)} / {len(symbols)} coins")
+    return result
+
+
 def init_rsi_db():
     """Initialize RSI engine"""
     print("[RSI] Engine initialized")

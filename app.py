@@ -73,7 +73,7 @@ from smart_signals import (
     update_rsi_history, check_rsi_exit, build_retrace_alert,
     calc_rsi,
 )
-from rsi_engine import build_rsi_heatmap_data, init_rsi_db, clear_rsi_cache
+from rsi_engine import build_rsi_heatmap_data, init_rsi_db, clear_rsi_cache, build_scatter_plot_data
 from lexique import get_all_terms, get_term, get_by_category, search_terms
 from lexique import get_categories as get_lexique_categories
 from backtest_engine import (
@@ -3505,6 +3505,22 @@ def api_heatmap_rsi_refresh():
         clear_rsi_cache()
         return jsonify({'success': True, 'message': 'RSI cache cleared'})
     except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route("/api/heatmap/scatter")
+@require_tier('member')
+def api_heatmap_scatter():
+    """Get RSI scatter plot data (1W vs 1M for all coins)"""
+    try:
+        data = build_scatter_plot_data()
+        return jsonify({
+            'success': True,
+            'data': data,
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        print(f"[API] /api/heatmap/scatter error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # ══════════════════════════════════════════════════════════════
