@@ -5,11 +5,9 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>◈</text></svg>">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CryptoScanner Pro V11</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@400;500;600&display=swap" rel="stylesheet">
-<script async src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
-<script async src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root {
   --bg:      #050505;
@@ -5444,71 +5442,26 @@ let chartSymbol = '', chartInstance = null;
 })();
 
 // ── SOCKET ────────────────────────────────────────────────────
-let socket = null;
-function initSocket() {
-  if (typeof io !== 'undefined' && !socket) {
-    try {
-      socket = io({reconnectionDelay: 500, reconnectionDelayMax: 5000});
-      socket.on('market_update', data => {
-      allCoins   = data.coins   || [];
-      allSignals = data.signals || [];
-      _buildLogoMap(allCoins);
-      currentExchange = data.exchange || 'binance';
-      updateExchangeUI(currentExchange);
-      document.getElementById('hdr-count').textContent = data.count || allCoins.length;
-      document.getElementById('hdr-sigs').textContent  = allSignals.length;
-      document.getElementById('hdr-ts').textContent    = data.ts || '—';
-      updateStats();
-      renderMarket();
-      renderSignals();
-      renderHeatmap();
-      loadPortfolio();
-      updateAISnapshot();
-      checkSoundAlerts(allSignals);
-      updateDashboard(data, {}, macroData);
-      updateHeroStrip();
-      });
-    } catch(e) {
-      console.warn('[Socket.io] Erreur connexion:', e);
-    }
-  }
-}
-// Appeler initSocket au chargement de la page
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initSocket);
-} else {
-  initSocket();
-}
-// Fallback: charger la page même si socket.io timeout (5s max)
-setTimeout(() => {
-  if (!socket) {
-    console.warn('[Socket.io] Timeout - page continue sans socket');
-  }
-}, 5000);
-
-// ── TAB ACCESS RULES ──────────────────────────────────────────
-const TAB_ACCESS_RULES = {
-  watchlist:       'member',
-  portfolio:       'member',
-  journal:         'member',
-  alertes:         'member',
-  exchange_connect:'member',
-  whales:          'member',
-  forex:           'member',
-  indices:         'member',
-  mood:            'member',
-  institutional_flows: 'member',
-  smart:           'paid',
-  cot:             'paid',
-  cvd:             'paid',
-  ai:              'paid',
-  backtest:        'paid',
-  multiex:         'paid',
-  investor:        'paid',
-  brief_vip:       'vip',
-  setups:          'vip',
-  blacklist:       'admin',
-};
+const socket = io();
+socket.on('market_update', data => {
+  allCoins   = data.coins   || [];
+  allSignals = data.signals || [];
+  _buildLogoMap(allCoins);
+  currentExchange = data.exchange || 'binance';
+  updateExchangeUI(currentExchange);
+  document.getElementById('hdr-count').textContent = data.count || allCoins.length;
+  document.getElementById('hdr-sigs').textContent  = allSignals.length;
+  document.getElementById('hdr-ts').textContent    = data.ts || '—';
+  updateStats();
+  renderMarket();
+  renderSignals();
+  renderHeatmap();
+  loadPortfolio();
+  updateAISnapshot();
+  checkSoundAlerts(allSignals);
+  updateDashboard(data, {}, macroData);
+  updateHeroStrip();
+});
 
 // ── TABS ──────────────────────────────────────────────────────
 function showTab(name) {
@@ -8217,6 +8170,31 @@ const ACCESS_ROLE_ORDER = {
   admin: 4,
   banned: -1
 };
+const TAB_ACCESS_RULES = {
+  // ── Visitor (libre) ── dashboard, market, signals, heatmap, news, macro, calculator, lexique, settings
+  // ── Member ───────────────────────────────────────────────────────────────────
+  watchlist:       'member',
+  portfolio:       'member',
+  journal:         'member',
+  alertes:         'member',
+  exchange_connect:'member',
+  whales:          'member',   // alertes institutionnelles
+  forex:           'member',   // taux forex live
+  indices:         'member',   // indices globaux
+  mood:            'member',   // market mood
+  institutional_flows: 'member', // liquidations + funding rates
+  // ── Paid ─────────────────────────────────────────────────────────────────────
+  smart:           'paid',     // Smart Signals avancés (avantage compétitif)
+  cot:             'paid',     // COT CFTC institutionnel
+  cvd:             'paid',     // CVD Flow order book
+  ai:              'paid',     // IA Analyste personnalisée
+  backtest:        'paid',     // Backtesting stratégies
+  multiex:         'paid',     // Multi-exchange comparaison
+  investor:        'paid',     // Analyse investisseur complète
+  // ── Admin ────────────────────────────────────────────────────────────────────
+  blacklist:       'admin',    // Gestion blacklist coins
+};
+
 // ══════════════════════════════════════════════════════════════
 // TIER ACCESS INITIALIZATION — Called on page load
 // ══════════════════════════════════════════════════════════════
