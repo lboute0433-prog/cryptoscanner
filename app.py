@@ -15,7 +15,7 @@ import threading, time, os, sys, sqlite3
 from db import (
     get_connection, migrate_add_subscription_tier, migrate_add_platform_settings,
     get_setting, set_setting, toggle_user_exchange_setting, get_user_enabled_exchanges,
-    migrate_add_exchange_tables, load_admin_alert_settings, init_alert_settings,
+    migrate_add_exchange_tables, init_alert_settings,
     migrate_add_watchlist_table
 )
 import requests as req
@@ -376,7 +376,6 @@ def _send_smart_alerts(signals):
     global _last_alert_time
 
     # ── Load settings from admin config ──────────────────────────────────────
-    from scanner_engine import load_admin_alert_settings
     settings = load_admin_alert_settings()
     score_min = settings.get("score_min", 85)
     max_per_cycle = settings.get("max_per_cycle", 3)
