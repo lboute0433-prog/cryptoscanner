@@ -656,18 +656,24 @@ def rsi_heatmap_warmer():
         try:
             print("[RSI] Warming cache...")
 
-            # Build data
-            data_1w = build_rsi_heatmap_data('1w')
-            data_1m = build_rsi_heatmap_data('1m')
+            # Build data with timeout
+            data_1w = build_rsi_heatmap_data('1w') or []
+            print(f"[RSI] Built 1w: {len(data_1w)} coins")
+
+            data_1m = build_rsi_heatmap_data('1m') or []
+            print(f"[RSI] Built 1m: {len(data_1m)} coins")
 
             # Store in DB (shared across all workers)
             set_setting('rsi_heatmap_cache_1w', json.dumps(data_1w))
             set_setting('rsi_heatmap_cache_1m', json.dumps(data_1m))
 
-            print(f"[RSI] Cache warmed: {len(data_1w)} coins (1w), {len(data_1m)} coins (1m)")
+            print(f"[RSI] Cache warmed and saved to DB")
         except Exception as e:
             print(f"[RSI] Warmer error: {e}")
+            import traceback
+            traceback.print_exc()
 
+        print("[RSI] Next warmup in 240 seconds")
         time.sleep(240)  # Warm cache every 4 minutes
 
 
