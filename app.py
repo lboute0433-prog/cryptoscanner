@@ -649,14 +649,22 @@ _background_tasks_lock = threading.Lock()
 
 def rsi_heatmap_warmer():
     """Background task: Warm RSI heatmap cache every 4 minutes"""
+    import json
     print("[RSI] Heatmap warmer started")
     time.sleep(5)  # Wait for app to settle
     while True:
         try:
             print("[RSI] Warming cache...")
-            build_rsi_heatmap_data('1w')
-            build_rsi_heatmap_data('1m')
-            print("[RSI] Cache warmed ✓")
+
+            # Build data
+            data_1w = build_rsi_heatmap_data('1w')
+            data_1m = build_rsi_heatmap_data('1m')
+
+            # Store in DB (shared across all workers)
+            set_setting('rsi_heatmap_cache_1w', json.dumps(data_1w))
+            set_setting('rsi_heatmap_cache_1m', json.dumps(data_1m))
+
+            print(f"[RSI] Cache warmed: {len(data_1w)} coins (1w), {len(data_1m)} coins (1m)")
         except Exception as e:
             print(f"[RSI] Warmer error: {e}")
 
@@ -3566,24 +3574,39 @@ def api_heatmap_rsi():
 @app.route("/api/heatmap/scatter")
 @require_tier('free')
 def api_heatmap_scatter():
-    """Alias for RSI heatmap scatter plot (frontend compatible) - cache only"""
+    """Alias for RSI heatmap scatter plot (frontend compatible) - DB cache"""
     timeframe = request.args.get('timeframe', '1w')
     if timeframe not in ['1w', '1m']:
         return jsonify({'error': 'Invalid timeframe'}), 400
 
     try:
-        from rsi_engine import cache
-        cache_key = f"rsi_heatmap_{timeframe}"
+        import json
+        conn = get_connection()
 
-        # Return cache only (warmer populates every 4 minutes)
-        cached_data = cache.get(cache_key)
+        # Try to get from DB cache (works across all gunicorn workers)
+        row = conn.execute(
+            "SELECT value FROM platform_settings WHERE key = ?",
+            (f"rsi_heatmap_cache_{timeframe}",)
+        ).fetchone()
+
+        cached_data = []
+        source = 'empty'
+
+        if row:
+            try:
+                cached_data = json.loads(row[0])
+                source = 'db'
+            except:
+                pass
+
+        conn.close()
+
         return jsonify({
             'success': True,
-            'data': cached_data or [],
+            'data': cached_data,
             'timeframe': timeframe,
             'timestamp': datetime.now().isoformat(),
-            'source': 'cache',
-            'cached': cached_data is not None
+            'source': source
         })
     except Exception as e:
         print(f"[API] /api/heatmap/scatter error: {e}")
