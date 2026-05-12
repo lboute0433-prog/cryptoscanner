@@ -3576,21 +3576,6 @@ def api_heatmap_rsi_refresh():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
-@app.route("/api/heatmap/scatter")
-@require_tier('free')
-def api_heatmap_scatter():
-    """Get RSI scatter plot data (1W vs 1M for all coins)"""
-    try:
-        data = build_scatter_plot_data()
-        return jsonify({
-            'success': True,
-            'data': data,
-            'timestamp': datetime.now().isoformat()
-        })
-    except Exception as e:
-        print(f"[API] /api/heatmap/scatter error: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
 # ══════════════════════════════════════════════════════════════
 # LANCER LES THREADS DE FOND AU DÉMARRAGE DU MODULE
 # ══════════════════════════════════════════════════════════════
