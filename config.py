@@ -49,7 +49,7 @@ def env_bool(name: str, default: bool = False) -> bool:
 load_dotenv()
 
 IS_RAILWAY = bool(os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("PORT"))
-DATABASE_PATH = os.environ.get("DATABASE_PATH") or os.environ.get("DB_PATH") or str(BASE_DIR / "cryptoscanner.db")
+DATABASE_PATH = os.environ.get("DATABASE_PATH") or os.environ.get("DB_PATH") or "/app/cryptoscanner.db" if os.path.exists("/app") else str(BASE_DIR / "cryptoscanner.db")
 SQLITE_TIMEOUT_SECONDS = float(os.environ.get("SQLITE_TIMEOUT_SECONDS", "15"))
 SQLITE_ENABLE_WAL = env_bool("SQLITE_ENABLE_WAL", default=not IS_RAILWAY)
 RUN_BACKGROUND_JOBS = env_bool("RUN_BACKGROUND_JOBS", default=not IS_RAILWAY)
