@@ -3553,6 +3553,21 @@ def api_heatmap_scatter():
         return jsonify({'error': 'Invalid timeframe'}), 400
 
     try:
+        from rsi_engine import cache
+        cache_key = f"rsi_heatmap_{timeframe}"
+
+        # Try cache first (fast path)
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return jsonify({
+                'success': True,
+                'data': cached_data,
+                'timeframe': timeframe,
+                'timestamp': datetime.now().isoformat(),
+                'source': 'cache'
+            })
+
+        # If no cache, build non-blocking (warmer will populate soon)
         data = build_rsi_heatmap_data(timeframe=timeframe)
         return jsonify({
             'success': True,
