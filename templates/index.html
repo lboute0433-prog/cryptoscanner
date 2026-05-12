@@ -14796,16 +14796,19 @@ async function loadRSIHeatmap(timeframe='1w') {
   }
   
   try {
-    const response = await fetch(`/api/heatmap/rsi?timeframe=${timeframe}`, {
+    const response = await fetch('/api/heatmap/scatter', {
       credentials: 'include'
     });
-    
+
     if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Veuillez vous connecter pour acceder au RSI Heatmap');
+      }
       throw new Error(`API error: ${response.status}`);
     }
-    
+
     const json = await response.json();
-    
+
     if (json.success && json.data) {
       rsiHeatmapCache[timeframe] = json.data;
       renderRSIHeatmap(json.data, timeframe);
