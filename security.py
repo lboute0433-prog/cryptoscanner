@@ -902,8 +902,8 @@ def require_tier(minimum_tier):
                 return jsonify({'error': 'Not authenticated', 'ok': False}), 401
 
             # Validate session using local database query to avoid circular import
-            conn = get_connection()
             try:
+                conn = get_connection()
                 sess = conn.execute(
                     "SELECT token, user_id, created FROM sessions WHERE token = ?",
                     (token,)
