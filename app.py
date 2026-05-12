@@ -3545,7 +3545,7 @@ def api_heatmap_rsi():
 
 
 @app.route("/api/heatmap/scatter")
-@require_tier('member')
+@require_tier('free')
 def api_heatmap_scatter():
     """Alias for RSI heatmap scatter plot (frontend compatible)"""
     timeframe = request.args.get('timeframe', '1w')
