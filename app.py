@@ -2808,6 +2808,25 @@ _alert_configs = {
     }
 }
 
+def _load_alert_configs_from_db():
+    """Load alert configurations from database if they exist"""
+    global _alert_configs
+    try:
+        conn = connect_sqlite()
+        cursor = conn.execute("SELECT alert_type, config_json FROM alert_settings")
+        for row in cursor.fetchall():
+            alert_type, config_json = row
+            if alert_type in _alert_configs:
+                try:
+                    loaded_config = json.loads(config_json)
+                    _alert_configs[alert_type].update(loaded_config)
+                    print(f"[Startup] Loaded {alert_type} config from DB")
+                except:
+                    print(f"[Startup] Failed to load {alert_type} config from DB")
+        conn.close()
+    except Exception as e:
+        print(f"[Startup] No alert configs in DB yet: {e}")
+
 @app.route("/api/admin/alerts/config", methods=["GET"])
 def api_admin_alerts_config_get_all():
     """Récupère toutes les configs d'alertes"""
@@ -2835,12 +2854,17 @@ def api_admin_alerts_config_save(alert_type):
         # Mettre à jour la config en mémoire
         _alert_configs[alert_type].update(data)
 
-        # TODO: Persister en base de données
-        # conn = connect_sqlite()
-        # conn.execute("""INSERT OR REPLACE INTO alert_configs (alert_type, config)
-        #             VALUES (?, ?)""", (alert_type, json.dumps(data)))
-        # conn.commit()
-        # conn.close()
+        # Persister en base de données
+        try:
+            conn = connect_sqlite()
+            conn.execute("""INSERT OR REPLACE INTO alert_settings (alert_type, config_json, last_modified, modified_by)
+                        VALUES (?, ?, ?, ?)""",
+                        (alert_type, json.dumps(data), datetime.now().isoformat(), sess.get("username", "admin")))
+            conn.commit()
+            conn.close()
+            print(f"[AdminAlerts] Saved {alert_type} config to DB")
+        except Exception as db_err:
+            print(f"[AdminAlerts] DB save error for {alert_type}: {db_err}")
 
         return jsonify({"ok": True, "alert_type": alert_type, "config": _alert_configs[alert_type]})
     except Exception as e:
@@ -3560,6 +3584,13 @@ try:
     print("[Init] Database initialized ✓")
 except Exception as e:
     print(f"[Init] Database init error: {e}")
+
+try:
+    # Load alert configs from database
+    _load_alert_configs_from_db()
+    print("[Init] Alert configs loaded ✓")
+except Exception as e:
+    print(f"[Init] Alert config load error: {e}")
 
 try:
     start_runtime_services()
