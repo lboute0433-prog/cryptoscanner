@@ -650,8 +650,10 @@ _background_tasks_lock = threading.Lock()
 def rsi_heatmap_warmer():
     """Background task: Warm RSI heatmap cache every 4 minutes (startup uses fast_mode)"""
     import json
+    from db import get_connection
+
     print("[RSI] Heatmap warmer started")
-    time.sleep(5)  # Wait for app to settle
+    time.sleep(8)  # Wait for app to fully settle
 
     is_first_run = True
     while True:
@@ -661,7 +663,7 @@ def rsi_heatmap_warmer():
             if is_first_run:
                 print("[RSI] Warming cache (FAST MODE - first run)...")
             else:
-                print("[RSI] Warming cache...")
+                print("[RSI] Warming cache (normal mode)...")
 
             # Build data with timeout
             data_1w = build_rsi_heatmap_data('1w', timeout_seconds=45, fast_mode=fast_mode) or []
@@ -670,11 +672,34 @@ def rsi_heatmap_warmer():
             data_1m = build_rsi_heatmap_data('1m', timeout_seconds=45, fast_mode=fast_mode) or []
             print(f"[RSI] Built 1m: {len(data_1m)} coins")
 
-            # Store in DB (shared across all workers)
-            set_setting('rsi_heatmap_cache_1w', json.dumps(data_1w))
-            set_setting('rsi_heatmap_cache_1m', json.dumps(data_1m))
+            # Store in DB with explicit commit
+            print("[RSI] Writing to database...")
+            conn = get_connection()
+            try:
+                conn.execute(
+                    "INSERT OR REPLACE INTO platform_settings (key, value, updated_at) VALUES (?, ?, datetime('now'))",
+                    ('rsi_heatmap_cache_1w', json.dumps(data_1w))
+                )
+                conn.execute(
+                    "INSERT OR REPLACE INTO platform_settings (key, value, updated_at) VALUES (?, ?, datetime('now'))",
+                    ('rsi_heatmap_cache_1m', json.dumps(data_1m))
+                )
+                conn.commit()
+                print(f"[RSI] Database commit successful")
+            finally:
+                conn.close()
 
-            print(f"[RSI] Cache warmed and saved to DB (first_run={is_first_run})")
+            # Verify write
+            verify_conn = get_connection()
+            try:
+                count = verify_conn.execute(
+                    "SELECT COUNT(*) FROM platform_settings WHERE key LIKE 'rsi_heatmap%'"
+                ).fetchone()[0]
+                print(f"[RSI] Verification: {count} cache entries in DB")
+            finally:
+                verify_conn.close()
+
+            print(f"[RSI] Cache warmed successfully (first_run={is_first_run})")
             is_first_run = False
         except Exception as e:
             print(f"[RSI] Warmer error: {e}")
