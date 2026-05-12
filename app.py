@@ -3673,9 +3673,35 @@ try:
     # Initialize database tables FIRST
     from scanner_engine import init_db
     init_db()
-    print("[Init] Database initialized ✓")
+    print("[Init] Database initialized OK")
 except Exception as e:
     print(f"[Init] Database init error: {e}")
+
+try:
+    # Eager warm RSI cache on startup (fast mode = no slow APIs)
+    print("[Init] Warming RSI cache on startup (eager mode)...")
+    import json
+    from rsi_engine import build_rsi_heatmap_data
+    from db import get_connection
+
+    data_1w = build_rsi_heatmap_data('1w', timeout_seconds=30, fast_mode=True) or []
+    data_1m = build_rsi_heatmap_data('1m', timeout_seconds=30, fast_mode=True) or []
+
+    conn = get_connection()
+    conn.execute(
+        "INSERT OR REPLACE INTO platform_settings (key, value, updated_at) VALUES (?, ?, datetime('now'))",
+        ('rsi_heatmap_cache_1w', json.dumps(data_1w))
+    )
+    conn.execute(
+        "INSERT OR REPLACE INTO platform_settings (key, value, updated_at) VALUES (?, ?, datetime('now'))",
+        ('rsi_heatmap_cache_1m', json.dumps(data_1m))
+    )
+    conn.commit()
+    conn.close()
+
+    print(f"[Init] RSI cache warmed: {len(data_1w)} coins (1w), {len(data_1m)} coins (1m) OK")
+except Exception as e:
+    print(f"[Init] RSI cache warm error (non-critical): {e}")
 
 try:
     # Load alert configs from database
