@@ -75,7 +75,7 @@ def get_top50_symbols():
                 "per_page": 50,
                 "page": 1
             },
-            timeout=8,
+            timeout=3,
             headers={"User-Agent": "Mozilla/5.0"}
         )
         if r.status_code == 200:
@@ -112,7 +112,7 @@ def fetch_coinglass_rsi(symbol, timeframe='7d'):
                 "pair": pair,
                 "timeframe": cg_timeframe
             },
-            timeout=8,
+            timeout=2,
             headers={"User-Agent": "Mozilla/5.0"}
         )
 
@@ -154,7 +154,7 @@ def calculate_rsi_from_binance(symbol, interval='1w', period=14):
                 "interval": binance_interval,
                 "limit": period + 5
             },
-            timeout=8
+            timeout=3
         )
 
         if r.status_code != 200:
