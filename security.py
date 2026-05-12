@@ -902,6 +902,7 @@ def require_tier(minimum_tier):
                 return jsonify({'error': 'Not authenticated', 'ok': False}), 401
 
             # Validate session using local database query to avoid circular import
+            conn = None
             try:
                 conn = get_connection()
                 sess = conn.execute(
@@ -954,7 +955,8 @@ def require_tier(minimum_tier):
             except Exception as e:
                 return jsonify({'error': str(e), 'ok': False}), 500
             finally:
-                conn.close()
+                if conn:
+                    conn.close()
 
         return wrapper
     return decorator
