@@ -187,9 +187,14 @@ def calculate_rsi_from_binance(symbol, interval='1w', period=14):
         return None
 
 
-def build_rsi_heatmap_data(timeframe='1w'):
+def build_rsi_heatmap_data(timeframe='1w', timeout_seconds=45, fast_mode=False):
     """
-    Main function: Build RSI heatmap for top 50 coins.
+    Main function: Build RSI heatmap for top 50 coins with timeout protection.
+
+    Args:
+        timeframe: '1w' or '1m'
+        timeout_seconds: Max time to spend building heatmap (45s default)
+        fast_mode: If True, skip CoinGlass API entirely, use only Binance
 
     Returns:
         [
@@ -203,40 +208,59 @@ def build_rsi_heatmap_data(timeframe='1w'):
         print(f"[RSI] Cache hit for {cache_key}")
         return cached
 
-    print(f"[RSI] Building heatmap for {timeframe}...")
+    print(f"[RSI] Building heatmap for {timeframe} (timeout={timeout_seconds}s, fast_mode={fast_mode})...")
+    import time as time_module
+    start_time = time_module.time()
+
     symbols = get_top50_symbols()
     result = []
+    api_errors = 0
+    skipped = 0
 
-    for symbol in symbols:
+    for i, symbol in enumerate(symbols):
+        # Check if we're running out of time
+        elapsed = time_module.time() - start_time
+        if elapsed > timeout_seconds:
+            print(f"[RSI] Timeout reached ({elapsed:.1f}s) after {len(result)} coins. Stopping.")
+            skipped = len(symbols) - i
+            break
+
         try:
-            # Try CoinGlass first
-            rsi_data = fetch_coinglass_rsi(symbol, timeframe)
+            rsi_val = None
 
-            if rsi_data and rsi_data.get('rsi') is not None:
+            # Try CoinGlass only if not in fast_mode
+            if not fast_mode:
+                try:
+                    rsi_data = fetch_coinglass_rsi(symbol, timeframe)
+                    if rsi_data and rsi_data.get('rsi') is not None:
+                        rsi_val = rsi_data['rsi']
+                except Exception as e:
+                    api_errors += 1
+                    if api_errors <= 3:  # Log first 3 errors only
+                        print(f"[RSI] CoinGlass skip (will use Binance): {e}")
+
+            # Fallback to Binance if CoinGlass failed or skipped
+            if rsi_val is None:
+                rsi_val = calculate_rsi_from_binance(symbol, timeframe)
+
+            if rsi_val is not None:
                 result.append({
                     'symbol': symbol,
-                    f'rsi_{timeframe[:2]}': round(rsi_data['rsi'], 1),
-                    'timestamp': rsi_data.get('timestamp', ''),
-                    'state': 'success'
+                    f'rsi_{timeframe[:2]}': rsi_val,
+                    'timestamp': datetime.now().isoformat(),
+                    'state': 'success' if not fast_mode else 'fast'
                 })
-            else:
-                # Fallback to Binance
-                rsi_val = calculate_rsi_from_binance(symbol, timeframe)
-                if rsi_val is not None:
-                    result.append({
-                        'symbol': symbol,
-                        f'rsi_{timeframe[:2]}': rsi_val,
-                        'timestamp': datetime.now().isoformat(),
-                        'state': 'fallback'
-                    })
         except Exception as e:
-            print(f"[RSI] Error building for {symbol}: {e}")
+            if api_errors <= 3:  # Log first 3 errors only
+                print(f"[RSI] Error for {symbol}: {e}")
+            api_errors += 1
             continue
 
     # Cache result
     cache.set(cache_key, result)
 
-    print(f"[RSI] Built {len(result)} / {len(symbols)} coins for {timeframe}")
+    elapsed = time_module.time() - start_time
+    print(f"[RSI] Built {len(result)} / {len(symbols)} coins for {timeframe} in {elapsed:.1f}s (skipped={skipped}, errors={api_errors})")
     return result
 
 

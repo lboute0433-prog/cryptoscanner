@@ -648,26 +648,34 @@ _background_tasks_lock = threading.Lock()
 
 
 def rsi_heatmap_warmer():
-    """Background task: Warm RSI heatmap cache every 4 minutes"""
+    """Background task: Warm RSI heatmap cache every 4 minutes (startup uses fast_mode)"""
     import json
     print("[RSI] Heatmap warmer started")
     time.sleep(5)  # Wait for app to settle
+
+    is_first_run = True
     while True:
         try:
-            print("[RSI] Warming cache...")
+            # Use fast_mode on first run to avoid long API waits during startup
+            fast_mode = is_first_run
+            if is_first_run:
+                print("[RSI] Warming cache (FAST MODE - first run)...")
+            else:
+                print("[RSI] Warming cache...")
 
             # Build data with timeout
-            data_1w = build_rsi_heatmap_data('1w') or []
+            data_1w = build_rsi_heatmap_data('1w', timeout_seconds=45, fast_mode=fast_mode) or []
             print(f"[RSI] Built 1w: {len(data_1w)} coins")
 
-            data_1m = build_rsi_heatmap_data('1m') or []
+            data_1m = build_rsi_heatmap_data('1m', timeout_seconds=45, fast_mode=fast_mode) or []
             print(f"[RSI] Built 1m: {len(data_1m)} coins")
 
             # Store in DB (shared across all workers)
             set_setting('rsi_heatmap_cache_1w', json.dumps(data_1w))
             set_setting('rsi_heatmap_cache_1m', json.dumps(data_1m))
 
-            print(f"[RSI] Cache warmed and saved to DB")
+            print(f"[RSI] Cache warmed and saved to DB (first_run={is_first_run})")
+            is_first_run = False
         except Exception as e:
             print(f"[RSI] Warmer error: {e}")
             import traceback
