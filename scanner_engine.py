@@ -1595,7 +1595,7 @@ def load_admin_alert_settings() -> dict:
     # Define all defaults
     DEFAULTS = {
         # SMART SIGNALS Block
-        "score_min": 85,
+        "score_min": 60,  # Reduced from 85 to show more signals (was too strict)
         "variation_pump": 4.0,
         "variation_dump": -4.0,
         "vol_mult_min": 5.0,
