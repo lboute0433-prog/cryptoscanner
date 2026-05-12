@@ -542,7 +542,9 @@ def scan_loop():
                     gainers = len([c for c in coins if c.get("change_pct",0) > 0])
                     try:
                         data["dna_score"] = calc_market_dna_score(fg, dom.get("btc"), len(data.get("signals",[])), len(coins), gainers)
-                    except: pass
+                    except Exception as e:
+                        print(f"[Scan] ERROR calc_market_dna_score: {e}")
+                        data["dna_score"] = 0  # Fallback value
                     socketio.emit("market_update", data, broadcast=True)
                     print(f"[Scan] {len(coins)} coins | {len(data.get('signals',[]))} signaux")
             
@@ -550,17 +552,21 @@ def scan_loop():
                 try:
                     info = engine.fetch_market_info()
                     if info: socketio.emit("market_info_update", info, broadcast=True)
-                except: pass
+                except Exception as e:
+                    print(f"[Scan] ERROR fetch_market_info: {e}")
                 try:
-                    socketio.emit("whale_update", engine.fetch_whale_alerts(), broadcast=True)
-                except: pass
-            
+                    whale_data = engine.fetch_whale_alerts()
+                    socketio.emit("whale_update", whale_data, broadcast=True)
+                except Exception as e:
+                    print(f"[Scan] ERROR fetch_whale_alerts: {e}")
+
             if cycle % 60 == 0:
                 try:
                     news = fetch_news_rss()
                     critical = [n for n in news if n.get("is_critical")]
                     socketio.emit("news_update", {"all":news[:20],"critical":critical[:5]}, broadcast=True)
-                except: pass
+                except Exception as e:
+                    print(f"[Scan] ERROR fetch_news_rss: {e}")
         except Exception as e:
             print(f"[scan_loop] {e}")
         cycle += 1
@@ -2868,8 +2874,8 @@ def api_ticker():
                     "change_str": change_str,
                     "trend": trend
                 })
-            except:
-                pass
+            except Exception as e:
+                print(f"[Ticker] ERROR processing {sym}: {e}")
 
         return jsonify({"items": items})
     except Exception as e:
