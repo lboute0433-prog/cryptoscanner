@@ -3679,29 +3679,37 @@ except Exception as e:
 
 try:
     # Eager warm RSI cache on startup (fast mode = no slow APIs)
-    print("[Init] Warming RSI cache on startup (eager mode)...")
+    print("[Init] Warming RSI cache on startup...")
     import json
     from rsi_engine import build_rsi_heatmap_data
-    from db import get_connection
+    from db import set_setting
+    import sys
 
-    data_1w = build_rsi_heatmap_data('1w', timeout_seconds=30, fast_mode=True) or []
-    data_1m = build_rsi_heatmap_data('1m', timeout_seconds=30, fast_mode=True) or []
+    print("[Init] Building RSI data (timeout=25s, fast_mode=True)...", flush=True)
+    sys.stdout.flush()
 
-    conn = get_connection()
-    conn.execute(
-        "INSERT OR REPLACE INTO platform_settings (key, value, updated_at) VALUES (?, ?, datetime('now'))",
-        ('rsi_heatmap_cache_1w', json.dumps(data_1w))
-    )
-    conn.execute(
-        "INSERT OR REPLACE INTO platform_settings (key, value, updated_at) VALUES (?, ?, datetime('now'))",
-        ('rsi_heatmap_cache_1m', json.dumps(data_1m))
-    )
-    conn.commit()
-    conn.close()
+    data_1w = build_rsi_heatmap_data('1w', timeout_seconds=25, fast_mode=True) or []
+    print(f"[Init] Got 1w: {len(data_1w)} coins", flush=True)
+    sys.stdout.flush()
 
-    print(f"[Init] RSI cache warmed: {len(data_1w)} coins (1w), {len(data_1m)} coins (1m) OK")
+    data_1m = build_rsi_heatmap_data('1m', timeout_seconds=25, fast_mode=True) or []
+    print(f"[Init] Got 1m: {len(data_1m)} coins", flush=True)
+    sys.stdout.flush()
+
+    # Use set_setting() which has proper DB handling
+    print("[Init] Saving to database...", flush=True)
+    sys.stdout.flush()
+
+    set_setting('rsi_heatmap_cache_1w', json.dumps(data_1w))
+    set_setting('rsi_heatmap_cache_1m', json.dumps(data_1m))
+
+    print(f"[Init] RSI cache initialized: {len(data_1w)} coins (1w), {len(data_1m)} coins (1m)", flush=True)
+    sys.stdout.flush()
 except Exception as e:
-    print(f"[Init] RSI cache warm error (non-critical): {e}")
+    print(f"[Init] RSI cache init error (non-critical): {e}", flush=True)
+    import traceback
+    traceback.print_exc()
+    sys.stdout.flush()
 
 try:
     # Load alert configs from database
