@@ -406,19 +406,31 @@ def get_setting(key: str, default: str = "") -> str:
 
 def set_setting(key: str, value: str) -> bool:
     """Set a platform setting in the database."""
-    conn = get_connection()
     try:
-        conn.execute(
+        conn = get_connection()
+        print(f"[DB] set_setting({key}): connection OK, writing {len(str(value))} bytes")
+
+        cursor = conn.cursor()
+        cursor.execute(
             "INSERT OR REPLACE INTO platform_settings (key, value, updated_at) VALUES (?, ?, datetime('now'))",
             (key, str(value))
         )
+        rows = cursor.rowcount
         conn.commit()
+
+        # Verify write
+        verify_cursor = conn.cursor()
+        verify_cursor.execute("SELECT COUNT(*) FROM platform_settings WHERE key = ?", (key,))
+        verify_count = verify_cursor.fetchone()[0]
+
+        print(f"[DB] set_setting({key}): written {rows} rows, verified {verify_count} rows in DB")
+        conn.close()
         return True
     except Exception as e:
-        print(f"[DB] Error setting platform_settings: {e}")
+        print(f"[DB] ERROR set_setting({key}): {e}")
+        import traceback
+        traceback.print_exc()
         return False
-    finally:
-        conn.close()
 
 
 # ── Exchange data tables (Phase 1) ────────────────────────────
