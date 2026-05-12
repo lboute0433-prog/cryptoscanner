@@ -3545,6 +3545,27 @@ def api_heatmap_rsi():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@app.route("/api/heatmap/scatter")
+@require_tier('member')
+def api_heatmap_scatter():
+    """Alias for RSI heatmap scatter plot (frontend compatible)"""
+    timeframe = request.args.get('timeframe', '1w')
+    if timeframe not in ['1w', '1m']:
+        return jsonify({'error': 'Invalid timeframe'}), 400
+
+    try:
+        data = build_rsi_heatmap_data(timeframe=timeframe)
+        return jsonify({
+            'success': True,
+            'data': data,
+            'timeframe': timeframe,
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        print(f"[API] /api/heatmap/scatter error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @app.route("/api/heatmap/rsi/refresh", methods=['POST'])
 @require_tier('member')
 def api_heatmap_rsi_refresh():

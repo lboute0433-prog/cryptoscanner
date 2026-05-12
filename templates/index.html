@@ -7765,9 +7765,14 @@ function enhanceCOTChart(history, asset) {
   const canvas = document.getElementById('cot-trend-chart');
   if (!canvas) return;
 
-  // Destroy existing chart if any
+  // Destroy existing chart instances (both types to avoid "canvas already in use" error)
+  if (_cotChart) {
+    _cotChart.destroy();
+    _cotChart = null;
+  }
   if (window.cotChartInstance) {
     window.cotChartInstance.destroy();
+    window.cotChartInstance = null;
   }
 
   // Prepare data
