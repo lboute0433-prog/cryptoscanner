@@ -1999,6 +1999,25 @@ def api_alerts_delete(aid):
     return jsonify({"ok": True})
 
 
+@app.route("/api/alerts/unread-count", methods=["GET"])
+def api_alerts_unread_count():
+    """Get count of unread alerts for current user"""
+    sess, denied = _role_guard("free")
+    if denied:
+        return denied
+    user_id = sess["user_id"]
+    try:
+        conn = get_connection()
+        count = conn.execute(
+            "SELECT COUNT(*) FROM alerts WHERE user_id = ? AND read = 0",
+            (user_id,)
+        ).fetchone()[0]
+        conn.close()
+        return jsonify({"count": count, "ok": True})
+    except Exception as e:
+        return jsonify({"count": 0, "error": str(e), "ok": False}), 200
+
+
 @app.route("/api/watchlist", methods=["GET", "POST"])
 def api_watchlist():
     sess, denied = _role_guard("member")
@@ -3547,7 +3566,7 @@ def api_heatmap_rsi():
 @app.route("/api/heatmap/scatter")
 @require_tier('free')
 def api_heatmap_scatter():
-    """Alias for RSI heatmap scatter plot (frontend compatible)"""
+    """Alias for RSI heatmap scatter plot (frontend compatible) - cache only"""
     timeframe = request.args.get('timeframe', '1w')
     if timeframe not in ['1w', '1m']:
         return jsonify({'error': 'Invalid timeframe'}), 400
@@ -3556,28 +3575,19 @@ def api_heatmap_scatter():
         from rsi_engine import cache
         cache_key = f"rsi_heatmap_{timeframe}"
 
-        # Try cache first (fast path)
+        # Return cache only (warmer populates every 4 minutes)
         cached_data = cache.get(cache_key)
-        if cached_data:
-            return jsonify({
-                'success': True,
-                'data': cached_data,
-                'timeframe': timeframe,
-                'timestamp': datetime.now().isoformat(),
-                'source': 'cache'
-            })
-
-        # If no cache, build non-blocking (warmer will populate soon)
-        data = build_rsi_heatmap_data(timeframe=timeframe)
         return jsonify({
             'success': True,
-            'data': data,
+            'data': cached_data or [],
             'timeframe': timeframe,
-            'timestamp': datetime.now().isoformat()
+            'timestamp': datetime.now().isoformat(),
+            'source': 'cache',
+            'cached': cached_data is not None
         })
     except Exception as e:
         print(f"[API] /api/heatmap/scatter error: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': True, 'data': [], 'error': str(e)}), 200
 
 
 @app.route("/api/heatmap/rsi/refresh", methods=['POST'])
