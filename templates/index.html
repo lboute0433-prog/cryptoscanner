@@ -14816,7 +14816,7 @@ async function loadRSIHeatmap(timeframe='1w') {
 
     const json = await response.json();
 
-    if (json.success && json.data) {
+    if (json.success && json.data !== undefined) {
       rsiHeatmapCache[timeframe] = json.data;
       renderRSIHeatmap(json.data, timeframe);
     } else {
