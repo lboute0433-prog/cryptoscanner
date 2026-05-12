@@ -9335,7 +9335,9 @@ function renderCOTChart(history, asset) {
 
   const canvas = document.getElementById('cot-trend-chart');
   if (!canvas) return;
+  // Destroy BOTH chart instances to avoid "canvas already in use" error
   if (_cotChart) { _cotChart.destroy(); _cotChart = null; }
+  if (window.cotChartInstance) { window.cotChartInstance.destroy(); window.cotChartInstance = null; }
   const ctx = canvas.getContext('2d');
 
   // Couleurs
