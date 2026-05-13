@@ -2906,7 +2906,7 @@ def api_admin_alerts_config_get_all():
 
 @app.route("/api/admin/alerts/config/<alert_type>", methods=["POST"])
 def api_admin_alerts_config_save(alert_type):
-    """Sauvegarde la config d'un type d'alerte"""
+    """Sauvegarde la config d'un type d'alerte dans platform_settings"""
     sess, denied = _admin_guard()
     if denied:
         return denied
@@ -2919,21 +2919,36 @@ def api_admin_alerts_config_save(alert_type):
         # Mettre à jour la config en mémoire
         _alert_configs[alert_type].update(data)
 
-        # Persister en base de données
+        # Persister en base de données - SAVE TO platform_settings!
+        # This ensures load_admin_alert_settings() can find the values
         try:
             conn = connect_sqlite()
-            conn.execute("""INSERT OR REPLACE INTO alert_settings (alert_type, config_json, last_modified, modified_by)
-                        VALUES (?, ?, ?, ?)""",
-                        (alert_type, json.dumps(data), datetime.now().isoformat(), sess.get("username", "admin")))
+
+            # Save each key-value pair to platform_settings
+            for key, value in data.items():
+                # Convert value to string for storage
+                str_value = json.dumps(value) if isinstance(value, (dict, list)) else str(value)
+
+                # Use INSERT OR REPLACE to update existing or create new
+                conn.execute(
+                    "INSERT OR REPLACE INTO platform_settings (key, value, created_at, modified_at) VALUES (?, ?, ?, ?)",
+                    (key, str_value, datetime.now().isoformat(), datetime.now().isoformat())
+                )
+                print(f"[AdminAlerts] Saved {key}={str_value} to platform_settings")
+
             conn.commit()
             conn.close()
-            print(f"[AdminAlerts] Saved {alert_type} config to DB")
+            print(f"[AdminAlerts] Saved {alert_type} config to platform_settings DB")
         except Exception as db_err:
             print(f"[AdminAlerts] DB save error for {alert_type}: {db_err}")
+            import traceback
+            traceback.print_exc()
 
         return jsonify({"ok": True, "alert_type": alert_type, "config": _alert_configs[alert_type]})
     except Exception as e:
         print(f"[/api/admin/alerts/config/{alert_type} POST] {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"ok": False, "error": str(e)}), 500
 
 @app.route("/api/ticker")
