@@ -377,7 +377,7 @@ def _send_smart_alerts(signals):
 
     # ── Load settings from admin config ──────────────────────────────────────
     settings = load_admin_alert_settings()
-    score_min = settings.get("score_min", 85)
+    score_min = settings.get("score_min", 60)  # Default 60 (matching load_admin_alert_settings)
     max_per_cycle = settings.get("max_per_cycle", 3)
     cooldown_hours = settings.get("cooldown_hours", 1)
     cooldown_seconds = cooldown_hours * 3600
@@ -1608,7 +1608,7 @@ def api_smart_signals():
         print(f"[DEBUG /api/smart_signals] Loading admin settings...")
         settings = load_admin_alert_settings()
         print(f"[DEBUG /api/smart_signals] Settings loaded: {settings}")
-        score_min = settings.get("score_min", 85)
+        score_min = settings.get("score_min", 60)  # Default 60 (matching load_admin_alert_settings)
         print(f"[DEBUG /api/smart_signals] score_min = {score_min}")
 
         # Filter signals
