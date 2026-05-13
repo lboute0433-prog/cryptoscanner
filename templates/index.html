@@ -1759,14 +1759,35 @@ window.hideKpiSkeleton = function() {
   </div>
 
   <!-- Internal Tabs Menu -->
-  <div class="signal-tabs-menu" style="display:flex;gap:10px;margin-bottom:15px;border-bottom:2px solid var(--accent);flex-wrap:wrap">
-    <button class="signal-tab-btn active" data-tab="signaux-free" style="padding:10px 20px;background:transparent;border:none;color:#aaa;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;transition:all 0.2s">
+  <div class="signal-tabs-menu" style="display:flex;gap:10px;margin-bottom:15px;border-bottom:2px solid var(--accent);flex-wrap:wrap" role="tablist">
+    <button class="signal-tab-btn active"
+            id="tab-btn-free"
+            data-tab="signaux-free"
+            role="tab"
+            aria-selected="true"
+            aria-controls="signaux-free"
+            tabindex="0"
+            style="padding:10px 20px;background:transparent;border:none;color:#aaa;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;transition:all 0.2s">
       ⚡ SIGNAUX (FREE)
     </button>
-    <button class="signal-tab-btn" data-tab="signaux-smart" style="padding:10px 20px;background:transparent;border:none;color:#aaa;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;transition:all 0.2s">
+    <button class="signal-tab-btn"
+            id="tab-btn-smart"
+            data-tab="signaux-smart"
+            role="tab"
+            aria-selected="false"
+            aria-controls="signaux-smart"
+            tabindex="-1"
+            style="padding:10px 20px;background:transparent;border:none;color:#aaa;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;transition:all 0.2s">
       🧠 SMART SIGNALS (PAID)
     </button>
-    <button class="signal-tab-btn" data-tab="signaux-rsi" style="padding:10px 20px;background:transparent;border:none;color:#aaa;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;transition:all 0.2s">
+    <button class="signal-tab-btn"
+            id="tab-btn-rsi"
+            data-tab="signaux-rsi"
+            role="tab"
+            aria-selected="false"
+            aria-controls="signaux-rsi"
+            tabindex="-1"
+            style="padding:10px 20px;background:transparent;border:none;color:#aaa;cursor:pointer;font-size:13px;border-bottom:2px solid transparent;transition:all 0.2s">
       📈 RSI SURACHAT/SURVENTE
     </button>
   </div>
@@ -1775,7 +1796,11 @@ window.hideKpiSkeleton = function() {
   <div class="signal-tabs-content">
 
     <!-- TAB 1: SIGNAUX (FREE) -->
-    <div id="signaux-free" class="signal-tab-content" style="display:block">
+    <div id="signaux-free"
+         class="signal-tab-content"
+         role="tabpanel"
+         aria-labelledby="tab-btn-free"
+         style="display:block">
       <div style="color:#ccc;font-size:12px;margin-bottom:10px">
         RSI basiques + EMA200 filter • Score minimum configurable (Admin)
       </div>
@@ -1817,7 +1842,11 @@ window.hideKpiSkeleton = function() {
     </div>
 
     <!-- TAB 2: SMART SIGNALS (PAID) -->
-    <div id="signaux-smart" class="signal-tab-content" style="display:none">
+    <div id="signaux-smart"
+         class="signal-tab-content"
+         role="tabpanel"
+         aria-labelledby="tab-btn-smart"
+         style="display:none">
       <div style="color:#ccc;font-size:12px;margin-bottom:10px">
         Confirmation multi-critères · Patterns bougies · Breakouts · Divergences RSI · Score minimum <span id="smart-score-display">50</span>/100 (Admin)
       </div>
@@ -1936,7 +1965,11 @@ window.hideKpiSkeleton = function() {
     </div>
 
     <!-- TAB 3: RSI SURACHAT/SURVENTE -->
-    <div id="signaux-rsi" class="signal-tab-content" style="display:none">
+    <div id="signaux-rsi"
+         class="signal-tab-content"
+         role="tabpanel"
+         aria-labelledby="tab-btn-rsi"
+         style="display:none">
       <div style="color:#ccc;font-size:12px;margin-bottom:10px">
         Divergences RSI + Retrace potentiel • Timeframes 1W/1M • Analyse avancée pour détection de reversals
       </div>
@@ -1992,6 +2025,11 @@ window.hideKpiSkeleton = function() {
   color: var(--accent);
 }
 
+.signal-tab-btn:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
 .signal-tab-content {
   display: none;
 }
@@ -2001,43 +2039,86 @@ window.hideKpiSkeleton = function() {
 }
 </style>
 
-<!-- JS for ANALYSE SIGNAUX tabs -->
+<!-- JS for ANALYSE SIGNAUX tabs with ARIA accessibility -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // Tab switching logic for ANALYSE SIGNAUX internal tabs
-  const tabBtns = document.querySelectorAll('.signal-tab-btn');
-  const tabContents = document.querySelectorAll('.signal-tab-content');
+  // Get all tab elements
+  const tabBtns = document.querySelectorAll('[role="tab"]');
+  const tabContents = document.querySelectorAll('[role="tabpanel"]');
 
-  tabBtns.forEach(btn => {
+  // Error check
+  if (tabBtns.length === 0) {
+    console.warn('No tab buttons found with role="tab"');
+    return;
+  }
+
+  const tabs = Array.from(tabBtns);
+
+  // Click and keyboard handlers
+  tabBtns.forEach((btn, index) => {
+    // Click handler
     btn.addEventListener('click', function() {
-      const tabId = this.getAttribute('data-tab');
+      activateTab(this);
+    });
 
-      // Remove active class from all buttons and hide all content
-      tabBtns.forEach(b => b.classList.remove('active'));
-      tabContents.forEach(c => {
-        c.classList.remove('active');
-        c.style.display = 'none';
-      });
+    // Keyboard navigation
+    btn.addEventListener('keydown', function(e) {
+      let newIndex = index;
 
-      // Add active class to selected button and show content
-      this.classList.add('active');
-      const selectedTab = document.getElementById(tabId);
-      if (selectedTab) {
-        selectedTab.classList.add('active');
-        selectedTab.style.display = 'block';
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        newIndex = (index - 1 + tabs.length) % tabs.length;
+        tabs[newIndex].focus();
+        activateTab(tabs[newIndex]);
+      } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        newIndex = (index + 1) % tabs.length;
+        tabs[newIndex].focus();
+        activateTab(tabs[newIndex]);
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        tabs[0].focus();
+        activateTab(tabs[0]);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        tabs[tabs.length - 1].focus();
+        activateTab(tabs[tabs.length - 1]);
       }
     });
   });
 
-  // Set first tab as active by default
-  if (tabBtns.length > 0) {
-    tabBtns[0].classList.add('active');
-    const firstTabId = tabBtns[0].getAttribute('data-tab');
-    const firstTab = document.getElementById(firstTabId);
-    if (firstTab) {
-      firstTab.classList.add('active');
-      firstTab.style.display = 'block';
+  // Function to activate a tab
+  function activateTab(activeBtn) {
+    // Remove active from all
+    tabBtns.forEach(btn => {
+      btn.classList.remove('active');
+      btn.setAttribute('aria-selected', 'false');
+      btn.setAttribute('tabindex', '-1');
+    });
+
+    // Hide all content
+    tabContents.forEach(content => {
+      content.classList.remove('active');
+      content.style.display = 'none';
+    });
+
+    // Activate selected
+    activeBtn.classList.add('active');
+    activeBtn.setAttribute('aria-selected', 'true');
+    activeBtn.setAttribute('tabindex', '0');
+
+    // Show corresponding content
+    const tabId = activeBtn.getAttribute('aria-controls');
+    const activeContent = document.getElementById(tabId);
+    if (activeContent) {
+      activeContent.classList.add('active');
+      activeContent.style.display = 'block';
     }
+  }
+
+  // Set first tab as active by default
+  if (tabs.length > 0) {
+    activateTab(tabs[0]);
   }
 });
 </script>
