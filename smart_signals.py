@@ -429,7 +429,6 @@ def build_telegram_alert(signal, for_role: str = "free"):
     if for_role == "free":
         lines.append(f"")
         lines.append(f"WARNING: Educational data only. Not investment advice.")
-        from datetime import datetime
         lines.append(f"Time: {datetime.now().strftime('%H:%M:%S')}")
         return "\n".join(lines)
 
