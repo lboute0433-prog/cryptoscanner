@@ -749,6 +749,49 @@ tbody tr { transition:background .15s ease; }
             font-size:.7rem; transition:.2s; }
 .hist-btn:hover,.hist-btn.active { border-color:var(--accent); color:var(--accent); }
 
+/* ── SIGNAL TAB BUTTONS (ARIA Accessible) ────────── */
+.signal-tab-btn {
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  border-bottom: 3px solid transparent;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.signal-tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.signal-tab-btn:hover:not(.active) {
+  color: #aaa;
+  border-bottom-color: rgba(0, 255, 255, 0.3);
+}
+
+.signal-tab-btn:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.signal-tab-content {
+  display: none;
+}
+
+.signal-tab-content.active {
+  display: block;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 /* ── SMART SIGNALS ───────────────────────────────── */
 .smart-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:10px;cursor:pointer;transition:.2s}
 .smart-card:hover{border-color:var(--accent);background:rgba(0,229,255,.03)}
@@ -3074,6 +3117,43 @@ function renderCotConclusions(btcSig, ethSig, sp5Sig, goldSig) {
       <div class="section-pill">Tri visuel plus naturel</div>
     </div>
   </div>
+
+  <!-- ── TAB NAVIGATION (ARIA Accessible) ──────── -->
+  <div style="display:flex;gap:16px;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:8px" role="tablist">
+    <button class="signal-tab-btn active"
+            id="tab-btn-free"
+            data-tab="signaux-free"
+            role="tab"
+            aria-selected="true"
+            aria-controls="signaux-free"
+            tabindex="0">
+      📊 SIGNAUX (FREE)
+    </button>
+    <button class="signal-tab-btn"
+            id="tab-btn-smart"
+            data-tab="signaux-smart"
+            role="tab"
+            aria-selected="false"
+            aria-controls="signaux-smart"
+            tabindex="-1">
+      ⭐ SMART SIGNALS (PAID)
+    </button>
+    <button class="signal-tab-btn"
+            id="tab-btn-rsi"
+            data-tab="signaux-rsi"
+            role="tab"
+            aria-selected="false"
+            aria-controls="signaux-rsi"
+            tabindex="-1">
+      📈 RSI SURACHAT/SURVENTE
+    </button>
+  </div>
+
+  <!-- ── TAB CONTENT: FREE SIGNALS ──────────────── -->
+  <div id="signaux-free"
+       class="signal-tab-content active"
+       role="tabpanel"
+       aria-labelledby="tab-btn-free">
   <div class="table-wrap table-shell">
     <div class="table-toolbar">
       <span style="font-size:.75rem;color:var(--muted)">Signaux détectés automatiquement — RSI, MACD, Volume, Tendance</span>
@@ -3094,21 +3174,39 @@ function renderCotConclusions(btcSig, ethSig, sp5Sig, goldSig) {
       </table>
     </div>
   </div>
+  </div><!-- End FREE signals content -->
 
-  <!-- RSI Distribution des signaux -->
-  <div id="signals-rsi-panel" style="display:none;margin-top:12px">
-    <div class="form-panel" style="padding:16px">
-      <div style="display:flex;align-items:center;gap:16px;margin-bottom:10px">
-        <div style="font-size:.65rem;color:var(--muted);letter-spacing:2px">DISTRIBUTION RSI DES SIGNAUX</div>
-        <div style="font-size:.62rem;color:var(--muted)">
-          <span style="color:var(--red)">■</span> Surachat (&gt;70)&nbsp;
-          <span style="color:var(--green)">■</span> Survendu (&lt;30)&nbsp;
-          <span style="color:var(--accent)">■</span> Neutre
-        </div>
-      </div>
-      <div style="position:relative;height:120px"><canvas id="signals-rsi-chart"></canvas></div>
+  <!-- ── TAB CONTENT: SMART SIGNALS ─────────────── -->
+  <div id="signaux-smart"
+       class="signal-tab-content"
+       role="tabpanel"
+       aria-labelledby="tab-btn-smart">
+    <div style="color:var(--muted);padding:40px;text-align:center">
+      ⏳ Smart Signals en cours de chargement... (module PAID)<br>
+      <span style="font-size:.7rem">Les signaux intelligents se chargent automatiquement toutes les 2 minutes</span>
     </div>
-  </div>
+  </div><!-- End SMART signals content -->
+
+  <!-- ── TAB CONTENT: RSI HEATMAP ─────────────── -->
+  <div id="signaux-rsi"
+       class="signal-tab-content"
+       role="tabpanel"
+       aria-labelledby="tab-btn-rsi">
+    <!-- RSI Distribution des signaux -->
+    <div id="signals-rsi-panel" style="margin-top:12px">
+      <div class="form-panel" style="padding:16px">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:10px">
+          <div style="font-size:.65rem;color:var(--muted);letter-spacing:2px">DISTRIBUTION RSI DES SIGNAUX</div>
+          <div style="font-size:.62rem;color:var(--muted)">
+            <span style="color:var(--red)">■</span> Surachat (&gt;70)&nbsp;
+            <span style="color:var(--green)">■</span> Survendu (&lt;30)&nbsp;
+            <span style="color:var(--accent)">■</span> Neutre
+          </div>
+        </div>
+        <div style="position:relative;height:120px"><canvas id="signals-rsi-chart"></canvas></div>
+      </div>
+    </div>
+  </div><!-- End RSI signals content -->
 </div>
 
 <!-- ═══ TAB: CVD ═══ -->
@@ -15045,6 +15143,101 @@ function renderScatterPlot(data) {
   document.getElementById('scatter-weak-count').textContent = counts.weak;
   document.getElementById('scatter-oversold-count').textContent = counts.oversold;
 }
+
+// ════════════════════════════════════════════════════════════════
+// SIGNAL TABS: WCAG 2.1 Accessible Keyboard Navigation
+// ════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', function() {
+  // Get all tab elements
+  const tabBtns = document.querySelectorAll('[role="tab"]');
+  const tabContents = document.querySelectorAll('[role="tabpanel"]');
+
+  // Error check
+  if (tabBtns.length === 0) {
+    console.warn('[SignalTabs] No tab buttons found with role="tab"');
+    return;
+  }
+
+  // Store tab elements for keyboard navigation
+  const tabs = Array.from(tabBtns);
+
+  // Click handlers for each tab button
+  tabBtns.forEach((btn, index) => {
+    btn.addEventListener('click', function() {
+      activateTab(btn);
+    });
+
+    // Keyboard navigation
+    btn.addEventListener('keydown', function(e) {
+      let newIndex = index;
+
+      // Left arrow or Up arrow = previous tab
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        newIndex = (index - 1 + tabs.length) % tabs.length;
+        tabs[newIndex].focus();
+        activateTab(tabs[newIndex]);
+      }
+
+      // Right arrow or Down arrow = next tab
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        newIndex = (index + 1) % tabs.length;
+        tabs[newIndex].focus();
+        activateTab(tabs[newIndex]);
+      }
+
+      // Home = first tab
+      if (e.key === 'Home') {
+        e.preventDefault();
+        tabs[0].focus();
+        activateTab(tabs[0]);
+      }
+
+      // End = last tab
+      if (e.key === 'End') {
+        e.preventDefault();
+        tabs[tabs.length - 1].focus();
+        activateTab(tabs[tabs.length - 1]);
+      }
+    });
+  });
+
+  // Function to activate a tab
+  function activateTab(activeBtn) {
+    // Remove active state from all buttons
+    tabBtns.forEach(btn => {
+      btn.classList.remove('active');
+      btn.setAttribute('aria-selected', 'false');
+      btn.setAttribute('tabindex', '-1');
+    });
+
+    // Hide all content
+    tabContents.forEach(content => {
+      content.classList.remove('active');
+    });
+
+    // Activate clicked button
+    activeBtn.classList.add('active');
+    activeBtn.setAttribute('aria-selected', 'true');
+    activeBtn.setAttribute('tabindex', '0');
+
+    // Show corresponding content
+    const tabId = activeBtn.getAttribute('aria-controls');
+    const activeContent = document.getElementById(tabId);
+
+    if (activeContent) {
+      activeContent.classList.add('active');
+    } else {
+      console.warn(`[SignalTabs] Tab content with id="${tabId}" not found`);
+    }
+  }
+
+  // Load signals data if function exists
+  if (typeof loadSignalsData === 'function') {
+    loadSignalsData();
+  }
+});
 </script>
 
 </body>
