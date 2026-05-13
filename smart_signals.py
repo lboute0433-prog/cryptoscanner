@@ -605,9 +605,12 @@ def detect_volume_spike(candle_data: dict, threshold: float = 2.0) -> VolumeSpik
         VolumeSpike object with triggered flag and multiplier
     """
     volume = float(candle_data.get('volume', 0))
-    volume_ma20 = float(candle_data.get('volume_ma20', 1))
+    volume_ma20 = float(candle_data.get('volume_ma20', 0))
 
+    # Validate inputs: reject zero or negative values
     if volume_ma20 == 0:
+        return VolumeSpike(False)
+    if volume < 0 or volume_ma20 < 0:
         return VolumeSpike(False)
 
     multiplier = volume / volume_ma20
@@ -616,7 +619,7 @@ def detect_volume_spike(candle_data: dict, threshold: float = 2.0) -> VolumeSpik
     return VolumeSpike(triggered, multiplier)
 
 
-def detect_breakout(candle_data: dict) -> bool:
+def detect_breakout_price(candle_data: dict) -> bool:
     """
     Detect if price is breaking above 24h high
 

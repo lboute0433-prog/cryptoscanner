@@ -21,17 +21,17 @@ def test_volume_spike_no_trigger_below_threshold():
 
 def test_breakout_detection_triggers_above_24h_high():
     """Breakout detected when close > 24h_high"""
-    from smart_signals import detect_breakout
+    from smart_signals import detect_breakout_price
     candle_data = {'close': 0.0052, 'high_24h': 0.0048}
-    result = detect_breakout(candle_data)
+    result = detect_breakout_price(candle_data)
     assert result == True
 
 
 def test_breakout_no_trigger_below_24h_high():
     """No breakout if close < 24h_high"""
-    from smart_signals import detect_breakout
+    from smart_signals import detect_breakout_price
     candle_data = {'close': 0.0047, 'high_24h': 0.0048}
-    result = detect_breakout(candle_data)
+    result = detect_breakout_price(candle_data)
     assert result == False
 
 
@@ -49,3 +49,17 @@ def test_momentum_no_trigger_below_threshold():
     candle_data = {'rsi': 45}
     result = detect_momentum(candle_data, threshold=60.0)
     assert result == False
+
+
+def test_volume_spike_rejects_negative_volumes():
+    """Negative volumes should not trigger detection"""
+    candle_data = {'volume': -100000000, 'volume_ma20': 50000000}
+    result = detect_volume_spike(candle_data, threshold=2.0)
+    assert bool(result) == False
+
+
+def test_volume_spike_handles_missing_volume_ma20():
+    """Missing volume_ma20 should not trigger detection"""
+    candle_data = {'volume': 100000000}  # missing volume_ma20
+    result = detect_volume_spike(candle_data, threshold=2.0)
+    assert bool(result) == False
