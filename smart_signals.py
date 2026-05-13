@@ -649,3 +649,30 @@ def detect_momentum(candle_data: dict, threshold: float = 60.0) -> bool:
     rsi = float(candle_data.get('rsi', 50))
 
     return rsi > threshold
+
+
+def calculate_pump_score(criteria: dict) -> float:
+    """
+    Calculate composite pump detection score (0-100)
+
+    Score = (number of criteria met / 3) * 100
+
+    Criteria:
+    - volume_spike: bool
+    - breakout: bool
+    - momentum: bool
+
+    Args:
+        criteria: dict with boolean flags for each criterion
+
+    Returns:
+        float - Score 0-100, rounded to 2 decimal places
+    """
+    criteria_met = sum([
+        criteria.get('volume_spike', False),
+        criteria.get('breakout', False),
+        criteria.get('momentum', False)
+    ])
+
+    score = (criteria_met / 3.0) * 100.0
+    return round(score, 2)

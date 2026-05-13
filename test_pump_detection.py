@@ -63,3 +63,28 @@ def test_volume_spike_handles_missing_volume_ma20():
     candle_data = {'volume': 100000000}  # missing volume_ma20
     result = detect_volume_spike(candle_data, threshold=2.0)
     assert bool(result) == False
+
+
+def test_composite_pump_score_calculation():
+    """Score = (criteria_met / 3) * 100"""
+    from smart_signals import calculate_pump_score
+
+    # All 3 criteria met
+    criteria = {'volume_spike': True, 'breakout': True, 'momentum': True}
+    score = calculate_pump_score(criteria)
+    assert score == 100.0
+
+    # 2 criteria met
+    criteria = {'volume_spike': True, 'breakout': True, 'momentum': False}
+    score = calculate_pump_score(criteria)
+    assert score == 66.67
+
+    # 1 criteria met
+    criteria = {'volume_spike': True, 'breakout': False, 'momentum': False}
+    score = calculate_pump_score(criteria)
+    assert score == 33.33
+
+    # No criteria met
+    criteria = {'volume_spike': False, 'breakout': False, 'momentum': False}
+    score = calculate_pump_score(criteria)
+    assert score == 0.0
