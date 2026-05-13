@@ -88,3 +88,28 @@ def test_composite_pump_score_calculation():
     criteria = {'volume_spike': False, 'breakout': False, 'momentum': False}
     score = calculate_pump_score(criteria)
     assert score == 0.0
+
+
+def test_api_smart_signals_enriched_response():
+    """API returns pump %, vol_mult, score, entry/target"""
+    from app import app
+
+    client = app.test_client()
+    response = client.get('/api/smart_signals?role=paid')
+
+    assert response.status_code == 200
+    data = response.json
+
+    # Check response structure
+    assert 'signals' in data
+    assert 'score_min' in data
+
+    # Check signal structure (if signals exist)
+    if data['signals']:
+        signal = data['signals'][0]
+        assert 'symbol' in signal
+        assert 'score' in signal
+        assert 'pump_pct' in signal  # NEW
+        assert 'vol_mult' in signal  # NEW
+        assert 'entry_level' in signal  # NEW
+        assert 'target_level' in signal  # NEW

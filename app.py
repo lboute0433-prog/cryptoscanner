@@ -1508,6 +1508,7 @@ def api_signals():
 def _format_signal_for_role(signal, role):
     """
     Return signal fields appropriate for FREE or PAID users.
+    Enriches response with pump metrics (pump_pct, vol_mult, entry/target levels).
 
     Args:
         signal (dict): Full signal data
@@ -1516,13 +1517,25 @@ def _format_signal_for_role(signal, role):
     Returns:
         dict: Filtered signal appropriate for user tier
     """
+    # Calculate enriched metrics (available to all roles)
+    pump_pct = float(signal.get("change_pct", 0))
+    vol_mult = float(signal.get("vol_ratio", 1.0))
+
+    # Calculate entry/target levels
+    current_price = float(signal.get("price", 0))
+    entry_level = round(current_price, 8)
+    target_level = round(current_price * 1.05, 8)  # +5% target
+
     if role == "free":
         # Basic fields only for FREE users
         return {
             "symbol": signal.get("symbol"),
             "score": signal.get("score"),
             "rsi": signal.get("rsi"),
-            "volume_mult": signal.get("volume_mult"),
+            "pump_pct": pump_pct,              # NEW
+            "vol_mult": vol_mult,              # NEW
+            "entry_level": entry_level,        # NEW
+            "target_level": target_level,      # NEW
             "timestamp": signal.get("timestamp"),
             "price": signal.get("price"),
             "change_pct": signal.get("change_pct"),
@@ -1531,8 +1544,15 @@ def _format_signal_for_role(signal, role):
             "tags": signal.get("tags", [])
         }
     else:  # role == "paid"
-        # Return full signal with all details
-        return signal
+        # Return full signal with enriched metrics
+        enriched = dict(signal)
+        enriched.update({
+            "pump_pct": pump_pct,              # NEW
+            "vol_mult": vol_mult,              # NEW
+            "entry_level": entry_level,        # NEW
+            "target_level": target_level       # NEW
+        })
+        return enriched
 
 
 def _get_user_role_tier():
