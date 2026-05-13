@@ -577,3 +577,72 @@ def build_retrace_alert(symbol: str, rsi_exit: dict, price: float,
         f"🕐 {datetime.now().strftime('%H:%M:%S')}",
     ]
     return "\n".join(lines)
+
+
+# ── Pump Detection Algorithms ─────────────────────────────────────
+class VolumeSpike:
+    """Result object for volume spike detection with triggered flag and multiplier"""
+    def __init__(self, triggered: bool, multiplier: float = 1.0):
+        self.triggered = triggered
+        self.multiplier = multiplier
+
+    def __bool__(self):
+        return self.triggered
+
+    def __repr__(self):
+        return f"VolumeSpike(triggered={self.triggered}, multiplier={self.multiplier:.1f}x)"
+
+
+def detect_volume_spike(candle_data: dict, threshold: float = 2.0) -> VolumeSpike:
+    """
+    Detect if volume is spiking (volume > threshold * MA20)
+
+    Args:
+        candle_data: dict with 'volume' and 'volume_ma20'
+        threshold: multiplier threshold (default 2.0 = 2x spike)
+
+    Returns:
+        VolumeSpike object with triggered flag and multiplier
+    """
+    volume = float(candle_data.get('volume', 0))
+    volume_ma20 = float(candle_data.get('volume_ma20', 1))
+
+    if volume_ma20 == 0:
+        return VolumeSpike(False)
+
+    multiplier = volume / volume_ma20
+    triggered = multiplier >= threshold
+
+    return VolumeSpike(triggered, multiplier)
+
+
+def detect_breakout(candle_data: dict) -> bool:
+    """
+    Detect if price is breaking above 24h high
+
+    Args:
+        candle_data: dict with 'close' and 'high_24h'
+
+    Returns:
+        bool - True if close > 24h high
+    """
+    close = float(candle_data.get('close', 0))
+    high_24h = float(candle_data.get('high_24h', 0))
+
+    return close > high_24h
+
+
+def detect_momentum(candle_data: dict, threshold: float = 60.0) -> bool:
+    """
+    Detect if RSI shows bullish momentum
+
+    Args:
+        candle_data: dict with 'rsi'
+        threshold: RSI threshold (default 60 = moderate bullish)
+
+    Returns:
+        bool - True if RSI > threshold
+    """
+    rsi = float(candle_data.get('rsi', 50))
+
+    return rsi > threshold
