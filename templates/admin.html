@@ -958,7 +958,6 @@ async function loadAlertConfigs() {
       document.getElementById('alert-smart-criteria-min').value = cfg.criteria_min || 3;
       document.getElementById('alert-smart-adr-pct').value = cfg.adr_pct || 25;
       document.getElementById('alert-smart-cooldown').value = cfg.cooldown_hours || 1;
-      document.getElementById('alert-smart-max-cycle').value = cfg.max_per_cycle || 3;
     }
 
     // Retrace RSI
@@ -967,14 +966,6 @@ async function loadAlertConfigs() {
       document.getElementById('alert-retrace-rsi-overbought').value = cfg.rsi_overbought || 70;
       document.getElementById('alert-retrace-rsi-oversold').value = cfg.rsi_oversold || 30;
       document.getElementById('alert-retrace-cooldown').value = cfg.cooldown_hours || 1;
-    }
-
-    // Macro Events
-    if(data.macro_events) {
-      const cfg = data.macro_events.config;
-      document.getElementById('alert-macro-impact').value = cfg.impact_filter || 'High';
-      document.getElementById('alert-macro-window-start').value = cfg.window_start || 7;
-      document.getElementById('alert-macro-window-end').value = cfg.window_end || 22;
     }
   } catch(e) {
     console.error('Erreur chargement alertes:', e);
@@ -994,15 +985,10 @@ async function saveAlertConfig(alertType) {
       payload.criteria_min = parseInt(document.getElementById('alert-smart-criteria-min').value);
       payload.adr_pct = parseInt(document.getElementById('alert-smart-adr-pct').value);
       payload.cooldown_hours = parseFloat(document.getElementById('alert-smart-cooldown').value);
-      payload.max_per_cycle = parseInt(document.getElementById('alert-smart-max-cycle').value);
     } else if(alertType === 'retrace_rsi') {
       payload.rsi_overbought = parseInt(document.getElementById('alert-retrace-rsi-overbought').value);
       payload.rsi_oversold = parseInt(document.getElementById('alert-retrace-rsi-oversold').value);
       payload.cooldown_hours = parseFloat(document.getElementById('alert-retrace-cooldown').value);
-    } else if(alertType === 'macro_events') {
-      payload.impact_filter = document.getElementById('alert-macro-impact').value;
-      payload.window_start = parseInt(document.getElementById('alert-macro-window-start').value);
-      payload.window_end = parseInt(document.getElementById('alert-macro-window-end').value);
     }
 
     if(statusElem) statusElem.textContent = '⏳ Sauvegarde...';
