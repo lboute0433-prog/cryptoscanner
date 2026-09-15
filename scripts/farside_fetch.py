@@ -160,7 +160,14 @@ def construire(actif: str) -> dict:
         for tk, v in j["fonds"].items():
             cumul[tk] = cumul.get(tk, 0.0) + v
 
-    dernier = jours[-1]
+    # ⚠️ LE DERNIER JOUR DU TABLEAU N'EST PAS FORCÉMENT PUBLIÉ. Farside
+    # ajoute la ligne du jour dès l'ouverture des marchés, puis la remplit
+    # en fin de journée américaine : le 15/09/2026 à 15 h, tous les fonds
+    # y étaient à 0. Prendre cette ligne comme « flux du jour » afficherait
+    # 0 M$ partout, et un classement d'émetteurs entièrement à zéro.
+    # On retient donc le dernier jour RÉELLEMENT publié.
+    publies = [j for j in jours if any(v for v in j["fonds"].values())]
+    dernier = publies[-1] if publies else jours[-1]
     emetteurs = []
     for tk in d["tickers"]:
         emetteurs.append({
@@ -178,6 +185,7 @@ def construire(actif: str) -> dict:
         "depuis": jours[0]["date"],
         "jusqu_a": dernier["date"],
         "nb_jours": len(jours),
+        "date_dernier_jour": dernier["date"],
         "flux_dernier_jour": dernier["flux"],
         "flux_cumule": round(sum(j["flux"] for j in jours), 2),
         # Série allégée pour le graphique : date + flux, sans le détail.
