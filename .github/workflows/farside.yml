@@ -1,0 +1,65 @@
+# Récupération quotidienne des flux ETF spot (Farside Investors).
+#
+# Pourquoi ce fichier est sur la branche par défaut
+# --------------------------------------------------
+# GitHub n'exécute les workflows `schedule` QUE depuis la branche par
+# défaut du dépôt. C'est la seule raison de sa présence ici : le code et
+# les données vivent sur la branche `relais-farside`, qu'il va chercher
+# lui-même. Cette branche-ci ne reçoit AUCUN commit quotidien.
+#
+# Pourquoi ce relais existe
+# -------------------------
+# Farside est derrière Cloudflare, qui refuse les IP de datacenter.
+# Mesuré le 15/09/2026 : HTTP 200 depuis une machine résidentielle,
+# HTTP 403 depuis le serveur ApexView — avec quatre jeux d'en-têtes,
+# jusqu'au jeu navigateur complet. C'est l'adresse IP, pas l'en-tête.
+# Les exécuteurs GitHub sortent par des adresses acceptées.
+#
+# ⚠️ CE WORKFLOW NE PEUT PAS ATTEINDRE LE SERVEUR ApexView. Il n'a que la
+# permission `contents: write` sur ce dépôt, aucun identifiant SSH. Le
+# déploiement du site reste entièrement manuel, par SFTP.
+
+name: Flux ETF — Farside
+
+on:
+  schedule:
+    # 06:20 UTC : Farside publie en fin de journée américaine, la veille
+    # est donc complète. Minute décalée car les tâches planifiées à HH:00
+    # sont mises en file d'attente et peuvent tarder.
+    - cron: "20 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  recuperer:
+    runs-on: ubuntu-latest
+    steps:
+      # ⚠️ ON TRAVAILLE SUR `relais-farside`, PAS SUR LA BRANCHE PAR DÉFAUT.
+      # Le script et les données y vivent ; la branche principale du dépôt
+      # ne doit recevoir aucun commit de données.
+      - uses: actions/checkout@v4
+        with:
+          ref: relais-farside
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Télécharger et analyser
+        run: python scripts/farside_fetch.py
+
+      - name: Publier si les données ont changé
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/farside_btc.json data/farside_eth.json
+          # `git diff --cached --quiet` sort en 1 s'il y a des changements.
+          # Sans ce test, un commit vide serait créé chaque jour.
+          if git diff --cached --quiet; then
+            echo "Aucun changement — pas de commit."
+          else
+            git commit -m "Flux ETF Farside — $(date -u +%Y-%m-%d)"
+            git push origin HEAD:relais-farside
+          fi
