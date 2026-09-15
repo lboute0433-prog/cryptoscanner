@@ -1,0 +1,57 @@
+# Récupération quotidienne des flux ETF spot chez Farside Investors.
+#
+# Pourquoi ici et pas sur le serveur ApexView
+# -------------------------------------------
+# Farside est derrière Cloudflare, qui refuse les IP de datacenter.
+# Mesuré le 15/09/2026 : HTTP 200 depuis une machine résidentielle,
+# HTTP 403 depuis le serveur Hetzner — et cela avec quatre jeux
+# d'en-têtes, jusqu'au jeu navigateur complet. C'est l'IP, pas l'en-tête.
+#
+# Les exécuteurs GitHub sortent par des adresses acceptées. Ce workflow
+# télécharge la page UNE FOIS PAR JOUR et publie le résultat dans le
+# dépôt ; ApexView lit ensuite le JSON via raw.githubusercontent.com,
+# joignable depuis le serveur en 0,22 s.
+#
+# ⚠️ UNE REQUÊTE PAR JOUR, PAS UNE PAR VISITEUR. C'est ce qui distingue
+# cette approche d'un scraping à chaque affichage : la charge imposée à
+# Farside reste négligeable et le blocage improbable.
+
+name: Flux ETF — Farside
+
+on:
+  schedule:
+    # 06:20 UTC : Farside publie en fin de journée américaine, la veille
+    # est donc complète. L'heure est décalée de la minute ronde car les
+    # tâches planifiées à HH:00 sont mises en file et peuvent tarder.
+    - cron: "20 6 * * *"
+  workflow_dispatch:        # permet un déclenchement manuel
+
+permissions:
+  contents: write           # nécessaire pour publier le JSON
+
+jobs:
+  recuperer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Télécharger et analyser
+        run: python scripts/farside_fetch.py
+
+      - name: Publier si les données ont changé
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/farside_btc.json data/farside_eth.json
+          # `git diff --cached --quiet` sort en 1 s'il y a des changements.
+          # Sans ce test, un commit vide serait créé chaque jour.
+          if git diff --cached --quiet; then
+            echo "Aucun changement — pas de commit."
+          else
+            git commit -m "Flux ETF Farside — $(date -u +%Y-%m-%d)"
+            git push
+          fi
